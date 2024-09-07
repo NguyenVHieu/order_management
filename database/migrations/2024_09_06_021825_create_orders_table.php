@@ -13,6 +13,25 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
+            $table->string('external_id');
+            $table->unsignedBigInteger('shop_id');
+            $table->integer('quanity');
+            $table->decimal('cost');
+            $table->decimal('shipping_cost');
+            $table->string('status');
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('region')->nullable();
+            $table->string('address1');
+            $table->string('city');
+            $table->string('zip');
+            $table->string('email');
+            $table->string('phone');
+            $table->string('country')->nullable();
+            $table->string('company')->nullable();
+            $table->string('image')->nullable();
+            $table->boolean('is_push')->default(0);
+            $table->unsignedBigInteger('user_id');
             $table->timestamps();
         });
     }
