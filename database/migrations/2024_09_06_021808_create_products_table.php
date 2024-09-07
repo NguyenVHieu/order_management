@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('size');
             $table->string('color');
-            $table->timestamps();
+            $table->timestamps(); 
         });
     }
 

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->unsignedBigInteger('user_management_id');
-            $table->timestamps();
+            $table->timestamps(); 
         });
     }
 

@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('country')->nullable();
             $table->string('company')->nullable();
             $table->string('image')->nullable();
-            $table->boolean('is_push')->default(0);
+            $table->boolean('is_push')->default(0); 
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
         });
