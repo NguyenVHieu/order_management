@@ -13,12 +13,9 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('variant_id');
-            $table->unsignedBigInteger('print_provider_id');
-            $table->unsignedBigInteger('blueprint_id');
+            $table->string('code');
+            $table->string('images');
             $table->string('name');
-            $table->string('size');
-            $table->string('color');
             $table->timestamps(); 
         });
     }
