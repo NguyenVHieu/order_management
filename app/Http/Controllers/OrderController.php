@@ -100,7 +100,11 @@ class OrderController extends BaseController
                         'is_push' => false
                     ];
 
-                    DB::table('orders')->insert($data);
+                    $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
+                    if (empty($order)) {
+                        DB::table('orders')->insert($data);
+                    }
+                    
                 }
             }
         }
