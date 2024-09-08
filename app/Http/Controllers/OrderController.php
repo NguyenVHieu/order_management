@@ -39,6 +39,7 @@ class OrderController extends BaseController
                 $responseData = json_decode($response->getBody()->getContents(), true);
                 // dd($responseData['images']);
                 foreach($responseData['data'] as $res) {
+                    dd($res);
                     $variantIds = array_slice(array_column($res['variants'], 'id'), 0, 5);
 
                     $data = [
@@ -113,12 +114,12 @@ class OrderController extends BaseController
     }
 
     function pushOrderToPrintify($orderData) {
-        $key = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjE2YTcyNDJkZjU4ZDRkNzMyMDI5ZDc4ZDBmOTVkNzEzOGYxMzVkNmIyNDVmNDk4NGQ3ODBmNDRhZWJjYzkzNzBiMTU0MGU5MTUwMzhjZjRjIiwiaWF0IjoxNzI1NDk5NjIxLjM1OTIxLCJuYmYiOjE3MjU0OTk2MjEuMzU5MjEyLCJleHAiOjE3NTcwMzU2MjEuMzUxODUxLCJzdWIiOiIxMDg2OTM1NyIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.Am_nZqDHguRVb5TnwkhXyh-v_oJA7WyU5moazWprlZZN7jpXklxGH5VRO8rLRB5hwk9Bu5lmOcHfrM048yY';
+        // $key = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjE2YTcyNDJkZjU4ZDRkNzMyMDI5ZDc4ZDBmOTVkNzEzOGYxMzVkNmIyNDVmNDk4NGQ3ODBmNDRhZWJjYzkzNzBiMTU0MGU5MTUwMzhjZjRjIiwiaWF0IjoxNzI1NDk5NjIxLjM1OTIxLCJuYmYiOjE3MjU0OTk2MjEuMzU5MjEyLCJleHAiOjE3NTcwMzU2MjEuMzUxODUxLCJzdWIiOiIxMDg2OTM1NyIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.Am_nZqDHguRVb5TnwkhXyh-v_oJA7WyU5moazWprlZZN7jpXklxGH5VRO8rLRB5hwk9Bu5lmOcHfrM048yY';
         $client = new Client();
 
         $response = $client->post($this->baseUrlPrintify.'shops/5926629/orders.json', [
             'headers' => [
-                'Authorization-Printify' => 'Bearer ' . $key,
+                'Authorization' => 'Bearer ' . $this->keyPrintify,
                 'Content-Type'  => 'application/json',
             ],
             'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -153,26 +154,28 @@ class OrderController extends BaseController
 
     public function createOrder(Request $req) 
     {
+        $order = DB::table('orders')->where('id', $req->id)->first();
+        // dd($order->order_number);
         try {
             $orderDataPrintify = [
-                "external_id" => "order_id_12346",
-                "label" => "Order#1234",
+                "external_id" => "order_id_".$order->order_number,
+                "label" => "Order#".$order->order_number,
                 "line_items" => [
                     [
-                        "product_id"=> "6397f58fb31571bb5c0556f9",
-                        "quantity"=> 1,
+                        "product_id"=> $order->product_id,
+                        "quantity"=> $order->quantity,
                         "variant_id"=> 81810,
-                        "print_provider_id"=> 228,
+                        "print_provider_id"=> $order->print_provider_id,
                         "cost"=> 414,
                         "shipping_cost"=> 400,
                         "status"=> "pending",
-                        "metadata"=> [
-                            "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
-                            "price"=> 622,
-                            "variant_label"=> "Golden indigocoin",
-                            "sku"=> "97122532902512964757",
-                            "country"=> "United States"
-                        ],
+                        // "metadata"=> [
+                        //     "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
+                        //     "price"=> 622,
+                        //     "variant_label"=> "Golden indigocoin",
+                        //     "sku"=> "97122532902512964757",
+                        //     "country"=> "United States"
+                        // ],
                         "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
                         "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
                         "blueprint_id" => 1094
@@ -181,19 +184,20 @@ class OrderController extends BaseController
                 "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
                 "send_to_production" => true,
                 "address_to" => [
-                    "first_name"=> "John",
-                    "last_name"=> "Smith",
+                    "first_name"=> $order->first_name,
+                    "last_name"=> $order->last_name,
                     "region"=> "",
-                    "address1"=> "ExampleBaan 121",
-                    "city"=> "Retie",
-                    "zip"=> "2470",
-                    "email"=> "vanhieuisme01@msn.com",
-                    "phone"=> "0574 69 21 90",
-                    "country"=> "BE",
-                    "company"=> "MSN"
+                    "address1"=> $order->address,
+                    "city"=> $order->city,
+                    // "zip"=> "2470",
+                    // "email"=> "vanhieuisme01@msn.com",
+                    // "phone"=> "0574 69 21 90",
+                    // "country"=> "BE",
+                    // "company"=> "MSN"
                 ],
                 
             ];
+            // dd($orderDataPrintify);
             
             // $placeOrder = $req->place_order;
             // switch ($placeOrder) {
@@ -209,7 +213,7 @@ class OrderController extends BaseController
             // }
             
             $result = $this->pushOrderToPrintify($orderDataPrintify);
-            return $result;
+            return $this->sendSuccess($result);
         } catch (\Throwable $th) {
             dd($th->getMessage());
         }
@@ -303,7 +307,6 @@ class OrderController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('error', 500);
         }
     }
