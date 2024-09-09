@@ -41,13 +41,12 @@ class OrderController extends BaseController
                 $responseData = json_decode($response->getBody()->getContents(), true);
                 // dd($responseData['images']);
                 foreach($responseData['data'] as $res) {
-                    dd($res);
                     $variantIds = array_slice(array_column($res['variants'], 'id'), 0, 5);
 
                     $data = [
                         'code' => $res['id'], 
                         'name'=> $res['title'],
-                        'images' => $product['images'][0]['src']
+                        'images' => $res['images'][0]['src']
                     ];
                     // dd($data)
                     $prod = DB::table('products')->where('code', $data['code'])->first();
@@ -107,7 +106,6 @@ class OrderController extends BaseController
                     if (empty($order)) {
                         DB::table('orders')->insert($data);
                     }
-                    
                 }
             }
         }
@@ -116,7 +114,6 @@ class OrderController extends BaseController
     }
 
     function pushOrderToPrintify($orderData) {
-        // $key = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjE2YTcyNDJkZjU4ZDRkNzMyMDI5ZDc4ZDBmOTVkNzEzOGYxMzVkNmIyNDVmNDk4NGQ3ODBmNDRhZWJjYzkzNzBiMTU0MGU5MTUwMzhjZjRjIiwiaWF0IjoxNzI1NDk5NjIxLjM1OTIxLCJuYmYiOjE3MjU0OTk2MjEuMzU5MjEyLCJleHAiOjE3NTcwMzU2MjEuMzUxODUxLCJzdWIiOiIxMDg2OTM1NyIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.Am_nZqDHguRVb5TnwkhXyh-v_oJA7WyU5moazWprlZZN7jpXklxGH5VRO8rLRB5hwk9Bu5lmOcHfrM048yY';
         $client = new Client();
 
         $response = $client->post($this->baseUrlPrintify.'shops/5926629/orders.json', [
@@ -319,20 +316,30 @@ class OrderController extends BaseController
 
     public function getProviders($blueprint_id)
     {
-        $client = new Client();
+        try {
+            if ($blueprint_id != -1) {
+                $client = new Client();
 
-        $response = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers.json", [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->keyPrintify,
-                'Content-Type'  => 'application/json',
-            ],
-        ]);
+                $response = $client->get($this->baseUrlPrintify. "catalog/blueprints/{$blueprint_id}/print_providers.json", [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->keyPrintify,
+                        'Content-Type'  => 'application/json',
+                    ],
+                ]);
+                    
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getBody()->getContents(), true);
+                    return $this->sendSuccess($data);
+                } else {
+                    return $this->sendError('error', $response->getStatusCode());
+                }
+            }else {
+                return $this->sendSuccess([]);
+            }
             
-        if ($response->getStatusCode() === 200) {
-            $data = json_decode($response->getBody()->getContents(), true);
-            return $this->sendSuccess($data);
-        } else {
-            return $this->sendError('error', $response->getStatusCode());
+        } catch (\Throwable $th) {
+            return $this->sendError('error', $th->getMessage());
         }
+        
     }
 }
