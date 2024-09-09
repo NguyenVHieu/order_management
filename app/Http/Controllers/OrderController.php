@@ -7,7 +7,7 @@ use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use DB;
+use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
 
 
@@ -15,6 +15,8 @@ class OrderController extends BaseController
 {
     private $baseUrlMerchize;
     private $baseUrlPrintify;
+    private $keyPrintify;
+    private $shop_id;
 
     public function __construct()
     {
@@ -300,13 +302,15 @@ class OrderController extends BaseController
     {
         try {
             $data = DB::table('orders')
-                    ->select('orders.*', 'products.images')
+                    ->select('orders.*', 'products.images', 'users.name as user_name')
                     ->join('products', 'orders.product_id', '=', 'products.code')
+                    ->join('users', 'orders.user_id', '=', 'users.id')
                     ->get();
 
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('error', 500);
         }
     }
