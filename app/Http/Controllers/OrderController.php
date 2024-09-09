@@ -306,6 +306,7 @@ class OrderController extends BaseController
                     ->join('products', 'orders.product_id', '=', 'products.code')
                     ->join('users', 'orders.user_id', '=', 'users.id')
                     ->join('shops', 'orders.shop_id', '=', 'shops.code')
+                    ->where('orders.is_push', false)
                     ->get();
 
             return $this->sendSuccess($data);
@@ -313,6 +314,25 @@ class OrderController extends BaseController
         } catch (\Throwable $th) {
             dd($th);
             return $this->sendError('error', 500);
+        }
+    }
+
+    public function getProviders($blueprint_id)
+    {
+        $client = new Client();
+
+        $response = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers.json", [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->keyPrintify,
+                'Content-Type'  => 'application/json',
+            ],
+        ]);
+            
+        if ($response->getStatusCode() === 200) {
+            $data = json_decode($response->getBody()->getContents(), true);
+            return $this->sendSuccess($data);
+        } else {
+            return $this->sendError('error', $response->getStatusCode());
         }
     }
 }
