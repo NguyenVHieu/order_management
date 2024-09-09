@@ -302,9 +302,10 @@ class OrderController extends BaseController
     {
         try {
             $data = DB::table('orders')
-                    ->select('orders.*', 'products.images', 'users.name as user_name')
+                    ->select('orders.*', 'products.images', 'users.name as user_name', 'shops.name as shop_name')
                     ->join('products', 'orders.product_id', '=', 'products.code')
                     ->join('users', 'orders.user_id', '=', 'users.id')
+                    ->join('shops', 'orders.shop_id', '=', 'shops.code')
                     ->get();
 
             return $this->sendSuccess($data);
