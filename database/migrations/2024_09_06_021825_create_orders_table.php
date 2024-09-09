@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('price')->default(0.00);
             $table->unsignedBigInteger('shop_id');
             $table->string('variant_id')->nullable();
-            $table->unsignedBigInteger('print_provider_id');
+            $table->unsignedBigInteger('print_provider_id')->nullable();
             $table->unsignedBigInteger('blueprint_id');
             $table->integer('quantity');
             $table->string('status')->nullable();

@@ -84,7 +84,7 @@ class OrderController extends BaseController
                         'order_number' => $param['orderNumber'],
                         'product_id' => $product->code,
                         'shop_id' => $infor['shop_id'],
-                        'print_provider_id' => $infor['print_provider_id'],
+                        // 'print_provider_id' => $infor['print_provider_id'],
                         'blueprint_id' => $infor['blueprint_id'],
                         'quantity' =>  $param['quantity'],
                         'price' => $param['price'],
