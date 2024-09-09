@@ -19,8 +19,11 @@ class OrderController extends BaseController
     private $shop_id;
 
     public function __construct()
-    {
-        $user = User::find(Auth::user()->id)->with('shop')->first(); 
+    {   
+        if (Auth::user()) {
+            $user = User::find(Auth::user()->id)->with('shop')->first();
+        }
+         
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
         $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjE2YTcyNDJkZjU4ZDRkNzMyMDI5ZDc4ZDBmOTVkNzEzOGYxMzVkNmIyNDVmNDk4NGQ3ODBmNDRhZWJjYzkzNzBiMTU0MGU5MTUwMzhjZjRjIiwiaWF0IjoxNzI1NDk5NjIxLjM1OTIxLCJuYmYiOjE3MjU0OTk2MjEuMzU5MjEyLCJleHAiOjE3NTcwMzU2MjEuMzUxODUxLCJzdWIiOiIxMDg2OTM1NyIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.Am_nZqDHguRVb5TnwkhXyh-v_oJA7WyU5moazWprlZZN7jpXklxGH5VRO8rLRB5hwk9Bu5lmOcHfrM048yY';
@@ -39,7 +42,6 @@ class OrderController extends BaseController
                     ],
                 ]);
                 $responseData = json_decode($response->getBody()->getContents(), true);
-                // dd($responseData['images']);
                 foreach($responseData['data'] as $res) {
                     $variantIds = array_slice(array_column($res['variants'], 'id'), 0, 5);
 
@@ -67,6 +69,7 @@ class OrderController extends BaseController
     public function getInformationProduct($params)
     {
         $order = [];
+        
         foreach($params as $param) {
             $product = DB::table('products')->where('name', Helper::cleanText($param['product']))->first();
             if ($this->shop_id != 0 && !empty($product->code)) 
@@ -106,6 +109,8 @@ class OrderController extends BaseController
                     if (empty($order)) {
                         DB::table('orders')->insert($data);
                     }
+                } else {
+                    return $this->sendError('error to clone email', 500);
                 }
             }
         }
@@ -115,7 +120,6 @@ class OrderController extends BaseController
 
     function pushOrderToPrintify($orderData) {
         $client = new Client();
-
         $response = $client->post($this->baseUrlPrintify.'shops/5926629/orders.json', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->keyPrintify,
@@ -123,11 +127,14 @@ class OrderController extends BaseController
             ],
             'json' => $orderData // Gửi dữ liệu đơn hàng
         ]);
+        $res = json_decode($response->getBody()->getContents(), true);
+        
 
         if ($response->getStatusCode() === 200) {
-            return true;
+            return 'success';
+            
         } else {
-            return false;
+            return 'failed';
         }
     }
 
@@ -151,67 +158,123 @@ class OrderController extends BaseController
         }
     }
 
-    public function createOrder(Request $req) 
+    public function createOrder(Request $req)
     {
-        $order = DB::table('orders')->where('id', $req->id)->first();
-        // dd($order->order_number);
+        $orders = DB::table('orders')->whereIn('id', $req->ids)->get()->toArray();
+        $placeOrder = $req->place_order;
+        $function = '';
+        switch ($placeOrder) {
+            case 'printify':
+                $function = 'pushOrderToPrintify';
+                break;
+            case 'merchize':
+                $function = 'merchize';
+                break;
+            default:
+                $function = '';
+                break;
+        }
         try {
-            $orderDataPrintify = [
-                "external_id" => "order_id_".$order->order_number,
-                "label" => "Order#".$order->order_number,
-                "line_items" => [
-                    [
-                        "product_id"=> $order->product_id,
-                        "quantity"=> $order->quantity,
-                        "variant_id"=> 81810,
-                        "print_provider_id"=> $order->print_provider_id,
-                        "cost"=> 414,
-                        "shipping_cost"=> 400,
-                        "status"=> "pending",
-                        // "metadata"=> [
-                        //     "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
-                        //     "price"=> 622,
-                        //     "variant_label"=> "Golden indigocoin",
-                        //     "sku"=> "97122532902512964757",
-                        //     "country"=> "United States"
-                        // ],
-                        "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
-                        "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
-                        "blueprint_id" => 1094
-                    ]
-                ],
-                "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
-                "send_to_production" => true,
-                "address_to" => [
-                    "first_name"=> $order->first_name,
-                    "last_name"=> $order->last_name,
-                    "region"=> "",
-                    "address1"=> $order->address,
-                    "city"=> $order->city,
-                    // "zip"=> "2470",
-                    // "email"=> "vanhieuisme01@msn.com",
-                    // "phone"=> "0574 69 21 90",
-                    // "country"=> "BE",
-                    // "company"=> "MSN"
-                ],
-                
-            ];
-            // dd($orderDataPrintify);
+            foreach($orders as $order){
+                if ($function === 'pushOrderToPrintify') {
+                    $orderData = [
+                        "external_id" => "order_id_ne323".$order->order_number,
+                        "label" => "Order1#".$order->order_number,
+                        "line_items" => [
+                            [
+                                "product_id"=> $order->product_id,
+                                "quantity"=> $order->quantity,
+                                "variant_id"=> 81810,
+                                "print_provider_id"=> 228,
+                                "cost"=> 414,
+                                "shipping_cost"=> 400,
+                                "status"=> "pending",
+                                // "metadata"=> [
+                                //     "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
+                                //     "price"=> 622,
+                                //     "variant_label"=> "Golden indigocoin",
+                                //     "sku"=> "97122532902512964757",
+                                //     "country"=> "United States"
+                                // ],
+                                "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
+                                "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
+                                "blueprint_id" => 1094
+                            ]
+                        ],
+                        "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
+                        "send_to_production" => true,
+                        "address_to" => [
+                            "first_name"=> $order->first_name,
+                            "last_name"=> $order->last_name,
+                            "region"=> "",
+                            "address1"=> $order->address,
+                            "city"=> $order->city,
+                            // "zip"=> "2470",
+                            // "email"=> "vanhieuisme01@msn.com",
+                            // "phone"=> "0574 69 21 90",
+                            // "country"=> "BE",
+                            // "company"=> "MSN"
+                        ],
+                        
+                    ];
+                }else {
+                    $orderData = [
+                        "external_id" => "order_id_".$order->order_number,
+                        "label" => "Order#".$order->order_number,
+                        "line_items" => [
+                            [
+                                "product_id"=> $order->product_id,
+                                "quantity"=> $order->quantity,
+                                "variant_id"=> 81810,
+                                "print_provider_id"=> $order->print_provider_id,
+                                "cost"=> 414,
+                                "shipping_cost"=> 400,
+                                "status"=> "pending",
+                                // "metadata"=> [
+                                //     "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
+                                //     "price"=> 622,
+                                //     "variant_label"=> "Golden indigocoin",
+                                //     "sku"=> "97122532902512964757",
+                                //     "country"=> "United States"
+                                // ],
+                                "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
+                                "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
+                                "blueprint_id" => 1094
+                            ]
+                        ],
+                        "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
+                        "send_to_production" => true,
+                        "address_to" => [
+                            "first_name"=> $order->first_name,
+                            "last_name"=> $order->last_name,
+                            "region"=> "",
+                            "address1"=> $order->address,
+                            "city"=> $order->city,
+                            // "zip"=> "2470",
+                            // "email"=> "vanhieuisme01@msn.com",
+                            // "phone"=> "0574 69 21 90",
+                            // "country"=> "BE",
+                            // "company"=> "MSN"
+                        ],
+                        
+                    ];
+                }
+
+                if ($function) {
+                    $result = $this->$function($orderData);
+                    if ($result === 'success') {
+                        DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $orderData['line_items'][0]['print_provider_id'], 'is_push' => '1']);
+                    }
+                    $results[$order->id] = $result;
+                    return $this->sendSuccess($results);
+                    
+                } else {
+                    return $this->sendError('Function not implemented', 500);
+                }
+
+            }
+
             
-            // $placeOrder = $req->place_order;
-            // switch ($placeOrder) {
-            //     case 'printify':
-            //         $orderData = $req->order_data;
-            //         break;
-            //     case 'merchize':
-            //         $orderData = $req->order_data;
-            //         break;
-            //     default:
-            //         return $this->sendError('Invalid place order', 400);
-            //         break;
-            // }
-            
-            $result = $this->pushOrderToPrintify($orderDataPrintify);
             return $this->sendSuccess($result);
         } catch (\Throwable $th) {
             dd($th->getMessage());
@@ -230,6 +293,7 @@ class OrderController extends BaseController
             // dd($today);
 
             $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
+
             $list_data = [];
             if (count($messages) > 0) {
                 foreach ($messages as $message) {
@@ -309,7 +373,6 @@ class OrderController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('error', 500);
         }
     }
