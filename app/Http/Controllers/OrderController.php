@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
+use Illuminate\Support\Facades\Storage;
 
 
 class OrderController extends BaseController
@@ -395,6 +396,81 @@ class OrderController extends BaseController
             
         } catch (\Throwable $th) {
             return $this->sendError('error', $th->getMessage());
+        }
+        
+    }
+
+    public function createOrderSku(Request $request)
+    {
+        try {
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+    
+                $originalName = $file->getClientOriginalName();
+    
+                $dateFolder = now()->format('Ymd');
+                $time = now()->format('his');
+    
+                $directory = public_path('uploads/' . $dateFolder);
+    
+                if (!file_exists($directory)) {
+                    mkdir($directory, 0755, true);
+                }
+    
+                $path = $file->move($directory, $time. '_'. $file->getClientOriginalName());
+    
+                $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $file->getClientOriginalName());
+    
+                $client = new Client();
+                $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->keyPrintify,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'json' => [
+                            "external_id"=> "order_sku_test_01",
+                            "label"=> "order_sku_test#01",
+                            "line_items"=> [
+                              [
+                                "print_provider_id"=> 5,
+                                "blueprint_id"=> 9,
+                                "variant_id"=> 17887,
+                                "print_areas"=> [
+                                  "front"=> 'https://images-api.printify.com/mockup/66e0158d519381f81d0a126b/12052/92570/unisex-heavy-cotton-tee.jpg?camera_label=front'
+                                //   'front' => $url
+                                ],
+                                "quantity"=> 1
+                              ]
+                            ],
+                            "shipping_method"=> 1,
+                            "is_printify_express"=> false,
+                            "is_economy_shipping"=> false,
+                            "send_shipping_notification"=> false,
+                            "address_to"=> [
+                              "first_name"=> "John",
+                              "last_name"=> "Smith",
+                              "email"=> "example@msn.com",
+                              "phone"=> "0574 69 21 90",
+                              "country"=> "BE",
+                              "region"=> "",
+                              "address1"=> "ExampleBaan 121",
+                              "address2"=> "45",
+                              "city"=> "Retie",
+                              "zip"=> "2470"
+                            ]
+                    ] // Gửi dữ liệu đơn hàng
+                ]);        
+    
+                if ($response->getStatusCode() === 200) {
+                    dd('success');
+                    
+                } else {
+                    dd('failed');
+                }
+                    
+            }
+        } catch (\Throwable $th) {
+            dd($th);
         }
         
     }
