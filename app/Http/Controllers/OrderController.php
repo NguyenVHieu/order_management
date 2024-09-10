@@ -43,9 +43,7 @@ class OrderController extends BaseController
                     ],
                 ]);
                 $responseData = json_decode($response->getBody()->getContents(), true);
-                dd($responseData['data'][1]);
                 foreach($responseData['data'] as $res) {
-                    dd($res);
                     $data = [
                         'code' => $res['id'], 
                         'name'=> $res['title'],
