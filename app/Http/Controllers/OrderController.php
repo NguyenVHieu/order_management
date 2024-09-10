@@ -27,6 +27,7 @@ class OrderController extends BaseController
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
         $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjE2YTcyNDJkZjU4ZDRkNzMyMDI5ZDc4ZDBmOTVkNzEzOGYxMzVkNmIyNDVmNDk4NGQ3ODBmNDRhZWJjYzkzNzBiMTU0MGU5MTUwMzhjZjRjIiwiaWF0IjoxNzI1NDk5NjIxLjM1OTIxLCJuYmYiOjE3MjU0OTk2MjEuMzU5MjEyLCJleHAiOjE3NTcwMzU2MjEuMzUxODUxLCJzdWIiOiIxMDg2OTM1NyIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.Am_nZqDHguRVb5TnwkhXyh-v_oJA7WyU5moazWprlZZN7jpXklxGH5VRO8rLRB5hwk9Bu5lmOcHfrM048yY';
+        $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
         $this->shop_id = $user->shop->code ?? 0;
     }
 
@@ -143,16 +144,16 @@ class OrderController extends BaseController
 
         $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
             'headers' => [
-                'Authorization' => 'Bearer ' . $key,
+                'Authorization' => 'Bearer ' . $this->keyMechize,
                 'Content-Type'  => 'application/json',
             ],
             'json' => $orderData // Gửi dữ liệu đơn hàng
         ]);
-            
+        dd(json_decode($response->getBody()->getContents(), true));
         if ($response->getStatusCode() === 200) {
-            return true;
+            return 'success';
         } else {
-            return false;
+            return 'failed';
         }
     }
 
@@ -167,7 +168,7 @@ class OrderController extends BaseController
                 $function = 'pushOrderToPrintify';
                 break;
             case 'merchize':
-                $function = 'merchize';
+                $function = 'pushOrderToMerchize';
                 break;
             default:
                 $function = '';
@@ -218,50 +219,58 @@ class OrderController extends BaseController
                     ];
                 }else {
                     $orderData = [
-                        "external_id" => "order_id_".$order->order_number,
-                        "label" => "Order#".$order->order_number,
-                        "line_items" => [
+                        "order_id" => "test123",
+                        "identifier" => "test.com",
+                        "shipping_info" => [
+                            "full_name" => "John",
+                            "address_1" => "123 ABC",
+                            "address_2" => "",
+                            "city" => "California",
+                            "state" => "CA",
+                            "postcode" => "12345",
+                            "country" => "US",
+                            "email" => "customer@example.com",
+                            "phone" => "0123456789"
+                        ],
+                        "tax" => "", // optional, example: "123456789",
+                        "tags" => ["tag A", "tag B"],
+                        "items" => [
                             [
-                                "product_id"=> $order->product_id,
-                                "quantity"=> $order->quantity,
-                                "variant_id"=> 81810,
-                                "print_provider_id"=> $order->print_provider_id,
-                                "cost"=> 414,
-                                "shipping_cost"=> 400,
-                                "status"=> "pending",
-                                // "metadata"=> [
-                                //     "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
-                                //     "price"=> 622,
-                                //     "variant_label"=> "Golden indigocoin",
-                                //     "sku"=> "97122532902512964757",
-                                //     "country"=> "United States"
-                                // ],
-                                "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
-                                "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
-                                "blueprint_id" => 1094
+                                "name" => "Example product",
+                                "product_id" => '66daa582fb8f3665a75fe65d',
+                                "sku" => "180BUS000DKHAA00",
+                                "merchize_sku" => "1C-VGY09T-1725605242KK34V-048D",
+                                "quantity" => 1,
+                                "price" => 35.3,
+                                "currency" => "USD",
+                                "image" => "https://example.com/products/hello-product/thumb.jpg",
+                                "design_front" => "https://example.com/your-private-artwork-front.png",
+                                "design_back" => "https://example.com/your-private-artwork-back.png",
+                                "design_sleeve" => "https://example.com/your-private-artwork-sleeve.png",
+                                "design_hood" => "https://example.com/your-private-artwork-hood.png",
+                                "attributes" => [
+                                    [
+                                        "name" => "product",
+                                        "option" => "T-shirt"
+                                    ],
+                                    [
+                                        "name" => "Color",
+                                        "option" => "Black"
+                                    ],
+                                    [
+                                        "name" => "Size",
+                                        "option" => "M"
+                                    ]
+                                ]
                             ]
-                        ],
-                        "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
-                        "send_to_production" => true,
-                        "address_to" => [
-                            "first_name"=> $order->first_name,
-                            "last_name"=> $order->last_name,
-                            "region"=> "",
-                            "address1"=> $order->address,
-                            "city"=> $order->city,
-                            // "zip"=> "2470",
-                            // "email"=> "vanhieuisme01@msn.com",
-                            // "phone"=> "0574 69 21 90",
-                            // "country"=> "BE",
-                            // "company"=> "MSN"
-                        ],
+                        ]
                         
                     ];
                 }
 
                 if ($function) {
                     $result = $this->$function($orderData);
-                    if ($result === 'success') {
+                    if ($result === 'success' && $function === 'pushOrderToPrintify') {
                         DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $orderData['line_items'][0]['print_provider_id'], 'is_push' => '1']);
                     }
                     $results[$order->id] = $result;
