@@ -269,7 +269,7 @@ class OrderController extends BaseController
                 if ($function) {
                     $result = $this->$function($orderData);
                     if ($result === 'success' && $function === 'pushOrderToPrintify') {
-                        DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $orderData['line_items'][0]['print_provider_id'], 'is_push' => '1']);
+                        DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $data['print_provider_id'], 'is_push' => '1']);
                     }
                     $results[$order->order_number] = $result;
                     
