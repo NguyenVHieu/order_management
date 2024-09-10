@@ -126,9 +126,7 @@ class OrderController extends BaseController
                 'Content-Type'  => 'application/json',
             ],
             'json' => $orderData // Gửi dữ liệu đơn hàng
-        ]);
-        $res = json_decode($response->getBody()->getContents(), true);
-        
+        ]);        
 
         if ($response->getStatusCode() === 200) {
             return 'success';
@@ -160,6 +158,7 @@ class OrderController extends BaseController
 
     public function createOrder(Request $req)
     {
+        $results = [];
         $orders = DB::table('orders')->whereIn('id', $req->ids)->get()->toArray();
         $placeOrder = $req->place_order;
         $function = '';
@@ -273,11 +272,10 @@ class OrderController extends BaseController
                 }
 
             }
-
             
-            return $this->sendSuccess($result);
+            return $this->sendSuccess($results);
         } catch (\Throwable $th) {
-            dd($th->getMessage());
+            return $this->sendError('error', $th->getMessage());
         }
         
     }
