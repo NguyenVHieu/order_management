@@ -237,29 +237,11 @@ class OrderController extends BaseController
                                 "name" => "Example product",
                                 "product_id" => '66daa582fb8f3665a75fe65d',
                                 "sku" => "180BUS000DKHAA00",
-                                "merchize_sku" => "1C-VGY09T-1725605242KK34V-048D",
+                                "merchize_sku" => "1725605242KK34V",
                                 "quantity" => 1,
                                 "price" => 35.3,
                                 "currency" => "USD",
-                                "image" => "https://example.com/products/hello-product/thumb.jpg",
-                                "design_front" => "https://example.com/your-private-artwork-front.png",
-                                "design_back" => "https://example.com/your-private-artwork-back.png",
-                                "design_sleeve" => "https://example.com/your-private-artwork-sleeve.png",
-                                "design_hood" => "https://example.com/your-private-artwork-hood.png",
-                                "attributes" => [
-                                    [
-                                        "name" => "product",
-                                        "option" => "T-shirt"
-                                    ],
-                                    [
-                                        "name" => "Color",
-                                        "option" => "Black"
-                                    ],
-                                    [
-                                        "name" => "Size",
-                                        "option" => "M"
-                                    ]
-                                ]
+                                'image' => "https://d2dytk4tvgwhb4.cloudfront.net/oi0i3fhl/products/66daa582fb8f3665a75fe65d/dark-heather/front/thumb.jpg"
                             ]
                         ]
                         
@@ -281,6 +263,7 @@ class OrderController extends BaseController
             
             return $this->sendSuccess($results);
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('error', $th->getMessage());
         }
         
@@ -363,16 +346,22 @@ class OrderController extends BaseController
         return preg_replace('/http[^\s]+/', '', $body);
     }
 
-    public function getOrderDB() 
+    public function getOrderDB(Request $req) 
     {
+        $type = $req->type ?? -1;
         try {
-            $data = DB::table('orders')
+            $query = DB::table('orders')
                     ->select('orders.*', 'products.images', 'products.name as product_name', 'users.name as user_name', 'shops.name as shop_name', 'orders.id as order_id')
-                    ->join('products', 'orders.product_id', '=', 'products.code')
+                    ->leftJoin('products', 'orders.product_id', '=', 'products.code')
                     ->join('users', 'orders.user_id', '=', 'users.id')
                     ->join('shops', 'orders.shop_id', '=', 'shops.code')
-                    ->where('orders.is_push', false)
-                    ->get();
+                    ->where('orders.is_push', false);
+            if ($type == 0) {
+                $query->whereNull("product_id")->orWhere('product_id', '');
+            } else if ($type == 1) {
+                $query->whereNotNull("product_id");
+            }
+            $data = $query->get();
 
             return $this->sendSuccess($data);
 
@@ -409,4 +398,5 @@ class OrderController extends BaseController
         }
         
     }
+
 }
