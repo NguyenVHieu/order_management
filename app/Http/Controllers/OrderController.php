@@ -118,7 +118,7 @@ class OrderController extends BaseController
 
     function pushOrderToPrintify($orderData) {
         $client = new Client();
-        $response = $client->post($this->baseUrlPrintify.'shops/5926629/orders.json', [
+        $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->keyPrintify,
                 'Content-Type'  => 'application/json',
@@ -157,7 +157,6 @@ class OrderController extends BaseController
     public function createOrder(Request $req)
     {
         $results = [];
-        $orders = DB::table('orders')->whereIn('id', $req->ids)->get()->toArray();
         $placeOrder = $req->place_order;
         $function = '';
         switch ($placeOrder) {
@@ -172,17 +171,19 @@ class OrderController extends BaseController
                 break;
         }
         try {
-            foreach($orders as $order){
+            foreach($req->orders as $data){
+                $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                $key_order_number = $order->order_number . time();
                 if ($function === 'pushOrderToPrintify') {
                     $orderData = [
-                        "external_id" => "order_id_ne323".$order->order_number,
-                        "label" => "Order1#".$order->order_number,
+                        "external_id" => "order_id_".$key_order_number,
+                        "label" => "Order#".$key_order_number,
                         "line_items" => [
                             [
                                 "product_id"=> $order->product_id,
                                 "quantity"=> $order->quantity,
-                                "variant_id"=> 81810,
-                                "print_provider_id"=> 228,
+                                "variant_id"=> $order->variant_id,
+                                "print_provider_id"=> $data['print_provider_id'],
                                 "cost"=> 414,
                                 "shipping_cost"=> 400,
                                 "status"=> "pending",
@@ -195,7 +196,7 @@ class OrderController extends BaseController
                                 // ],
                                 "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
                                 "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
-                                "blueprint_id" => 1094
+                                "blueprint_id" => $order->blueprint_id
                             ]
                         ],
                         "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
@@ -270,8 +271,7 @@ class OrderController extends BaseController
                     if ($result === 'success' && $function === 'pushOrderToPrintify') {
                         DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $orderData['line_items'][0]['print_provider_id'], 'is_push' => '1']);
                     }
-                    $results[$order->id] = $result;
-                    return $this->sendSuccess($results);
+                    $results[$order->order_number] = $result;
                     
                 } else {
                     return $this->sendError('Function not implemented', 500);
