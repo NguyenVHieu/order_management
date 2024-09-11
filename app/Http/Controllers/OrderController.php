@@ -134,12 +134,14 @@ class OrderController extends BaseController
             if (!empty($orders)) {
                 foreach ($orders as $data)
                 {
-                    $type = $data['order_id'] ?? '';
+                    $type = $data['type'] ?? '';
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
-                    $key_order_number = $order->order_number . time();
+                    $order_number = $order->order_number ?? 0;
+                    
                     if ($type === 'sku')
                     {
-                        $url = $this->saveImgeSku($order->image);
+                        $key_order_number = time();
+                        $url = $this->saveImgeSku($data['image']);
                         $orderData = [
                                 "external_id" => "order_sku_" . $key_order_number,
                                 "label" => "order_sku_" . $key_order_number,
@@ -149,7 +151,7 @@ class OrderController extends BaseController
                                     "blueprint_id" => 9,
                                     "variant_id" => 17887,
                                     "print_areas" => [
-                                    "front" => $url
+                                    "front" => 'http://103.48.193.219:1006/Resources/tshirt.png'
                                     ],
                                     "quantity" => $order->quantity
                                 ]
@@ -167,10 +169,11 @@ class OrderController extends BaseController
                                 "region" => "",
                                 "address1" => $order->address,
                                 "city" => $order->city,
-                                "zip" => $order->zip
+                                // "zip" => $order->zip
                                 ]
                         ];
                     } else {
+                        $key_order_number = $order->order_number . time();
                         $orderData = [
                             "external_id" => "order_id_".$key_order_number,
                             "label" => "Order#".$key_order_number,
@@ -452,10 +455,11 @@ class OrderController extends BaseController
 
     public function pushOrder(Request $request)
     {
+        // dd($request);
         $placeOrder = $request->place_order;
         switch ($placeOrder) {
             case 'printify':
-                $result = $this->pushOrderToPrintify($request->all());
+                $result = $this->pushOrderToPrintify($request);
                 return $this->sendSuccess($result);
             case 'merchize':
                 $result = $this->pushOrderToMerchize($request->all());
