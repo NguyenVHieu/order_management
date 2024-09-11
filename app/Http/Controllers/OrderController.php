@@ -219,6 +219,7 @@ class OrderController extends BaseController
                 return $results;
             }
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('error', $th->getMessage());
         }
     }
