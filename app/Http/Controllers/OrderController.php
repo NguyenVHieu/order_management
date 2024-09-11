@@ -132,9 +132,9 @@ class OrderController extends BaseController
             $results = [];
             $orders = $request['orders'];
             if (!empty($orders)) {
-                $type = $request['type'];
                 foreach ($orders as $data)
                 {
+                    $type = $data['order_id'] ?? '';
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
                     $key_order_number = $order->order_number . time();
                     if ($type === 'sku')
