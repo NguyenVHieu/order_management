@@ -142,7 +142,6 @@ class OrderController extends BaseController
                     {
                         $key_order_number = time();
                         $url = $this->saveImgeSku($data['image']);
-                        dd($url);
                         $orderData = [
                                 "external_id" => "order_sku_" . $key_order_number,
                                 "label" => "order_sku_" . $key_order_number,
