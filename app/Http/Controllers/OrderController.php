@@ -60,7 +60,7 @@ class OrderController extends BaseController
 
                 return $this->sendSuccess('add product success!');
             } catch (\Throwable $th) {
-                return $this->sendError($th->getMessage(), 501);        
+                return $this->sendError($th->getMessage(), 500);        
             }
         }
     }
@@ -142,6 +142,7 @@ class OrderController extends BaseController
                     {
                         $key_order_number = time();
                         $url = $this->saveImgeSku($data['image']);
+                        dd($url);
                         $orderData = [
                                 "external_id" => "order_sku_" . $key_order_number,
                                 "label" => "order_sku_" . $key_order_number,
@@ -229,22 +230,27 @@ class OrderController extends BaseController
 
     function pushOrderToMerchize($orderData) 
     {
-        $key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1NTA5Nzk2LCJleHAiOjE3MjgxMDE3OTZ9.TFO6ovKEft_-HWFT7knkT5Vx6ZfZ0UXxyZ3pUVnnujU';
-        $client = new Client();
+        try {
+            $client = new Client();
 
-        $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->keyMechize,
-                'Content-Type'  => 'application/json',
-            ],
-            'json' => $orderData // Gửi dữ liệu đơn hàng
-        ]);
-        dd(json_decode($response->getBody()->getContents(), true));
-        if ($response->getStatusCode() === 200) {
-            return 'success';
-        } else {
-            return 'failed';
+            $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->keyMechize,
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => $orderData // Gửi dữ liệu đơn hàng
+            ]);
+
+            dd(json_decode($response->getBody()->getContents(), true));
+            if ($response->getStatusCode() === 200) {
+                return 'success';
+            } else {
+                return 'failed';
+            }
+        } catch (\Throwable $th) {
+            return $this->sendError('error'. $th->getMessage(), 500);
         }
+        
     }
 
     public function fetchMailOrder()
@@ -462,7 +468,7 @@ class OrderController extends BaseController
                 $result = $this->pushOrderToPrintify($request);
                 return $this->sendSuccess($result);
             case 'merchize':
-                $result = $this->pushOrderToMerchize($request->all());
+                $result = $this->pushOrderToMerchize($request);
                 return $this->sendSuccess($result);
             default:
                 return $this->sendError('Function not implemented', 500);
@@ -471,20 +477,25 @@ class OrderController extends BaseController
 
     public function saveImgeSku($image)
     {
-        $dateFolder = now()->format('Ymd');
-        $time = now()->format('his');
+        try {
+            $dateFolder = now()->format('Ymd');
+            $time = now()->format('his');
 
-        $directory = public_path('uploads/' . $dateFolder);
+            $directory = public_path('uploads/' . $dateFolder);
 
-        if (!file_exists($directory)) {
-            mkdir($directory, 0755, true);
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
+
+            $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
+
+            return $url;
+        } catch (\Throwable $th) {
+            return $this->sendError('error'. $th->getMessage(), 500);
         }
-
-        $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
-
-        $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
-
-        return $url;
+        
     }
 
 }
