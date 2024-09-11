@@ -151,7 +151,7 @@ class OrderController extends BaseController
                                     "blueprint_id" => 9,
                                     "variant_id" => 17887,
                                     "print_areas" => [
-                                    "front" => 'http://103.48.193.219:1006/Resources/tshirt.png'
+                                    "front" => $url
                                     ],
                                     "quantity" => $order->quantity
                                 ]
