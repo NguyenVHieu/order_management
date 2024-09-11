@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
-use Illuminate\Support\Facades\Storage;
 
 
 class OrderController extends BaseController
@@ -18,6 +17,7 @@ class OrderController extends BaseController
     private $baseUrlPrintify;
     private $keyPrintify;
     private $shop_id;
+    private $keyMechize;
 
     public function __construct()
     {   
@@ -117,21 +117,100 @@ class OrderController extends BaseController
 
     }
 
-    function pushOrderToPrintify($orderData) {
-        $client = new Client();
-        $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->keyPrintify,
-                'Content-Type'  => 'application/json',
-            ],
-            'json' => $orderData // Gửi dữ liệu đơn hàng
-        ]);        
-
-        if ($response->getStatusCode() === 200) {
-            return 'success';
+    function pushOrderToPrintify($request) {
+        dd($request);
+        try {
+            $results = [];
+            $orders = $request['orders'];
+            if (!empty($orders)) {
+                $type = $request['type'];
+                foreach ($orders as $data)
+                {
+                    $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                    $key_order_number = $order->order_number . time();
+                    if ($type === 'sku')
+                    {
+                        $url = $this->saveImgeSku($order->image);
+                        $orderData = [
+                                "external_id" => "order_sku_" . $key_order_number,
+                                "label" => "order_sku_" . $key_order_number,
+                                "line_items" => [
+                                [
+                                    "print_provider_id" => 5,
+                                    "blueprint_id" => 9,
+                                    "variant_id" => 17887,
+                                    "print_areas" => [
+                                    "front" => $url
+                                    ],
+                                    "quantity" => $order->quantity
+                                ]
+                                ],
+                                "shipping_method" => 1,
+                                "is_printify_express" => false,
+                                "is_economy_shipping" => false,
+                                "send_shipping_notification" => false,
+                                "address_to" => [
+                                "first_name" => $order->first_name,
+                                "last_name" => $order->last_name,
+                                "email" => "example@msn.com",
+                                "phone" => "0574 69 21 90",
+                                "country" => "BE",
+                                "region" => "",
+                                "address1" => $order->address,
+                                "city" => $order->city,
+                                "zip" => $order->zip
+                                ]
+                        ];
+                    } else {
+                        $orderData = [
+                            "external_id" => "order_id_".$key_order_number,
+                            "label" => "Order#".$key_order_number,
+                            "line_items" => [
+                                [
+                                    "product_id"=> $order->product_id,
+                                    "quantity"=> $order->quantity,
+                                    "variant_id"=> $order->variant_id,
+                                    "print_provider_id"=> $data['print_provider_id'],
+                                    "cost"=> 414,
+                                    "shipping_cost"=> 400,
+                                    "status"=> "pending",
+                                    "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
+                                    "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
+                                    "blueprint_id" => $order->blueprint_id
+                                ]
+                            ],
+                            "shipping_method" => 1, 
+                            "send_to_production" => true,
+                            "address_to" => [
+                                "first_name"=> $order->first_name,
+                                "last_name"=> $order->last_name,
+                                "region"=> "",
+                                "address1"=> $order->address,
+                                "city"=> $order->city,
+                            ],
+                            
+                        ];
+                    }
+                    $client = new Client();
+                    $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $this->keyPrintify,
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => $orderData // Gửi dữ liệu đơn hàng
+                    ]);        
             
-        } else {
-            return 'failed';
+                    if ($response->getStatusCode() === 200) {
+                        DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $data['print_provider_id'], 'is_push' => '1']);
+                        $results[$order->order_number] = 'success';
+                    } else {
+                        $results[$order->order_number] = 'failed';
+                    }
+                }
+                return $results;
+            }
+        } catch (\Throwable $th) {
+            return $this->sendError('error', $th->getMessage());
         }
     }
 
@@ -153,121 +232,6 @@ class OrderController extends BaseController
         } else {
             return 'failed';
         }
-    }
-
-    public function createOrder(Request $req)
-    {
-        $results = [];
-        $placeOrder = $req->place_order;
-        $function = '';
-        switch ($placeOrder) {
-            case 'printify':
-                $function = 'pushOrderToPrintify';
-                break;
-            case 'merchize':
-                $function = 'pushOrderToMerchize';
-                break;
-            default:
-                $function = '';
-                break;
-        }
-        try {
-            foreach($req->orders as $data){
-                $order = DB::table('orders')->where('id', $data['order_id'])->first();
-                $key_order_number = $order->order_number . time();
-                if ($function === 'pushOrderToPrintify') {
-                    $orderData = [
-                        "external_id" => "order_id_".$key_order_number,
-                        "label" => "Order#".$key_order_number,
-                        "line_items" => [
-                            [
-                                "product_id"=> $order->product_id,
-                                "quantity"=> $order->quantity,
-                                "variant_id"=> $order->variant_id,
-                                "print_provider_id"=> $data['print_provider_id'],
-                                "cost"=> 414,
-                                "shipping_cost"=> 400,
-                                "status"=> "pending",
-                                // "metadata"=> [
-                                //     "title"=> "3.5\" x 4.9\" (Vertical) / Coated (both sides) / 1 pc",
-                                //     "price"=> 622,
-                                //     "variant_label"=> "Golden indigocoin",
-                                //     "sku"=> "97122532902512964757",
-                                //     "country"=> "United States"
-                                // ],
-                                "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
-                                "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
-                                "blueprint_id" => $order->blueprint_id
-                            ]
-                        ],
-                        "shipping_method" => 1, // Bạn cần tham khảo ID phương thức vận chuyển từ Printify
-                        "send_to_production" => true,
-                        "address_to" => [
-                            "first_name"=> $order->first_name,
-                            "last_name"=> $order->last_name,
-                            "region"=> "",
-                            "address1"=> $order->address,
-                            "city"=> $order->city,
-                            // "zip"=> "2470",
-                            // "email"=> "vanhieuisme01@msn.com",
-                            // "phone"=> "0574 69 21 90",
-                            // "country"=> "BE",
-                            // "company"=> "MSN"
-                        ],
-                        
-                    ];
-                }else {
-                    $orderData = [
-                        "order_id" => "test123",
-                        "identifier" => "test.com",
-                        "shipping_info" => [
-                            "full_name" => "John",
-                            "address_1" => "123 ABC",
-                            "address_2" => "",
-                            "city" => "California",
-                            "state" => "CA",
-                            "postcode" => "12345",
-                            "country" => "US",
-                            "email" => "customer@example.com",
-                            "phone" => "0123456789"
-                        ],
-                        "tax" => "", // optional, example: "123456789",
-                        "tags" => ["tag A", "tag B"],
-                        "items" => [
-                            [
-                                "name" => "Example product",
-                                "product_id" => '66daa582fb8f3665a75fe65d',
-                                "sku" => "180BUS000DKHAA00",
-                                "merchize_sku" => "1725605242KK34V",
-                                "quantity" => 1,
-                                "price" => 35.3,
-                                "currency" => "USD",
-                                'image' => "https://d2dytk4tvgwhb4.cloudfront.net/oi0i3fhl/products/66daa582fb8f3665a75fe65d/dark-heather/front/thumb.jpg"
-                            ]
-                        ]
-                        
-                    ];
-                }
-
-                if ($function) {
-                    $result = $this->$function($orderData);
-                    if ($result === 'success' && $function === 'pushOrderToPrintify') {
-                        DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $data['print_provider_id'], 'is_push' => '1']);
-                    }
-                    $results[$order->order_number] = $result;
-                    
-                } else {
-                    return $this->sendError('Function not implemented', 500);
-                }
-
-            }
-            
-            return $this->sendSuccess($results);
-        } catch (\Throwable $th) {
-            dd($th);
-            return $this->sendError('error', $th->getMessage());
-        }
-        
     }
 
     public function fetchMailOrder()
@@ -403,11 +367,10 @@ class OrderController extends BaseController
     public function createOrderSku(Request $request)
     {
         try {
+            
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-    
-                $originalName = $file->getClientOriginalName();
-    
+        
                 $dateFolder = now()->format('Ymd');
                 $time = now()->format('his');
     
@@ -420,6 +383,7 @@ class OrderController extends BaseController
                 $path = $file->move($directory, $time. '_'. $file->getClientOriginalName());
     
                 $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $file->getClientOriginalName());
+                dd($url);
     
                 $client = new Client();
                 $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
@@ -436,16 +400,16 @@ class OrderController extends BaseController
                                 "blueprint_id"=> 9,
                                 "variant_id"=> 17887,
                                 "print_areas"=> [
-                                  "front"=> 'https://images-api.printify.com/mockup/66e0158d519381f81d0a126b/12052/92570/unisex-heavy-cotton-tee.jpg?camera_label=front'
+                                  "front"=> 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Printify.png/220px-Printify.png'
                                 //   'front' => $url
                                 ],
                                 "quantity"=> 1
                               ]
                             ],
-                            "shipping_method"=> 1,
-                            "is_printify_express"=> false,
-                            "is_economy_shipping"=> false,
-                            "send_shipping_notification"=> false,
+                            // "shipping_method"=> 1,
+                            // "is_printify_express"=> false,
+                            // "is_economy_shipping"=> false,
+                            // "send_shipping_notification"=> false,
                             "address_to"=> [
                               "first_name"=> "John",
                               "last_name"=> "Smith",
@@ -457,7 +421,7 @@ class OrderController extends BaseController
                               "address2"=> "45",
                               "city"=> "Retie",
                               "zip"=> "2470"
-                            ]
+                            ],
                     ] // Gửi dữ liệu đơn hàng
                 ]);        
     
@@ -470,9 +434,43 @@ class OrderController extends BaseController
                     
             }
         } catch (\Throwable $th) {
-            dd($th);
+            \Log::error('Error in createOrderSku: ' . $th->getMessage());
+            dd($th->getMessage());
         }
         
+    }
+
+    public function pushOrder(Request $request)
+    {
+        $placeOrder = $request->place_order;
+        switch ($placeOrder) {
+            case 'printify':
+                $result = $this->pushOrderToPrintify($request->all());
+                return $this->sendSuccess($result);
+            case 'merchize':
+                $result = $this->pushOrderToMerchize($request->all());
+                return $this->sendSuccess($result);
+            default:
+                return $this->sendError('Function not implemented', 500);
+        }
+    }
+
+    public function saveImgeSku($image)
+    {
+        $dateFolder = now()->format('Ymd');
+        $time = now()->format('his');
+
+        $directory = public_path('uploads/' . $dateFolder);
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
+
+        $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
+
+        return $url;
     }
 
 }
