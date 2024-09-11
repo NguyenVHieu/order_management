@@ -128,7 +128,6 @@ class OrderController extends BaseController
     }
 
     function pushOrderToPrintify($request) {
-        dd($request);
         try {
             $results = [];
             $orders = $request['orders'];
