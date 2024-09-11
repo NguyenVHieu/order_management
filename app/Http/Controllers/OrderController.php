@@ -71,45 +71,55 @@ class OrderController extends BaseController
         
         foreach($params as $param) {
             $product = DB::table('products')->where('name', Helper::cleanText($param['product']))->first();
-            if ($this->shop_id != 0 && !empty($product->code)) 
+            if ($this->shop_id != 0) 
             {
-                $client = new Client();
-                $response = $client->get("https://api.printify.com/v1/shops/{$this->shop_id}/products/{$product->code}.json", [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->keyPrintify,
-                    ],
-                ]);
+                if (!empty($product)) {
+                    $client = new Client();
+                    $response = $client->get("https://api.printify.com/v1/shops/{$this->shop_id}/products/{$product->code}.json", [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $this->keyPrintify,
+                        ],
+                    ]);
 
-                if ($response->getStatusCode() == 200) {
-                    $infor = json_decode($response->getBody()->getContents(), true);
-                    $data = [
-                        'order_number' => $param['orderNumber'],
-                        'product_id' => $product->code,
-                        'shop_id' => $infor['shop_id'],
-                        // 'print_provider_id' => $infor['print_provider_id'],
-                        'blueprint_id' => $infor['blueprint_id'],
-                        'quantity' =>  $param['quantity'],
-                        'price' => $param['price'],
-                        'item_total' => $param['itemTotal'],
-                        'discount' => $param['discount'],
-                        'sub_total' => $param['subtotal'],
-                        'shipping' => $param['shipping'],
-                        'sale_tax' => $param['salesTax'],
-                        'order_total' => $param['orderTotal'],
-                        'first_name' => explode(" ", $param['shippingAddress'][0])[0],
-                        'last_name' => explode(" ", $param['shippingAddress'][0])[1],
-                        'address' => $param['shippingAddress'][1] . $param['shippingAddress'][2] .$param['shippingAddress'][3],
-                        'city' => $param['shippingAddress'][4],
-                        'user_id' => Auth::user()->id,
-                        'is_push' => false
-                    ];
-
-                    $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
-                    if (empty($order)) {
-                        DB::table('orders')->insert($data);
+                    if ($response->getStatusCode() == 200) {
+                        $infor = json_decode($response->getBody()->getContents(), true);
+                    } else {
+                        return $this->sendError('error to clone email', 500);
                     }
-                } else {
-                    return $this->sendError('error to clone email', 500);
+
+                }
+
+                $first = reset($param['shippingAddress']);
+                $city = end($param['shippingAddress']); 
+                $middle = array_slice($param['shippingAddress'], 1, -1);
+                $address = implode(', ', $middle);
+                
+                $data = [
+                    'order_number' => $param['orderNumber'],
+                    'product_id' => $product->code ?? null,
+                    'shop_id' => $this->shop_id,
+                    'color' => $param['color'] != 'N/A' ? $param['color'] : '',
+                    // 'print_provider_id' => $infor['print_provider_id'],
+                    'blueprint_id' => $infor['blueprint_id'] ?? null,
+                    'quantity' =>  $param['quantity'],
+                    'price' => $param['price'],
+                    'item_total' => $param['itemTotal'],
+                    'discount' => $param['discount'],
+                    'sub_total' => $param['subtotal'],
+                    'shipping' => $param['shipping'],
+                    'sale_tax' => $param['salesTax'],
+                    'order_total' => $param['orderTotal'],
+                    'first_name' => explode(" ", $param['shippingAddress'][0])[0],
+                    'last_name' => explode(" ", $param['shippingAddress'][0])[1],
+                    'address' =>$address,
+                    'city' => $city,
+                    'user_id' => Auth::user()->id,
+                    'is_push' => false
+                ];
+
+                $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
+                if (empty($order)) {
+                    DB::table('orders')->insert($data);
                 }
             }
         }
@@ -245,7 +255,7 @@ class OrderController extends BaseController
             // dd($today);
 
             $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
-
+            
             $list_data = [];
             if (count($messages) > 0) {
                 foreach ($messages as $message) {
@@ -265,13 +275,13 @@ class OrderController extends BaseController
                         'shop' => '/Shop:\s*(.*)/',
                         'transactionID' => '/Transaction ID:\s*(\d+)/',
                         'quantity' => '/Quantity:\s*(\d+)/',
-                        'price' => '/Price:\s*US\$(.*)/',
-                        'itemTotal' => '/Item total:\s*US\$(.*)/',
-                        'discount' => '/Discount:\s*- US\$(.*)/',
-                        'subtotal' => '/Subtotal:\s*US\$(.*)/',
-                        'shipping' => '/Shipping:\s*US\$(.*)/',
-                        'salesTax' => '/Sales tax:\s*US\$(.*)/',
-                        'orderTotal' => '/Order total:\s*US\$(.*)/'
+                        'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+                        'itemTotal' => '/Item total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+                        'discount' => '/Discount:\s*- (?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+                        'subtotal' => '/Subtotal:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+                        'shipping' => '/Shipping:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+                        'salesTax' => '/Sales tax:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+                        'orderTotal' => '/Order total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/'
                     ];
             
                     $data = [];
@@ -285,12 +295,12 @@ class OrderController extends BaseController
                     }
                     $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
                     $data['product'] = str_replace('<', '', $data['product']);
-                    $data['orderNumber'] = Helper::cleanText($data['orderNumber']);
                     $list_data[] = $data;
 
                     
                 }
                 $this->getInformationProduct($list_data);
+                
                 return $this->sendSuccess('clone order ok');
             } 
         } catch (\Throwable $th) {
