@@ -227,26 +227,113 @@ class OrderController extends BaseController
         }
     }
 
-    function pushOrderToMerchize($orderData) 
+    function pushOrderToMerchize($request) 
     {
         try {
+            $results = [];
             $client = new Client();
+            $orders = $request['orders'];
+            if (!empty($orders)) {
+                foreach ($orders as $data)
+                {
+                    $urlThumb = $this->saveImgeSku($data['thumb']);
+                    $urlFront = $this->saveImgeSku($data['front']);
+                    $order = DB::table('orders')->leftJoin('products', 'products.id', '=', 'orders.product_id')->where('orders.id', $data['order_id'])->select('orders.*', 'products.name as product_name')->first();
+                    $orderData = [
+                        [
+                            "order_id" => $order->order_number,
+                            "identifier" => $order->order_number,
+                            "product_id" => $order->product_id ?? time(),
+                            "shipping_info" => [
+                                "full_name" => $order->first_name . ' ' . $order->last_name,
+                                "address_1" => $order->address,
+                                "address_2" => "",
+                                "city" => $order->city,
+                                // "state" => "CA",
+                                // "postcode" => "12345",
+                                // "country" => "US",
+                                // "email" => "customer@example.com",
+                                // "phone" => "0123456789"
+                            ],
+                            "items" => [
+                                [
+                                    "name" => $order->product_name ?? 'test',
+                                    "quantity" => $order->quantity,
+                                    "price" => $order->price,
+                                    "currency" => "USD",
+                                    "image" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                                    "design_front" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                                ]
+                            ]
+                        ]
+                    ];
+                    // $orderData = [
+                    //     "order_id" => $order->order_number,
+                    //     "identifier" => "hello.com",
+                    //     "shipping_info" => [
+                    //         "full_name" => "John",
+                    //         "address_1" => "123 ABC",
+                    //         "address_2" => "",
+                    //         "city" => "California",
+                    //         "state" => "CA",
+                    //         "postcode" => "12345",
+                    //         "country" => "US",
+                    //         "email" => "customer@example.com",
+                    //         "phone" => "0123456789"
+                    //     ],
+                    //     "tax" => "", // optional, example => "123456789",
+                    //     "tags" => ["tag A", "tag B"],
+                    //     "items" => [
+                    //         [
+                    //             "name" => "Example product",
+                    //             "product_id" => 12,
+                    //             "sku" => "custom-product-12-black",
+                    //             "merchize_sku" => "CSWSVN000000EA12",
+                    //             "quantity" => 1,
+                    //             "price" => 35.3,
+                    //             "currency" => "USD",
+                    //             "image" => "https://example.com/products/hello-product/thumb.jpg",
+                    //             "design_front" => "https://example.com/your-private-artwork-front.png",
+                    //             "design_back" => "https://example.com/your-private-artwork-back.png",
+                    //             "design_sleeve" => "https://example.com/your-private-artwork-sleeve.png",
+                    //             "design_hood" => "https://example.com/your-private-artwork-hood.png",
+                    //             // "attributes" => [
+                    //             //     {
+                    //             //         "name" => "product",
+                    //             //         "option" => "T-shirt"
+                    //             //     },
+                    //             //     {
+                    //             //         "name" => "Color",
+                    //             //         "option" => "Black"
+                    //             //     },
+                    //             //     {
+                    //             //         "name" => "Size",
+                    //             //         "option" => "M"
+                    //             //     }
+                    //             // ]
+                    //         ]
+                    //     ]
+                    // ];
 
-            $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->keyMechize,
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => $orderData // Gửi dữ liệu đơn hàng
-            ]);
+                    $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $this->keyMechize,
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => $orderData // Gửi dữ liệu đơn hàng
+                    ]);
+                    
+                    if ($response->getStatusCode() === 200) {
+                        $results[$order->order_number] = 'success';
+                    } else {
+                        $results[$order->order_number] = 'failed';
+                    }
 
-            dd(json_decode($response->getBody()->getContents(), true));
-            if ($response->getStatusCode() === 200) {
-                return 'success';
-            } else {
-                return 'failed';
+                    return $results;
+                }
             }
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('error'. $th->getMessage(), 500);
         }
         
@@ -382,82 +469,6 @@ class OrderController extends BaseController
         
     }
 
-    public function createOrderSku(Request $request)
-    {
-        try {
-            
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-        
-                $dateFolder = now()->format('Ymd');
-                $time = now()->format('his');
-    
-                $directory = public_path('uploads/' . $dateFolder);
-    
-                if (!file_exists($directory)) {
-                    mkdir($directory, 0755, true);
-                }
-    
-                $path = $file->move($directory, $time. '_'. $file->getClientOriginalName());
-    
-                $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $file->getClientOriginalName());
-                dd($url);
-    
-                $client = new Client();
-                $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->keyPrintify,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'json' => [
-                            "external_id"=> "order_sku_test_01",
-                            "label"=> "order_sku_test#01",
-                            "line_items"=> [
-                              [
-                                "print_provider_id"=> 5,
-                                "blueprint_id"=> 9,
-                                "variant_id"=> 17887,
-                                "print_areas"=> [
-                                  "front"=> 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Printify.png/220px-Printify.png'
-                                //   'front' => $url
-                                ],
-                                "quantity"=> 1
-                              ]
-                            ],
-                            // "shipping_method"=> 1,
-                            // "is_printify_express"=> false,
-                            // "is_economy_shipping"=> false,
-                            // "send_shipping_notification"=> false,
-                            "address_to"=> [
-                              "first_name"=> "John",
-                              "last_name"=> "Smith",
-                              "email"=> "example@msn.com",
-                              "phone"=> "0574 69 21 90",
-                              "country"=> "BE",
-                              "region"=> "",
-                              "address1"=> "ExampleBaan 121",
-                              "address2"=> "45",
-                              "city"=> "Retie",
-                              "zip"=> "2470"
-                            ],
-                    ] // Gửi dữ liệu đơn hàng
-                ]);        
-    
-                if ($response->getStatusCode() === 200) {
-                    dd('success');
-                    
-                } else {
-                    dd('failed');
-                }
-                    
-            }
-        } catch (\Throwable $th) {
-            \Log::error('Error in createOrderSku: ' . $th->getMessage());
-            dd($th->getMessage());
-        }
-        
-    }
-
     public function pushOrder(Request $request)
     {
         // dd($request);
@@ -468,6 +479,7 @@ class OrderController extends BaseController
                 return $this->sendSuccess($result);
             case 'merchize':
                 $result = $this->pushOrderToMerchize($request);
+                dd($result);
                 return $this->sendSuccess($result);
             default:
                 return $this->sendError('Function not implemented', 500);
