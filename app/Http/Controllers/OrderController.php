@@ -239,82 +239,35 @@ class OrderController extends BaseController
                     $urlThumb = $this->saveImgeSku($data['thumb']);
                     $urlFront = $this->saveImgeSku($data['front']);
                     $order = DB::table('orders')->leftJoin('products', 'products.id', '=', 'orders.product_id')->where('orders.id', $data['order_id'])->select('orders.*', 'products.name as product_name')->first();
+   
                     $orderData = [
-                        [
-                            "order_id" => $order->order_number,
-                            "identifier" => $order->order_number,
-                            "product_id" => $order->product_id ?? time(),
-                            "shipping_info" => [
-                                "full_name" => $order->first_name . ' ' . $order->last_name,
-                                "address_1" => $order->address,
-                                "address_2" => "",
-                                "city" => $order->city,
-                                // "state" => "CA",
-                                // "postcode" => "12345",
-                                // "country" => "US",
-                                // "email" => "customer@example.com",
-                                // "phone" => "0123456789"
-                            ],
-                            "items" => [
-                                [
-                                    "name" => $order->product_name ?? 'test',
-                                    "quantity" => $order->quantity,
-                                    "price" => $order->price,
-                                    "currency" => "USD",
-                                    "image" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                                    "design_front" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                                ]
+                        "order_id" => $order->order_number. time(),
+                        "identifier" => $order->order_number. time(),
+                        "shipping_info" => [
+                            "full_name" => $order->first_name . "" . $order->last_name,
+                            "address_1" => $order->address,
+                            "address_2" => "",
+                            "city" => $order->city,
+                            "state" => "CA",
+                            "postcode" => "12345",
+                            "country" => "US",
+                            // "email" => "customer@example.com",
+                            // "phone" => "0123456789"
+                        ],
+                        "items" => [
+                            [
+                                "name" => $order->product_name ?? "Example product",
+                                "product_id" => $order->product_id,
+                                "merchize_sku" => "CSWSVN000000EA12",
+                                "quantity" => $order->quantity,
+                                "price" => $order->price,
+                                "currency" => "USD",
+                                "image" => $urlThumb,
+                                "design_front" => $urlFront,
                             ]
                         ]
                     ];
-                    // $orderData = [
-                    //     "order_id" => $order->order_number,
-                    //     "identifier" => "hello.com",
-                    //     "shipping_info" => [
-                    //         "full_name" => "John",
-                    //         "address_1" => "123 ABC",
-                    //         "address_2" => "",
-                    //         "city" => "California",
-                    //         "state" => "CA",
-                    //         "postcode" => "12345",
-                    //         "country" => "US",
-                    //         "email" => "customer@example.com",
-                    //         "phone" => "0123456789"
-                    //     ],
-                    //     "tax" => "", // optional, example => "123456789",
-                    //     "tags" => ["tag A", "tag B"],
-                    //     "items" => [
-                    //         [
-                    //             "name" => "Example product",
-                    //             "product_id" => 12,
-                    //             "sku" => "custom-product-12-black",
-                    //             "merchize_sku" => "CSWSVN000000EA12",
-                    //             "quantity" => 1,
-                    //             "price" => 35.3,
-                    //             "currency" => "USD",
-                    //             "image" => "https://example.com/products/hello-product/thumb.jpg",
-                    //             "design_front" => "https://example.com/your-private-artwork-front.png",
-                    //             "design_back" => "https://example.com/your-private-artwork-back.png",
-                    //             "design_sleeve" => "https://example.com/your-private-artwork-sleeve.png",
-                    //             "design_hood" => "https://example.com/your-private-artwork-hood.png",
-                    //             // "attributes" => [
-                    //             //     {
-                    //             //         "name" => "product",
-                    //             //         "option" => "T-shirt"
-                    //             //     },
-                    //             //     {
-                    //             //         "name" => "Color",
-                    //             //         "option" => "Black"
-                    //             //     },
-                    //             //     {
-                    //             //         "name" => "Size",
-                    //             //         "option" => "M"
-                    //             //     }
-                    //             // ]
-                    //         ]
-                    //     ]
-                    // ];
-
+                 
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $this->keyMechize,
@@ -479,7 +432,6 @@ class OrderController extends BaseController
                 return $this->sendSuccess($result);
             case 'merchize':
                 $result = $this->pushOrderToMerchize($request);
-                dd($result);
                 return $this->sendSuccess($result);
             default:
                 return $this->sendError('Function not implemented', 500);
