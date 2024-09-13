@@ -89,29 +89,47 @@ class OrderController extends BaseController
 
                 }
 
-                $first = reset($param['shippingAddress']);
-                $city = end($param['shippingAddress']); 
-                $middle = array_slice($param['shippingAddress'], 1, -1);
-                $address = implode(', ', $middle);
+                $first_name = explode(" ", $param['shippingAddress'][0])[0];
+                $last_name = explode(" ", $param['shippingAddress'][0])[1];
+                $address = $param['shippingAddress'][1];
+                $country = $param['shippingAddress'][count($param['shippingAddress']) -1];
+                $infoCity = explode(", ", $param['shippingAddress'][count($param['shippingAddress']) -2]);
+                $city = $infoCity[0];
+                $state = explode(" ", $infoCity[1])[0];
+                $zip = explode(" ", $infoCity[1])[1];   
+                $apartment = null;
+
+                if ($param['shippingAddress'][count($param['shippingAddress']) -3] != $address) {
+                    $apartment = $param['shippingAddress'][count($param['shippingAddress']) -3];
+                }
+
                 
                 $data = [
                     'order_number' => $param['orderNumber'],
                     'product_id' => $product->code ?? null,
+                    'product_name' => $param['product'],
+                    'price' => $param['price'],
                     'shop_id' => $this->shop_id,
-                    'color' => $param['color'] != 'N/A' ? $param['color'] : '',
-                    // 'print_provider_id' => $infor['print_provider_id'],
+                    'size' => $param['size'] != 'N/A' ? $param['size'] : null,
+                    'color' => $param['color'] != 'N/A' ? $param['color'] : null,
+                    'transaction_id' => $param['transactionID'],
+                    'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
+                    'variant_id' => $infor['variant_id'] ?? null,
                     'blueprint_id' => $infor['blueprint_id'] ?? null,
                     'quantity' =>  $param['quantity'],
-                    'price' => $param['price'],
                     'item_total' => $param['itemTotal'],
                     'discount' => $param['discount'],
                     'sub_total' => $param['subtotal'],
                     'shipping' => $param['shipping'],
                     'sale_tax' => $param['salesTax'],
                     'order_total' => $param['orderTotal'],
-                    'first_name' => explode(" ", $param['shippingAddress'][0])[0],
-                    'last_name' => explode(" ", $param['shippingAddress'][0])[1],
-                    'address' =>$address,
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'address' => $address,
+                    'country' => $country,
+                    'state' => $state,
+                    'apartment' => $apartment,
+                    'zip' => $zip,
                     'city' => $city,
                     'user_id' => Auth::user()->id,
                     'is_push' => false
@@ -349,6 +367,7 @@ class OrderController extends BaseController
                 }
                 $this->getInformationProduct($list_data);
                 
+                
                 return $this->sendSuccess('clone order ok');
             } 
         } catch (\Throwable $th) {
@@ -424,7 +443,6 @@ class OrderController extends BaseController
 
     public function pushOrder(Request $request)
     {
-        // dd($request);
         $placeOrder = $request->place_order;
         switch ($placeOrder) {
             case 'printify':

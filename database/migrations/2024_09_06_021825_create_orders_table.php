@@ -14,19 +14,29 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('order_number');
-            $table->string('product_id');
+            $table->string('product_id')->nullable();
+            $table->string('product_name')->nullable();
             $table->decimal('price')->default(0.00);
-            $table->unsignedBigInteger('shop_id');
+            $table->unsignedBigInteger('shop_id')->nullable();;
+            $table->string('size')->nullable();
+            $table->string('color')->nullable();
+            $table->string('transaction_id')->nullable();
+            $table->string('personalization')->nullable();
             $table->string('variant_id')->nullable();
             $table->unsignedBigInteger('print_provider_id')->nullable();
-            $table->unsignedBigInteger('blueprint_id');
-            $table->integer('quantity');
+            $table->unsignedBigInteger('blueprint_id')->nullable();;
+            $table->integer('quantity')->nullable();
             $table->string('status')->nullable();
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
-            $table->string('address')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('zip')->nullable();
+            $table->string('country')->nullable();
+            $table->string('state')->nullable();
             $table->string('city')->nullable();
-            $table->boolean('is_push')->default(0); 
+            $table->string('apartment')->nullable();    
+            $table->string('address')->nullable();
             $table->decimal('item_total')->default(0.00);
             $table->decimal('discount')->default(0.00);
             $table->decimal('sub_total')->default(0.00);
@@ -34,6 +44,7 @@ return new class extends Migration
             $table->decimal('sale_tax')->default(0.00);
             $table->decimal('order_total')->default(0.00);
             $table->unsignedBigInteger('user_id');
+            $table->boolean('is_push')->default(false); 
             $table->timestamps();
         });
     }
