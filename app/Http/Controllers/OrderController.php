@@ -165,9 +165,9 @@ class OrderController extends BaseController
                                 "label" => "order_sku_" . $key_order_number,
                                 "line_items" => [
                                 [
-                                    "print_provider_id" => 5,
-                                    "blueprint_id" => 9,
-                                    "variant_id" => 17887,
+                                    "print_provider_id" => 2,
+                                    "blueprint_id" => 50,
+                                    "variant_id" => 33721,
                                     "print_areas" => [
                                     "front" => $url
                                     ],
@@ -233,9 +233,11 @@ class OrderController extends BaseController
                     ]);        
             
                     if ($response->getStatusCode() === 200) {
+                        dd($data);
                         DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $data['print_provider_id'], 'is_push' => '1']);
                         $results[$order->order_number] = 'success';
                     } else {
+                        dd('1'. $data);
                         $results[$order->order_number] = 'failed';
                     }
                 }
