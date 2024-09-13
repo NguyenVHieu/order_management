@@ -165,7 +165,7 @@ class OrderController extends BaseController
                                 "label" => "order_sku_" . $key_order_number,
                                 "line_items" => [
                                 [
-                                    "print_provider_id" => $data->print_provider_id,
+                                    "print_provider_id" => $data['print_provider_id'],
                                     "blueprint_id" => 50,
                                     "variant_id" => 33721,
                                     "print_areas" => [
