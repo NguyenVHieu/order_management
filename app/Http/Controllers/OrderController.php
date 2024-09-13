@@ -183,7 +183,7 @@ class OrderController extends BaseController
                                 "last_name" => $order->last_name,
                                 "email" => "example@msn.com",
                                 "phone" => "0574 69 21 90",
-                                "country" => "BE",
+                                "country" => $order->state,
                                 "region" => "",
                                 "address1" => $order->address,
                                 "city" => $order->city,
@@ -215,6 +215,7 @@ class OrderController extends BaseController
                                 "first_name"=> $order->first_name,
                                 "last_name"=> $order->last_name,
                                 "region"=> "",
+                                "country" => $order->state,
                                 "address1"=> $order->address,
                                 "city"=> $order->city,
                                 "zip" => $order->zip
@@ -263,7 +264,7 @@ class OrderController extends BaseController
                         "order_id" => $order->order_number. time(),
                         "identifier" => $order->order_number. time(),
                         "shipping_info" => [
-                            "full_name" => $order->first_name . "" . $order->last_name,
+                            "full_name" => $order->first_name . " " . $order->last_name,
                             "address_1" => $order->address,
                             "address_2" => "",
                             "city" => $order->city,
