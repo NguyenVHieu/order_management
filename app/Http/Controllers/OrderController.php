@@ -187,7 +187,7 @@ class OrderController extends BaseController
                                 "region" => "",
                                 "address1" => $order->address,
                                 "city" => $order->city,
-                                // "zip" => $order->zip
+                                "zip" => $order->zip
                                 ]
                         ];
                     } else {
@@ -217,6 +217,7 @@ class OrderController extends BaseController
                                 "region"=> "",
                                 "address1"=> $order->address,
                                 "city"=> $order->city,
+                                "zip" => $order->zip
                             ],
                             
                         ];
@@ -266,9 +267,9 @@ class OrderController extends BaseController
                             "address_1" => $order->address,
                             "address_2" => "",
                             "city" => $order->city,
-                            "state" => "CA",
-                            "postcode" => "12345",
-                            "country" => "US",
+                            "state" => $order->state,
+                            "postcode" => $order->zip,
+                            "country" => $order->country,
                             // "email" => "customer@example.com",
                             // "phone" => "0123456789"
                         ],
@@ -304,7 +305,6 @@ class OrderController extends BaseController
                 }
             }
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('error'. $th->getMessage(), 500);
         }
         
