@@ -233,11 +233,9 @@ class OrderController extends BaseController
                     ]);        
             
                     if ($response->getStatusCode() === 200) {
-                        dd($data);
                         DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $data['print_provider_id'], 'is_push' => '1']);
                         $results[$order->order_number] = 'success';
                     } else {
-                        dd('1'. $data);
                         $results[$order->order_number] = 'failed';
                     }
                 }
