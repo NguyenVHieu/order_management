@@ -165,7 +165,7 @@ class OrderController extends BaseController
                                 "label" => "order_sku_" . $key_order_number,
                                 "line_items" => [
                                 [
-                                    "print_provider_id" => 2,
+                                    "print_provider_id" => $data->print_provider_id,
                                     "blueprint_id" => 50,
                                     "variant_id" => 33721,
                                     "print_areas" => [
@@ -199,14 +199,14 @@ class OrderController extends BaseController
                                 [
                                     "product_id"=> $order->product_id,
                                     "quantity"=> $order->quantity,
-                                    "variant_id"=> $order->variant_id,
+                                    "variant_id"=> 33721,
                                     "print_provider_id"=> $data['print_provider_id'],
                                     "cost"=> 414,
                                     "shipping_cost"=> 400,
                                     "status"=> "pending",
                                     "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
                                     "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
-                                    "blueprint_id" => $order->blueprint_id
+                                    "blueprint_id" => 50
                                 ]
                             ],
                             "shipping_method" => 1, 
