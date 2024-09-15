@@ -9,140 +9,79 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
-
+use App\Models\Order;
+use App\Models\Shop;
+use App\Repositories\OrderRepository;
 
 class OrderController extends BaseController
 {
-    private $baseUrlMerchize;
-    private $baseUrlPrintify;
-    private $keyPrintify;
-    private $shop_id;
-    private $keyMechize;
+    protected $baseUrlMerchize;
+    protected $baseUrlPrintify;
+    protected $keyPrintify;
+    protected $shop_id;
+    protected $keyMechize;
+    protected $orderRepository;
 
-    public function __construct()
+    public function __construct(OrderRepository $orderRepository)
     {   
-        if (Auth::user()) {
-            $user = User::find(Auth::user()->id)->with('shop')->first();
-        }
-         
+
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
         $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
         $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
-        $this->shop_id = $user->shop->code ?? 0;
-    }
-
-    public function getAllProduct() 
-    {
-        if ($this->shop_id != 0)  {
-            try {
-                $client = new Client();
-                $response = $client->get($this->baseUrlPrintify. 'shops/'.$this->shop_id.'/products.json', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->keyPrintify,
-                        'Content-Type'  => 'application/json',
-                    ],
-                ]);
-                $responseData = json_decode($response->getBody()->getContents(), true);
-                foreach($responseData['data'] as $res) {
-                    $data = [
-                        'code' => $res['id'], 
-                        'name'=> $res['title'],
-                        'images' => $res['images'][0]['src']
-                    ];
-                    $prod = DB::table('products')->where('code', $data['code'])->first();
-
-                    if (empty($prod)) {
-                        DB::table('products')->insert($data);
-                    }
-                   
-                }
-
-                return $this->sendSuccess('add product success!');
-            } catch (\Throwable $th) {
-                return $this->sendError($th->getMessage(), 500);        
-            }
-        }
+        $this->orderRepository = $orderRepository;
     }
 
     public function getInformationProduct($params)
     {
-        $order = [];
-        
         foreach($params as $param) {
-            $product = DB::table('products')->where('name', Helper::cleanText($param['product']))->first();
-            if ($this->shop_id != 0) 
-            {
-                if (!empty($product)) {
-                    $client = new Client();
-                    $response = $client->get("https://api.printify.com/v1/shops/{$this->shop_id}/products/{$product->code}.json", [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $this->keyPrintify,
-                        ],
-                    ]);
+            $first_name = explode(" ", $param['shippingAddress'][0])[0];
+            $last_name = explode(" ", $param['shippingAddress'][0])[1];
+            $address = $param['shippingAddress'][1];
+            $country = $param['shippingAddress'][count($param['shippingAddress']) -1];
+            $infoCity = explode(", ", $param['shippingAddress'][count($param['shippingAddress']) -2]);
+            $city = $infoCity[0];
+            $state = explode(" ", $infoCity[1])[0];
+            $zip = explode(" ", $infoCity[1])[1];   
+            $apartment = null;
 
-                    if ($response->getStatusCode() == 200) {
-                        $infor = json_decode($response->getBody()->getContents(), true);
-                    } else {
-                        return $this->sendError('error to clone email', 500);
-                    }
+            if ($param['shippingAddress'][count($param['shippingAddress']) -3] != $address) {
+                $apartment = $param['shippingAddress'][count($param['shippingAddress']) -3];
+            }
+            $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
+            
+            $data = [
+                'order_number' => $param['orderNumber'],
+                'price' => $param['price'],
+                'shop_id' => $shop->id,
+                'size' => $param['size'] != 'N/A' ? $param['size'] : null,
+                'color' => $param['color'] != 'N/A' ? $param['color'] : null,
+                'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
+                'quantity' =>  $param['quantity'],
+                'item_total' => $param['itemTotal'],
+                'discount' => $param['discount'],
+                'sub_total' => $param['subtotal'],
+                'shipping' => $param['shipping'],
+                'sale_tax' => $param['salesTax'],
+                'order_total' => $param['orderTotal'],
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'address' => $address,
+                'country' => $country,
+                'state' => $state,
+                'apartment' => $apartment,
+                'zip' => $zip,
+                'city' => $city,
+                'user_id' => Auth::user()->id,
+                'is_push' => false,
+                'is_approval' => false,
+            ];
 
-                }
-
-                $first_name = explode(" ", $param['shippingAddress'][0])[0];
-                $last_name = explode(" ", $param['shippingAddress'][0])[1];
-                $address = $param['shippingAddress'][1];
-                $country = $param['shippingAddress'][count($param['shippingAddress']) -1];
-                $infoCity = explode(", ", $param['shippingAddress'][count($param['shippingAddress']) -2]);
-                $city = $infoCity[0];
-                $state = explode(" ", $infoCity[1])[0];
-                $zip = explode(" ", $infoCity[1])[1];   
-                $apartment = null;
-
-                if ($param['shippingAddress'][count($param['shippingAddress']) -3] != $address) {
-                    $apartment = $param['shippingAddress'][count($param['shippingAddress']) -3];
-                }
-
-                
-                $data = [
-                    'order_number' => $param['orderNumber'],
-                    'product_id' => $product->code ?? null,
-                    'product_name' => $param['product'],
-                    'price' => $param['price'],
-                    'shop_id' => $this->shop_id,
-                    'size' => $param['size'] != 'N/A' ? $param['size'] : null,
-                    'color' => $param['color'] != 'N/A' ? $param['color'] : null,
-                    'transaction_id' => $param['transactionID'],
-                    'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
-                    'variant_id' => $infor['variant_id'] ?? null,
-                    'blueprint_id' => $infor['blueprint_id'] ?? null,
-                    'quantity' =>  $param['quantity'],
-                    'item_total' => $param['itemTotal'],
-                    'discount' => $param['discount'],
-                    'sub_total' => $param['subtotal'],
-                    'shipping' => $param['shipping'],
-                    'sale_tax' => $param['salesTax'],
-                    'order_total' => $param['orderTotal'],
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'address' => $address,
-                    'country' => $country,
-                    'state' => $state,
-                    'apartment' => $apartment,
-                    'zip' => $zip,
-                    'city' => $city,
-                    'user_id' => Auth::user()->id,
-                    'is_push' => false
-                ];
-
-                $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
-                if (empty($order)) {
-                    DB::table('orders')->insert($data);
-                }
+            $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
+            if (empty($order)) {
+                DB::table('orders')->insert($data);
             }
         }
-        
-
     }
 
     function pushOrderToPrintify($request) {
@@ -391,24 +330,32 @@ class OrderController extends BaseController
 
     public function getOrderDB(Request $req) 
     {
-        $type = $req->type ?? -1;
         try {
-            $query = DB::table('orders')
-                    ->select('orders.*', 'products.images', 'products.name as product_name', 'users.name as user_name', 'shops.name as shop_name', 'orders.id as order_id')
-                    ->leftJoin('products', 'orders.product_id', '=', 'products.code')
-                    ->join('users', 'orders.user_id', '=', 'users.id')
-                    ->join('shops', 'orders.shop_id', '=', 'shops.code')
-                    ->where('orders.is_push', false);
-            if ($type == 0) {
-                $query->whereNull("product_id")->orWhere('product_id', '');
-            } else if ($type == 1) {
-                $query->whereNotNull("product_id");
-            }
-            $data = $query->get();
+            $userType = Auth::user()->is_admin ? -1 : Auth::user()->user_type_id;
+            $shopId = Auth::user()->shop_id;
+            $params = [
+                'userType' => $userType,
+                'shopId' => $shopId
+            ];
+            $orders = $this->orderRepository->index($params);
+            dd($orders);
+            // $query = DB::table('orders')
+            //         ->select('orders.*', 'products.images', 'products.name as product_name', 'users.name as user_name', 'shops.name as shop_name', 'orders.id as order_id')
+            //         ->leftJoin('products', 'orders.product_id', '=', 'products.code')
+            //         ->join('users', 'orders.user_id', '=', 'users.id')
+            //         ->join('shops', 'orders.shop_id', '=', 'shops.code')
+            //         ->where('orders.is_push', false);
+            // if ($type == 0) {
+            //     $query->whereNull("product_id")->orWhere('product_id', '');
+            // } else if ($type == 1) {
+            //     $query->whereNotNull("product_id");
+            // }
+            // $data = $query->get();
 
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('error', 500);
         }
     }
