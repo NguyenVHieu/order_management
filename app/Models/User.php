@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +23,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'user_type_id',
+        'shop_id',
+        'created_by',
+        'updated_by'
     ];
 
     /**
@@ -49,6 +54,6 @@ class User extends Authenticatable
 
     public function shop()
     {
-        return $this->hasOne(Shop::class, 'user_management_id', 'id');
+        return $this->hasOne(Shop::class, 'id', 'shop_id');
     }
 }

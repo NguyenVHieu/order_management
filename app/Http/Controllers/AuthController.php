@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\AuthResource;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,7 @@ class AuthController extends BaseController
         $user = Auth::user();
         $token = $user->createToken('order-management')->plainTextToken;
         $user->token = $token;
-        $data = (new UserResource($user))->additional(['token' => $token]);
+        $data = (new AuthResource($user))->additional(['token' => $token]);
         return $this->sendSuccess($data);
     }   else {
         return $this->sendError('auth failed', 401);
