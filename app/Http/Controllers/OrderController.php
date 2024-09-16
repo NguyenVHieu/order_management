@@ -428,4 +428,27 @@ class OrderController extends BaseController
         
     }
 
+    public function test()
+    {
+        $client = new Client();
+        $response = $client->get($this->baseUrlPrintify. "/catalog/blueprints.json", [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->keyPrintify,
+                'Content-Type'  => 'application/json',
+            ],
+        ]);
+
+        $titles = [];
+
+        if ($response->getStatusCode() === 200) {
+            $data = json_decode($response->getBody()->getContents(), true);
+            foreach ($data as $blueprint) {
+                $titles[] = $blueprint['title'];
+            }
+            return $this->sendSuccess($titles);
+        } else {
+            return $this->sendError('error', $response->getStatusCode());
+        }
+    }
+
 }
