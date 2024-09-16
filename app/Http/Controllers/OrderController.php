@@ -52,11 +52,13 @@ class OrderController extends BaseController
             
             $data = [
                 'order_number' => $param['orderNumber'],
+                'product_name' => $param['product'],
                 'price' => $param['price'],
                 'shop_id' => $shop->id,
                 'size' => $param['size'] != 'N/A' ? $param['size'] : null,
                 'color' => $param['color'] != 'N/A' ? $param['color'] : null,
                 'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
+                'thumbnail' => $param['thumb'],
                 'quantity' =>  $param['quantity'],
                 'item_total' => $param['itemTotal'],
                 'discount' => $param['discount'],
@@ -70,6 +72,7 @@ class OrderController extends BaseController
                 'country' => $country,
                 'state' => $state,
                 'apartment' => $apartment,
+                'recieved_mail_at' => $param['recieved_mail_at'],
                 'zip' => $zip,
                 'city' => $city,
                 'user_id' => Auth::user()->id,
@@ -269,7 +272,11 @@ class OrderController extends BaseController
                     $subject = $message->getSubject();
                     $from = $message->getFrom()[0]->mail;
                     $date = $message->getDate();
+                    
                     $emailBody = $this->removeLinks($message->getTextBody());
+                    $emailHtml = $message->getHTMLBody();
+                    $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
+                    $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
                     $patterns = [
                         'orderNumber' => '/Your order number is:\s*(.*)/',
@@ -301,9 +308,10 @@ class OrderController extends BaseController
                     }
                     $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
                     $data['product'] = str_replace('<', '', $data['product']);
+                    $data['thumb'] = $thumb;
+                    $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                     $list_data[] = $data;
 
-                    
                 }
                 $this->getInformationProduct($list_data);
                 
