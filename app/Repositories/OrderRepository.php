@@ -28,7 +28,6 @@ class OrderRepository implements OrderRepositoryInterface
                 $query->where('orders.shop_id', $params['shopId']);
             }
         }
-        dd($query->toSql());
         $data = $query->orderBy('orders.id', 'desc')->get();
         return $data;
     }

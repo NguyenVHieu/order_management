@@ -338,7 +338,6 @@ class OrderController extends BaseController
                 'shopId' => $shopId
             ];
             $orders = $this->orderRepository->index($params);
-            dd($orders);
             // $query = DB::table('orders')
             //         ->select('orders.*', 'products.images', 'products.name as product_name', 'users.name as user_name', 'shops.name as shop_name', 'orders.id as order_id')
             //         ->leftJoin('products', 'orders.product_id', '=', 'products.code')
@@ -352,7 +351,7 @@ class OrderController extends BaseController
             // }
             // $data = $query->get();
 
-            return $this->sendSuccess($data);
+            return $this->sendSuccess($orders);
 
         } catch (\Throwable $th) {
             dd($th);
