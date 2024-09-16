@@ -12,9 +12,14 @@ class OrderRepository implements OrderRepositoryInterface
     {
         $query = Order::query()->select($columns);
 
-        $query->leftJoin('users', function($join){  
+        $query->leftJoin('users', function($join) {  
             $join->on('users.shop_id', '=', 'orders.shop_id');
             $join->whereNull('users.deleted_at');
+        });
+
+        $query->leftJoin('shops', function($join) {  
+            $join->on('shops.id', '=', 'orders.shop_id');
+            $join->whereNull('shops.deleted_at');
         });
 
         if ($params['userType'] != -1) {
@@ -27,6 +32,7 @@ class OrderRepository implements OrderRepositoryInterface
             if (!empty($params['shopId'])) {
                 $query->where('orders.shop_id', $params['shopId']);
             }
+            $query->where('users.id',  $params['userId']);
         }
         $data = $query->orderBy('orders.id', 'desc')->get();
         return $data;
