@@ -100,7 +100,15 @@ class UserController extends BaseController
             if (!$query) {
                 return $this->sendError('User Not Found');
             }
-            $data = new UserResource($query);   
+            $user = new UserResource($query);  
+            $shops = Shop::get();
+            $userTypes = UserType::get();
+            $data = [
+                'shops' => $shops,
+                'userTypes' => $userTypes,
+                'user' => $user
+            ];
+            
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
             return $this->sendError($th->getMessage());
