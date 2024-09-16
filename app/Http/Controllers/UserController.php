@@ -44,8 +44,8 @@ class UserController extends BaseController
     public function create() 
     {
         try {
-            $shops = Shop::get();
-            $userTypes = UserType::get();
+            $shops = Shop::select(['id as value', 'name as label'])->get();
+            $userTypes = UserType::select(['id as value', 'name as label'])->get();
             $data = [
                 'shops' => $shops,
                 'userTypes' => $userTypes
@@ -101,14 +101,14 @@ class UserController extends BaseController
                 return $this->sendError('User Not Found');
             }
             $user = new UserResource($query);  
-            $shops = Shop::get();
-            $userTypes = UserType::get();
+            $shops = Shop::select(['id as value', 'name as label'])->get();;
+            $userTypes = UserType::select(['id as value', 'name as label'])->get();;
             $data = [
                 'shops' => $shops,
                 'userTypes' => $userTypes,
                 'user' => $user
             ];
-            
+
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
             return $this->sendError($th->getMessage());
