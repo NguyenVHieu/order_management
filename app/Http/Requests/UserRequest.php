@@ -16,8 +16,8 @@ class UserRequest extends BaseFormRequest
      */
     public function rules()
     {
-        $id = $this->route('id');
-        if ($id) {    //update
+        $id = $this->input('id') ?? 0;
+        if ($id > 0) {    //update
             return [
                 'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users,email,' . $id,

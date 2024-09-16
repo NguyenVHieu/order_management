@@ -25,7 +25,6 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
                 Route::get('/create', 'create');
-                Route::put('/{id}', 'update');
                 Route::get('/{id}', 'edit');
                 Route::delete('/{id}', 'destroy');
             });

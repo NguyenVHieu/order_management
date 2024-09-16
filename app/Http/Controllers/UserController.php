@@ -59,7 +59,8 @@ class UserController extends BaseController
     public function store(UserRequest $request)
     {
         try {
-            $data = [
+            $id = $request->id ?? 0;
+            $columns = [
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => bcrypt($request->password),
@@ -69,7 +70,16 @@ class UserController extends BaseController
                 'created_at' => date('Y-m-d H:i:s')
             ];
 
-            $data = User::create($data);
+            if ($id > 0) {
+                $data = User::find($id);
+                if (!$data) {
+                    return $this->sendError('User Not Found');
+                }
+                $data->update($columns);
+            } else {
+                $data = User::create($columns);
+            }
+            
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
             return $this->sendError($th->getMessage());
@@ -90,30 +100,30 @@ class UserController extends BaseController
         }
     }
 
-    public function update(Request $request, $id)
-    {
-        try {
-            $columns = [
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => bcrypt($request->password),
-                'user_type_id' => $request->user_type_id,
-                'shop_id' => $request->shop_id,
-                'updated_by' => Auth::user()->id,
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
+    // public function inserOrUpdate(Request $request, $id)
+    // {
+    //     try {
+    //         $columns = [
+    //             'name' => $request->name,
+    //             'email' => $request->email,
+    //             'password' => bcrypt($request->password),
+    //             'user_type_id' => $request->user_type_id,
+    //             'shop_id' => $request->shop_id,
+    //             'updated_by' => Auth::user()->id,
+    //             'updated_at' => date('Y-m-d H:i:s')
+    //         ];
 
-            $data = User::find($id);
-            if (!$data) {
-                return $this->sendError('User Not Found');
-            }
+    //         $data = User::find($id);
+    //         if (!$data) {
+    //             return $this->sendError('User Not Found');
+    //         }
 
-            $data->update($columns);
-            return $this->sendSuccess($data);
-        } catch (\Throwable $th) {
-            return $this->sendError($th->getMessage());
-        }
-    }
+    //         $data->update($columns);
+    //         return $this->sendSuccess($data);
+    //     } catch (\Throwable $th) {
+    //         return $this->sendError($th->getMessage());
+    //     }
+    // }
 
     public function destroy($id)
     {
