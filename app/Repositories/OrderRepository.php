@@ -10,7 +10,7 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function index($params, $columns = ['*'])
     {
-        $query = Order::query()->select($columns);
+        $query = Order::query()->select($columns)->distinct();
 
         $query->leftJoin('users', function($join) {  
             $join->on('users.shop_id', '=', 'orders.shop_id');
