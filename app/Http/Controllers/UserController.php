@@ -72,6 +72,13 @@ class UserController extends BaseController
 
             if ($id > 0) {
                 $data = User::find($id);
+                
+                if ($request->password) {
+                    $columns['password'] = bcrypt($request->password);
+                }else{
+                    unset($columns['password']);
+                }
+
                 if (!$data) {
                     return $this->sendError('User Not Found');
                 }

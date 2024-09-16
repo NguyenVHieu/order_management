@@ -21,7 +21,6 @@ class UserRequest extends BaseFormRequest
             return [
                 'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users,email,' . $id,
-                'password' => 'required|max:255',
                 'user_type_id' => 'required',
                 'shop_id' => 'required', 
             ];
