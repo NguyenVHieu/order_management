@@ -288,6 +288,7 @@ class OrderController extends BaseController
                 // }else {
                 //     $prodNum = 1;
                 // }
+
                 $prodNum = 1;
                 $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                     'headers' => [
@@ -455,7 +456,7 @@ class OrderController extends BaseController
             ];
             $blueprints = DB::table('blueprints')
                         ->where('name', 'LIKE', '%tee%')
-                        ->select('id as value', 'name as label')
+                        ->select('blueprint_id as value', 'name as label')
                         ->limit(20)
                         ->get();
 
