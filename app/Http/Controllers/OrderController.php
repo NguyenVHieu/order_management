@@ -21,12 +21,14 @@ class OrderController extends BaseController
     protected $shop_id;
     protected $keyMechize;
     protected $orderRepository;
+    protected $baseUrlPrivate;
 
     public function __construct(OrderRepository $orderRepository)
     {   
 
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
+        $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
         $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
         $this->orderRepository = $orderRepository;
@@ -253,6 +255,106 @@ class OrderController extends BaseController
         
     }
 
+    public function pushOrderToPrivate($request) 
+    {
+        try {
+            $results = [];
+            $client = new Client();
+            $resLogin = $client->post($this->baseUrlPrivate. '/login', [
+                'headers' => [
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => [
+                    'email' => 'lehanhhong2294@gmail.com',
+                    'password' => 'cacc6dd0'
+                ] // Gửi dữ liệu đơn hàng
+            ]);
+            $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+            $token = $resLoginConvert['accessToken'];
+
+            $orders = $request['orders'];
+            foreach($orders as $data) 
+            {
+                // $linkBack = $this->saveImgeSku($order['back']);
+                // $linkFront = $this->saveImgeSku($order['front']);
+                // $linkLeft = $this->saveImgeSku($order['left']);
+                // $linkRight = $this->saveImgeSku($order['right']);
+                // $linkNeck = $this->saveImgeSku($order['neck']);
+
+                $order = DB::table('orders')->where('id', $data['order_id'])->first();
+
+                // if (!empty($order->front) && !empty($order->back)) {
+                //     $prodNum = 2;
+                // }else {
+                //     $prodNum = 1;
+                // }
+                $prodNum = 1;
+                $resSku = $client->get($this->baseUrlPrivate. '/sku', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $token,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'query' => [
+                        'prodType' => 'HOODIE',
+                        'prodSize' => str_replace("\r", "", trim($order->size)),
+                        'prodNum' => $prodNum,
+                        'prodColor' => $order->color,
+                    ],
+                ]);
+                $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
+                $variantId = $resSkuConvert['data'][0]['variantId'];
+
+                $orderData = [
+                    "order" => [
+                        "orderId" => $order->order_number. time(),
+                        "shippingMethod" => "STANDARD",
+                        "firstName" => $order->first_name,
+                        "lastName" => $order->last_name,
+                        "countryCode" => "US",
+                        "provinceCode" => "AL",
+                        "addressLine1" => $order->address,
+                        "city" => $order->city,
+                        "zipcode" => $order->zip,
+                    ],
+                    "product" => [
+                        [
+                        "variantId" => $variantId,
+                        "quantity" => 1,
+                        "printAreaFront" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                        "printAreaBack" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                        "mockupFront" => "http://14.225.253.89:8080/uploads/20240911/023521_test.jpg",
+                        "mockupBack" => "http://14.225.253.89:8080/uploads/20240911/023521_test.jpg",
+                        "printAreaLeft" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                        "printAreaRight" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                        "printAreaNeck" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
+                        "customNote" => "Color mode: RGBA"
+                        ]
+                    ]
+                ];
+
+                $resOrder = $client->post($this->baseUrlPrivate. '/order', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $token,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'json' => $orderData // Gửi dữ liệu đơn hàng
+                ]);
+
+                if ($resOrder->getStatusCode() === 201) {
+                    $results[$order->order_number] = 'success';
+                } else {
+                    $results[$order->order_number] = 'failed';
+                }
+            }
+            
+            return $results;    
+
+        } catch (\Throwable $th) {
+            dd($th);
+            return $this->sendError('error'. $th->getMessage(), 500);
+        }
+    }
+
     public function fetchMailOrder()
     {
         try {
@@ -400,6 +502,9 @@ class OrderController extends BaseController
             case 'merchize':
                 $result = $this->pushOrderToMerchize($request);
                 return $this->sendSuccess($result);
+            case 'private':
+                $result = $this->pushOrderToPrivate($request);
+                return $this->sendSuccess($result);
             default:
                 return $this->sendError('Function not implemented', 500);
         }
@@ -428,7 +533,7 @@ class OrderController extends BaseController
         
     }
 
-    public function test()
+    public function storeBlueprint()
     {
         $client = new Client();
         $response = $client->get($this->baseUrlPrintify. "/catalog/blueprints.json", [
@@ -438,14 +543,19 @@ class OrderController extends BaseController
             ],
         ]);
 
-        $titles = [];
+        $data_save = [];
 
         if ($response->getStatusCode() === 200) {
             $data = json_decode($response->getBody()->getContents(), true);
             foreach ($data as $blueprint) {
-                $titles[] = $blueprint['title'];
+                $blue = [
+                    'blueprint_id' => $blueprint['id'],
+                    'name'  => $blueprint['title'],
+                ];
+                $data_save[] = $blue;
             }
-            return $this->sendSuccess($titles);
+            DB::table('blueprints')->insert($data_save);
+            return $this->sendSuccess('ok');
         } else {
             return $this->sendError('error', $response->getStatusCode());
         }
