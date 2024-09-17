@@ -202,7 +202,7 @@ class OrderController extends BaseController
                 {
                     $urlThumb = $this->saveImgeSku($data['thumb']);
                     $urlFront = $this->saveImgeSku($data['front']);
-                    $order = DB::table('orders')->leftJoin('products', 'products.id', '=', 'orders.product_id')->where('orders.id', $data['order_id'])->select('orders.*', 'products.name as product_name')->first();
+                    $order = DB::table('orders')->select('*')->first();
    
                     $orderData = [
                         "order_id" => $order->order_number. time(),
@@ -220,8 +220,8 @@ class OrderController extends BaseController
                         ],
                         "items" => [
                             [
-                                "name" => $order->product_name ?? "Example product",
-                                "product_id" => $order->product_id,
+                                "name" => "Example product",
+                                // "product_id" => $order->product_id,
                                 "merchize_sku" => "CSWSVN000000EA12",
                                 "quantity" => $order->quantity,
                                 "price" => $order->price,
@@ -453,9 +453,20 @@ class OrderController extends BaseController
                 'shops.name as shop_name',
                 'orders.id as order_id',
             ];
+            $blueprints = DB::table('blueprints')
+                        ->where('name', 'LIKE', '%tee%')
+                        ->select('id as value', 'name as label')
+                        ->limit(20)
+                        ->get();
+
             $orders = $this->orderRepository->index($params, $columns);
 
-            return $this->sendSuccess($orders);
+            $data = [
+                'orders' => $orders,
+                'blueprints' => $blueprints
+            ];
+
+            return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
             dd($th);
