@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('order_number');
-            $table->decimal('price')->default(0.00);
+            $table->string('price');
             $table->unsignedBigInteger('shop_id')->nullable();;
             $table->string('size')->nullable();
             $table->string('color')->nullable();
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('variant_id')->nullable();
             $table->unsignedBigInteger('print_provider_id')->nullable();
             $table->unsignedBigInteger('blueprint_id')->nullable();
-            $table->string('thumbnail')->nullable();
+            $table->string('thumbnail', 1024)->nullable();
             $table->string('sku')->nullable();
             $table->integer('quantity')->nullable();
             $table->string('first_name')->nullable();
@@ -41,6 +41,15 @@ return new class extends Migration
             $table->decimal('shipping')->default(0.00);
             $table->decimal('sale_tax')->default(0.00);
             $table->decimal('order_total')->default(0.00);
+            $table->string('1')->nullable();
+            $table->string('2')->nullable();
+            $table->string('3')->nullable();
+            $table->string('4')->nullable();
+            $table->string('5')->nullable();
+            $table->string('6')->nullable();
+            $table->string('7')->nullable();
+            $table->string('product_name')->nullable(); 
+            $table->timestamp('recieved_mail_at')->nullable();
             $table->unsignedBigInteger('user_id');
             $table->boolean('is_push')->default(false);
             $table->boolean('is_approval')->default(false);

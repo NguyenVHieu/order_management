@@ -41,11 +41,11 @@ class OrderController extends BaseController
             if (!empty($orders)) {
                 foreach ($orders as $data)
                 {
-                    $type = $data['type'] ?? '';
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
                     $order_number = $order->order_number ?? 0;
                     $key_order_number = $order_number. time();
-                    $url = $this->saveImgeSku($data['image']);
+                    $linkFront = $this->saveImgeSku($data['1']);
+                    $linkBack = $this->saveImgeSku($data['2']);
 
                     $orderData = [
                         "external_id" => "order_sku_" . $key_order_number,
@@ -53,10 +53,11 @@ class OrderController extends BaseController
                         "line_items" => [
                         [
                             "print_provider_id" => $data['print_provider_id'],
-                            "blueprint_id" => 50,
-                            "variant_id" => 33721,
+                            "blueprint_id" => $order->blueprint_id,
+                            "variant_id" => $order->variant_id,
                             "print_areas" => [
-                            "front" => $url
+                                "front" => $linkFront,
+                                "back" => $linkBack,
                             ],
                             "quantity" => $order->quantity
                         ]
@@ -86,7 +87,13 @@ class OrderController extends BaseController
                     ]);        
             
                     if ($response->getStatusCode() === 200) {
-                        DB::table('orders')->where('id', $order->id)->update(['print_provider_id' => $data['print_provider_id'], 'is_push' => '1']);
+                        $data = [
+                            'print_provider_id' => $data['print_provider_id'], 
+                            'is_push' => '1',
+                            '1' => $linkFront,
+                            '2' => $linkBack,
+                        ];
+                        DB::table('orders')->where('id', $order->id)->update($data);
                         $results[$order->order_number] = 'success';
                     } else {
                         $results[$order->order_number] = 'failed';
@@ -401,4 +408,94 @@ class OrderController extends BaseController
         }
     }
 
+    public function approvalOrder(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $orders = $request['orders'];
+            foreach ($orders as $order) {
+                $img_1 = isset($order->img_1) ? $this->saveImgeSku($order->img_1) : null;
+                $img_2 = isset($order->img_2) ? $this->saveImgeSku($order->img_2) : null;
+                $img_3 = isset($order->img_3) ? $this->saveImgeSku($order->img_3) : null;
+                $img_4 = isset($order->img_4) ? $this->saveImgeSku($order->img_4) : null;
+                $img_5 = isset($order->img_5) ? $this->saveImgeSku($order->img_5) : null;
+                $img_6 = isset($order->img_6) ? $this->saveImgeSku($order->img_6) : null;
+                $img_7 = isset($order->img_7) ? $this->saveImgeSku($order->img_7) : null;
+
+                $print_provider_id = $order['print_provider_id'];
+                $data = Order::find($order['id']);
+
+                if (!empty($data)) {
+                    $size = isset($data->size) ? $data->size : null;
+                    $color = isset($data->color) ? $data->color : null;
+                    $variant_id = $this->getVariantId($data->blueprint_id, $print_provider_id, $size, $color);
+
+                    if (!$variant_id) {
+                        DB::rollBack();
+                        return $this->sendError('Không tìm thể variant ở order'. $order->order_number);
+                    }
+
+                    $data = [
+                        'img_1' => $img_1,
+                        'img_2' => $img_2,
+                        'img_3' => $img_3,
+                        'img_4' => $img_4,
+                        'img_5' => $img_5,
+                        'img_6' => $img_6,
+                        'img_7' => $img_7,
+                        'variant_id' => $variant_id,
+                        'print_provider_id' => $print_provider_id,
+                        'approval_by' => Auth::user()->id,
+                    ];
+
+                    DB::table('orders')->where('id', $order['id'])->update($data);
+                    
+                } else {
+                    DB::rollBack();
+                    return $this->sendError('Không tìm thấy order', 404);
+                }
+                DB::commit();
+                return $this->sendSuccess('Approval ok');
+
+            }
+        } catch (\Throwable $th) {
+            dd($th);
+            DB::rollBack();
+            return $this->sendError($th->getMessage());
+        }
+    }
+
+    public function getVariantId($blueprint_id, $provider_id, $size, $color)
+    {
+        $client = new Client();
+        $resVariant = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->keyPrintify,
+                'Content-Type'  => 'application/json',
+            ],
+        ]);
+        $resFormat = json_decode($resVariant->getBody()->getContents(), true);
+        $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color) {
+            
+            $title = str_replace('″', '"', $variant['title']);
+            $size = str_replace('″', '"', $size);
+            $color = str_replace('″', '"', $color);
+            if ($color != null) {
+                $result = stripos($title, $color) !== false;
+            }
+
+            if ($size != null) {
+                $result = stripos($title, $size) !== false;
+            }
+            
+            return $result;
+        });
+
+        if (!empty($matchedVariant)) {
+            $variant_id = $matchedVariant[0]['id'];
+        }
+
+        return $variant_id;
+        
+    }
 }

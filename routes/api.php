@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/get-providers/{blueprint_id}', 'getProviders');
             Route::post('/create-order-sku', 'createOrderSku');
             Route::post('/store-blueprint', 'storeBlueprint');
+            Route::post('/approval-order', 'approvalOrder');
         });
         Route::controller(MailController::class)->group(function(){
             Route::get('/fetch-mail-order', 'fetchMailOrder');
