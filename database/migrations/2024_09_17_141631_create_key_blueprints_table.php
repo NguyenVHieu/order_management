@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('key_blueprints', function (Blueprint $table) {
             $table->id();
-            $table->string('blueprint_name');
-            $table->string('platform');
-            $table->string('style');
-            $table->string('color');
+            $table->string('style')->nullable();
+            $table->string('color')->nullable();
+            $table->string('printify')->nullable();
+            $table->string('merchize')->nullable();
+            $table->string('private')->nullable();
+            $table->string('hubfulfill')->nullable();
+            $table->string('otb')->nullable();
+            $table->string('lenfull')->nullable();
             $table->timestamps();
         });
     }

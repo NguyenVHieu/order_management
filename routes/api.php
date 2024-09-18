@@ -34,12 +34,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('orders')->group(function () {
         Route::controller(OrderController::class)->group(function(){
             Route::post('/create', 'pushOrder');
-            Route::get('/get-all-product', 'getAllProduct');
-            Route::get('/fetch-mail-order', 'fetchMailOrder');
             Route::get('/', 'getOrderDB');
             Route::get('/get-providers/{blueprint_id}', 'getProviders');
             Route::post('/create-order-sku', 'createOrderSku');
             Route::post('/store-blueprint', 'storeBlueprint');
+        });
+        Route::controller(MailController::class)->group(function(){
+            Route::get('/fetch-mail-order', 'fetchMailOrder');
         });
     });
 

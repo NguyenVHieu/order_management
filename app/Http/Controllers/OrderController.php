@@ -34,61 +34,6 @@ class OrderController extends BaseController
         $this->orderRepository = $orderRepository;
     }
 
-    public function getInformationProduct($params)
-    {
-        foreach($params as $param) {
-            $first_name = explode(" ", $param['shippingAddress'][0])[0];
-            $last_name = explode(" ", $param['shippingAddress'][0])[1];
-            $address = $param['shippingAddress'][1];
-            $country = $param['shippingAddress'][count($param['shippingAddress']) -1];
-            $infoCity = explode(", ", $param['shippingAddress'][count($param['shippingAddress']) -2]);
-            $city = $infoCity[0];
-            $state = explode(" ", $infoCity[1])[0];
-            $zip = explode(" ", $infoCity[1])[1];   
-            $apartment = null;
-
-            if ($param['shippingAddress'][count($param['shippingAddress']) -3] != $address) {
-                $apartment = $param['shippingAddress'][count($param['shippingAddress']) -3];
-            }
-            $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
-            
-            $data = [
-                'order_number' => $param['orderNumber'],
-                'product_name' => $param['product'],
-                'price' => $param['price'],
-                'shop_id' => $shop->id,
-                'size' => $param['size'] != 'N/A' ? $param['size'] : null,
-                'color' => $param['color'] != 'N/A' ? $param['color'] : null,
-                'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
-                'thumbnail' => $param['thumb'],
-                'quantity' =>  $param['quantity'],
-                'item_total' => $param['itemTotal'],
-                'discount' => $param['discount'],
-                'sub_total' => $param['subtotal'],
-                'shipping' => $param['shipping'],
-                'sale_tax' => $param['salesTax'],
-                'order_total' => $param['orderTotal'],
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'address' => $address,
-                'country' => $country,
-                'state' => $state,
-                'apartment' => $apartment,
-                'recieved_mail_at' => $param['recieved_mail_at'],
-                'zip' => $zip,
-                'city' => $city,
-                'user_id' => Auth::user()->id,
-                'is_push' => false,
-                'is_approval' => false,
-            ];
-
-            $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
-            if (empty($order)) {
-                DB::table('orders')->insert($data);
-            }
-        }
-    }
-
     function pushOrderToPrintify($request) {
         try {
             $results = [];
@@ -99,74 +44,38 @@ class OrderController extends BaseController
                     $type = $data['type'] ?? '';
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
                     $order_number = $order->order_number ?? 0;
+                    $key_order_number = $order_number. time();
+                    $url = $this->saveImgeSku($data['image']);
+
+                    $orderData = [
+                        "external_id" => "order_sku_" . $key_order_number,
+                        "label" => "order_sku_" . $key_order_number,
+                        "line_items" => [
+                        [
+                            "print_provider_id" => $data['print_provider_id'],
+                            "blueprint_id" => 50,
+                            "variant_id" => 33721,
+                            "print_areas" => [
+                            "front" => $url
+                            ],
+                            "quantity" => $order->quantity
+                        ]
+                        ],
+                        "shipping_method" => 1,
+                        "is_printify_express" => false,
+                        "is_economy_shipping" => false,
+                        "send_shipping_notification" => false,
+                        "address_to" => [
+                        "first_name" => $order->first_name,
+                        "last_name" => $order->last_name,
+                        "country" => "BE",
+                        "region" => "",
+                        "address1" => $order->address,
+                        "city" => $order->city,
+                        // "zip" => $order->zip
+                        ]
+                    ];
                     
-                    if ($type === 'sku')
-                    {
-                        $key_order_number = time();
-                        $url = $this->saveImgeSku($data['image']);
-                        $orderData = [
-                                "external_id" => "order_sku_" . $key_order_number,
-                                "label" => "order_sku_" . $key_order_number,
-                                "line_items" => [
-                                [
-                                    "print_provider_id" => $data['print_provider_id'],
-                                    "blueprint_id" => 50,
-                                    "variant_id" => 33721,
-                                    "print_areas" => [
-                                    "front" => $url
-                                    ],
-                                    "quantity" => $order->quantity
-                                ]
-                                ],
-                                "shipping_method" => 1,
-                                "is_printify_express" => false,
-                                "is_economy_shipping" => false,
-                                "send_shipping_notification" => false,
-                                "address_to" => [
-                                "first_name" => $order->first_name,
-                                "last_name" => $order->last_name,
-                                "email" => "example@msn.com",
-                                "phone" => "0574 69 21 90",
-                                "country" => "BE",
-                                "region" => "",
-                                "address1" => $order->address,
-                                "city" => $order->city,
-                                // "zip" => $order->zip
-                                ]
-                        ];
-                    } else {
-                        $key_order_number = $order->order_number . time();
-                        $orderData = [
-                            "external_id" => "order_id_".$key_order_number,
-                            "label" => "Order#".$key_order_number,
-                            "line_items" => [
-                                [
-                                    "product_id"=> $order->product_id,
-                                    "quantity"=> $order->quantity,
-                                    "variant_id"=> 33721,
-                                    "print_provider_id"=> $data['print_provider_id'],
-                                    "cost"=> 414,
-                                    "shipping_cost"=> 400,
-                                    "status"=> "pending",
-                                    "sent_to_production_at"=> "2025-04-18 13:24:28+00:00",
-                                    "fulfilled_at"=> "2025-04-18 13:24:28+00:00",
-                                    "blueprint_id" => 50
-                                ]
-                            ],
-                            "shipping_method" => 1, 
-                            "send_to_production" => true,
-                            "address_to" => [
-                                "first_name"=> $order->first_name,
-                                "last_name"=> $order->last_name,
-                                "region"=> "",
-                                "country" => "BE",
-                                "address1"=> $order->address,
-                                "city"=> $order->city,
-                                // "zip" => $order->zip
-                            ],
-                            
-                        ];
-                    }
                     $client = new Client();
                     $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
                         'headers' => [
@@ -255,7 +164,7 @@ class OrderController extends BaseController
         
     }
 
-    public function pushOrderToPrivate($request) 
+    function pushOrderToPrivate($request) 
     {
         try {
             $results = [];
@@ -275,21 +184,23 @@ class OrderController extends BaseController
             $orders = $request['orders'];
             foreach($orders as $data) 
             {
-                // $linkBack = $this->saveImgeSku($order['back']);
-                // $linkFront = $this->saveImgeSku($order['front']);
-                // $linkLeft = $this->saveImgeSku($order['left']);
-                // $linkRight = $this->saveImgeSku($order['right']);
-                // $linkNeck = $this->saveImgeSku($order['neck']);
+                $linkFront = $this->saveImgeSku($data['1']);
+                $linkBack = $this->saveImgeSku($data['2']);
+                $linkLeft = $this->saveImgeSku($data['3']);
+                $linkRight = $this->saveImgeSku($data['4']);
+                $linkNeck = $this->saveImgeSku($data['5']);
+                $linkMockupFront = $this->saveImgeSku($data['6']);
+                $linkMockupBack = $this->saveImgeSku($data['7']);
+
 
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
 
-                // if (!empty($order->front) && !empty($order->back)) {
-                //     $prodNum = 2;
-                // }else {
-                //     $prodNum = 1;
-                // }
+                if (!empty($linkFront) && !empty($linkBack)) {
+                    $prodNum = 2;
+                }else {
+                    $prodNum = 1;
+                }
 
-                $prodNum = 1;
                 $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $token,
@@ -321,14 +232,14 @@ class OrderController extends BaseController
                         [
                         "variantId" => $variantId,
                         "quantity" => 1,
-                        "printAreaFront" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                        "printAreaBack" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                        "mockupFront" => "http://14.225.253.89:8080/uploads/20240911/023521_test.jpg",
-                        "mockupBack" => "http://14.225.253.89:8080/uploads/20240911/023521_test.jpg",
-                        "printAreaLeft" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                        "printAreaRight" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                        "printAreaNeck" => 'http://14.225.253.89:8080/uploads/20240911/023521_test.jpg',
-                        "customNote" => "Color mode: RGBA"
+                        "printAreaFront" => $linkFront,
+                        "printAreaBack" => $linkBack,
+                        "mockupFront" => $linkMockupFront,
+                        "mockupBack" => $linkMockupBack,
+                        "printAreaLeft" => $linkLeft,
+                        "printAreaRight" => $linkRight,
+                        "printAreaNeck" => $linkNeck,
+                        "customNote" => $order->personalization
                         ]
                     ]
                 ];
@@ -356,89 +267,6 @@ class OrderController extends BaseController
         }
     }
 
-    public function fetchMailOrder()
-    {
-        try {
-            $client = \Webklex\IMAP\Facades\Client::account('default');
-            $client->connect();
-
-            $inbox = $client->getFolder('INBOX');
-            // $today = Carbon::now()->startOfMonth(); 
-            // dd($today);
-
-            $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
-            
-            $list_data = [];
-            if (count($messages) > 0) {
-                foreach ($messages as $message) {
-                    // Trích xuất thông tin từ email
-                    $subject = $message->getSubject();
-                    $from = $message->getFrom()[0]->mail;
-                    $date = $message->getDate();
-                    
-                    $emailBody = $this->removeLinks($message->getTextBody());
-                    $emailHtml = $message->getHTMLBody();
-                    $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
-                    $thumb = $this->extractInfo($thumbRegex, $emailHtml);
-
-                    $patterns = [
-                        'orderNumber' => '/Your order number is:\s*(.*)/',
-                        'shippingAddress' => '/Shipping address \*(.*?)\*/s',
-                        'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nSize:|\nColors:|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
-                        'size' => '/Size:\s*(.*)/',
-                        'color' => '/Colors:\s*(.*)/',
-                        'personalization' => '/Personalization:\s*(.*)/',
-                        'shop' => '/Shop:\s*(.*)/',
-                        'transactionID' => '/Transaction ID:\s*(\d+)/',
-                        'quantity' => '/Quantity:\s*(\d+)/',
-                        'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'itemTotal' => '/Item total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'discount' => '/Discount:\s*- (?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'subtotal' => '/Subtotal:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'shipping' => '/Shipping:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'salesTax' => '/Sales tax:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'orderTotal' => '/Order total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/'
-                    ];
-            
-                    $data = [];
-                    foreach ($patterns as $key => $pattern) {
-                        if ($key === 'shippingAddress' || $key === 'product') {
-                            $data[$key] = $this->extractInfo($pattern, $emailBody, true);
-                        } else {
-                            $data[$key] = $this->extractInfo($pattern, $emailBody);
-                        }
-                        
-                    }
-                    $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
-                    $data['product'] = str_replace('<', '', $data['product']);
-                    $data['thumb'] = $thumb;
-                    $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
-                    $list_data[] = $data;
-
-                }
-                $this->getInformationProduct($list_data);
-                
-                
-                return $this->sendSuccess('clone order ok');
-            } 
-        } catch (\Throwable $th) {
-            dd($th);
-            // Log::error('Connection setup failed: ' . $th->getMessage());
-        }
-    }
-
-    private function extractInfo($pattern, $body, $singleLine = false)
-    {
-        $options = $singleLine ? 's' : '';
-        preg_match($pattern, $body, $matches);
-        return $matches[1] ?? 'N/A';
-    }
-
-    private function removeLinks($body)
-    {
-        return preg_replace('/http[^\s]+/', '', $body);
-    }
-
     public function getOrderDB(Request $req) 
     {
         try {
@@ -454,10 +282,10 @@ class OrderController extends BaseController
                 'shops.name as shop_name',
                 'orders.id as order_id',
             ];
-            $blueprints = DB::table('blueprints')
-                        ->where('name', 'LIKE', '%tee%')
-                        ->select('blueprint_id as value', 'name as label')
-                        ->limit(20)
+            $blueprints = DB::table('key_blueprints')
+                        ->leftJoin('blueprints', 'key_blueprints.printify', '=', 'blueprints.name')
+                        ->select('blueprints.blueprint_id as value', 'key_blueprints.printify as label')->distinct()
+                        ->where('key_blueprints.printify', '!=', null)
                         ->get();
 
             $orders = $this->orderRepository->index($params, $columns);
