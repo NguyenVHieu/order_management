@@ -428,7 +428,8 @@ class OrderController extends BaseController
                 if (!empty($data)) {
                     $size = isset($data->size) ? $data->size : null;
                     $color = isset($data->color) ? $data->color : null;
-                    $variant_id = $this->getVariantId($data->blueprint_id, $print_provider_id, $size, $color);
+                    $blueprint_id = $order['blueprint_id'] ?? $data->blueprint_id;
+                    $variant_id = $this->getVariantId($blueprint_id, $print_provider_id, $size, $color);
 
                     if (!$variant_id) {
                         DB::rollBack();
