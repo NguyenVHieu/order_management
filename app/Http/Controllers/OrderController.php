@@ -231,9 +231,9 @@ class OrderController extends BaseController
                         "printAreaBack" => $order->img_2,
                         "mockupFront" => $order->img_6,
                         "mockupBack" => $order->img_7, 
-                        "printAreaLeft" => $order->img_3 ?? '',
-                        "printAreaRight" => $order->img_4 ?? '',
-                        "printAreaNeck" => $order->img_5 ?? '',
+                        // "printAreaLeft" => $order->img_3 ?? '',
+                        // "printAreaRight" => $order->img_4 ?? '',
+                        // "printAreaNeck" => $order->img_5 ?? '',
                         ]
                     ]
                 ];
@@ -401,13 +401,6 @@ class OrderController extends BaseController
             DB::beginTransaction();
             $orders = $request['orders'];
             foreach ($orders as $order) {
-                $img_1 = isset($order->r_img_1) ? $this->saveImgeSku($order->r_img_1) : null;
-                $img_2 = isset($order->r_img_2) ? $this->saveImgeSku($order->r_img_2) : null;
-                $img_3 = isset($order->r_img_3) ? $this->saveImgeSku($order->r_img_3) : null;
-                $img_4 = isset($order->r_img_4) ? $this->saveImgeSku($order->r_img_4) : null;
-                $img_5 = isset($order->r_img_5) ? $this->saveImgeSku($order->r_img_5) : null;
-                $img_6 = isset($order->r_img_6) ? $this->saveImgeSku($order->r_img_6) : null;
-                $img_7 = isset($order->r_img_7) ? $this->saveImgeSku($order->r_img_7) : null;
 
                 $print_provider_id = $order['print_provider_id'];
                 $data = Order::find($order['id']);
@@ -424,13 +417,6 @@ class OrderController extends BaseController
                     }
 
                     $data = [
-                        'img_1' => $img_1,
-                        'img_2' => $img_2,
-                        'img_3' => $img_3,
-                        'img_4' => $img_4,
-                        'img_5' => $img_5,
-                        'img_6' => $img_6,
-                        'img_7' => $img_7,
                         'variant_id' => $variant_id,
                         'print_provider_id' => $print_provider_id,
                         'approval_by' => Auth::user()->id,
@@ -495,5 +481,40 @@ class OrderController extends BaseController
 
         return $variant_id;
         
+    }
+
+    public function saveImgOrder(Request $request)
+    {
+        try {
+            $img_1 = isset($request->r_img_1) ? $this->saveImgeSku($request->r_img_1) : null;
+            $img_2 = isset($request->r_img_2) ? $this->saveImgeSku($request->r_img_2) : null;
+            $img_3 = isset($request->r_img_3) ? $this->saveImgeSku($request->r_img_3) : null;
+            $img_4 = isset($request->r_img_4) ? $this->saveImgeSku($request->r_img_4) : null;
+            $img_5 = isset($request->r_img_5) ? $this->saveImgeSku($request->r_img_5) : null;
+            $img_6 = isset($request->r_img_6) ? $this->saveImgeSku($request->r_img_6) : null;
+            $img_7 = isset($request->r_img_7) ? $this->saveImgeSku($request->r_img_7) : null;
+
+            $data = [
+                'img_1' => $img_1,
+                'img_2' => $img_2,
+                'img_3' => $img_3,
+                'img_4' => $img_4,
+                'img_5' => $img_5,
+                'img_6' => $img_6,
+                'img_7' => $img_7
+            ];
+            $order = DB::table('orders')->where('id', $request->id)->first();
+
+            if (!$order) {
+                return $this->sendError('Không tìm thấy order', 404);
+            }
+
+            DB::table('orders')->where('id', $request->id)->update($data);
+            return $this->sendSuccess('ok');
+        } catch (\Throwable $th) {
+            return $this->sendError('error'. $th->getMessage(), 500);
+        }
+        
+
     }
 }
