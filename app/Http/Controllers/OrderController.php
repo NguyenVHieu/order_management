@@ -411,7 +411,6 @@ class OrderController extends BaseController
                     $color = isset($data->color) ? $data->color : null;
                     $blueprint_id = $order['blueprint_id'] ?? $data->blueprint_id;
                     $variant_id = $this->getVariantId($blueprint_id, $print_provider_id, $size, $color);
-
                     if (!$variant_id) {
                         DB::rollBack();
                         return $this->sendError('Không tìm thể variant ở order'. $order->order_number);
@@ -420,6 +419,7 @@ class OrderController extends BaseController
                     $data = [
                         'variant_id' => $variant_id,
                         'print_provider_id' => $print_provider_id,
+                        'is_approval' => true,
                         'approval_by' => Auth::user()->id,
                     ];
 
