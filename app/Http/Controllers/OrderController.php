@@ -468,19 +468,29 @@ class OrderController extends BaseController
             $title = str_replace('″', '"', $variant['title']);
             $size = str_replace('″', '"', $size);
             $color = str_replace('″', '"', $color);
+            // dd($title, $size, $color);
             if ($color != null) {
-                $result = stripos($title, ' / '.$color) !== false || stripos($title, $color.' / ') !== false;
+                $resultColor = stripos($title, ' / '.$color) !== false || stripos($title, $color.' / ') !== false;
             }
 
             if ($size != null) {
-                $result = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false;
+                $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false;
             }
+
+            if ($resultColor && $resultSize) {
+                return $variant;
+            } else {
+                return false;
+            }
+
             
-            return $result;
         });
 
-        if (!empty($matchedVariant)) {
-            $variant_id = $matchedVariant[0]['id'];
+        $variant = array_values($matchedVariant);
+
+        if (!empty($variant)) {
+
+            $variant_id = $variant[0]['id'];
         }
 
         return $variant_id;
