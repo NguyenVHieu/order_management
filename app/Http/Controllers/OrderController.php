@@ -186,7 +186,7 @@ class OrderController extends BaseController
             $orders = $request['orders'];
             foreach($orders as $data) 
             {
-                $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                $order = DB::table('orders')->where('id', $data)->first();
 
                 if (!empty($order->img_1) && !empty($order->img_2)) {
                     $prodNum = 2;
