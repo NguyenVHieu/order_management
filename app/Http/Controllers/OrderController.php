@@ -361,8 +361,8 @@ class OrderController extends BaseController
             $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
 
             return $url;
-        } catch (\Throwable $th) {
-            return $this->sendError('error'. $th->getMessage(), 500);
+        } catch (\Exception $ex) {
+            return $this->sendError('error'. $ex->getMessage(), 500);
         }
         
     }
@@ -391,6 +391,7 @@ class OrderController extends BaseController
             DB::table('blueprints')->insert($data_save);
             return $this->sendSuccess('ok');
         } else {
+            
             return $this->sendError('error', $response->getStatusCode());
         }
     }
