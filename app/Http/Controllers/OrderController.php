@@ -41,13 +41,15 @@ class OrderController extends BaseController
             if (!empty($orders)) {
                 foreach ($orders as $data)
                 {
-                    $provider_id = $data['print_provider_id'];
+                    
 
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                    $provider_id = $data['print_provider_id'];
+                    $blueprint_id = isset($data['blueprint_id']) ? $data['blueprint_id'] : $order->blueprint_id;
                     $order_number = $order->order_number ?? 0;
                     $key_order_number = $order_number. time();
 
-                    $variant_id = $this->getVariantId($order->blueprint_id, $provider_id, $order->size, $order->color);
+                    $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
                     if ($variant_id == 0) {
                         return $this->sendError('Không tìm thấy biến thể ở order'. $order->order_number);
                     }
@@ -58,7 +60,7 @@ class OrderController extends BaseController
                         "line_items" => [
                         [
                             "print_provider_id" => $provider_id,
-                            "blueprint_id" => $order->blueprint_id,
+                            "blueprint_id" => $blueprint_id,
                             "variant_id" => $variant_id,
                             "print_areas" => [
                                 "front" => $order->img_1,
