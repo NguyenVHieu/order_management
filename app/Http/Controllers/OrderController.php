@@ -400,7 +400,7 @@ class OrderController extends BaseController
     {
         try {
             DB::beginTransaction();
-            $orders = $request['orders'];
+            $orders = $request->orders;
             foreach ($orders as $order) {
 
                 $print_provider_id = $order['print_provider_id'];
