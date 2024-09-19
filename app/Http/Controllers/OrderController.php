@@ -414,13 +414,13 @@ class OrderController extends BaseController
             DB::beginTransaction();
             $orders = $request['orders'];
             foreach ($orders as $order) {
-                $img_1 = isset($order->img_1) ? $this->saveImgeSku($order->img_1) : null;
-                $img_2 = isset($order->img_2) ? $this->saveImgeSku($order->img_2) : null;
-                $img_3 = isset($order->img_3) ? $this->saveImgeSku($order->img_3) : null;
-                $img_4 = isset($order->img_4) ? $this->saveImgeSku($order->img_4) : null;
-                $img_5 = isset($order->img_5) ? $this->saveImgeSku($order->img_5) : null;
-                $img_6 = isset($order->img_6) ? $this->saveImgeSku($order->img_6) : null;
-                $img_7 = isset($order->img_7) ? $this->saveImgeSku($order->img_7) : null;
+                $img_1 = isset($order->r_img_1) ? $this->saveImgeSku($order->r_img_1) : null;
+                $img_2 = isset($order->r_img_2) ? $this->saveImgeSku($order->r_img_2) : null;
+                $img_3 = isset($order->r_img_3) ? $this->saveImgeSku($order->r_img_3) : null;
+                $img_4 = isset($order->r_img_4) ? $this->saveImgeSku($order->r_img_4) : null;
+                $img_5 = isset($order->r_img_5) ? $this->saveImgeSku($order->r_img_5) : null;
+                $img_6 = isset($order->r_img_6) ? $this->saveImgeSku($order->r_img_6) : null;
+                $img_7 = isset($order->r_img_7) ? $this->saveImgeSku($order->r_img_7) : null;
 
                 $print_provider_id = $order['print_provider_id'];
                 $data = Order::find($order['id']);
