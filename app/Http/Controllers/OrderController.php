@@ -111,9 +111,7 @@ class OrderController extends BaseController
             if (!empty($orders)) {
                 foreach ($orders as $data)
                 {
-                    $urlThumb = $this->saveImgeSku($data['thumb']);
-                    $urlFront = $this->saveImgeSku($data['front']);
-                    $order = DB::table('orders')->select('*')->first();
+                    $order = DB::table('orders')->where('id', $data)->select('*')->first();
    
                     $orderData = [
                         "order_id" => $order->order_number. time(),
@@ -137,8 +135,8 @@ class OrderController extends BaseController
                                 "quantity" => $order->quantity,
                                 "price" => $order->price,
                                 "currency" => "USD",
-                                "image" => $urlThumb,
-                                "design_front" => $urlFront,
+                                "image" => $order->img_6,
+                                "design_front" => $order->img_1,
                             ]
                         ]
                     ];
