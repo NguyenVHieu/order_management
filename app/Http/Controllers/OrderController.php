@@ -37,22 +37,29 @@ class OrderController extends BaseController
     function pushOrderToPrintify($request) {
         try {
             $results = [];
-            $orders = $request['orders'];
+            $orders = $request->orders;
             if (!empty($orders)) {
                 foreach ($orders as $data)
                 {
+                    $provider_id = $data['print_provider_id'];
+
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
                     $order_number = $order->order_number ?? 0;
                     $key_order_number = $order_number. time();
+
+                    $variant_id = $this->getVariantId($order->blueprint_id, $provider_id, $order->size, $order->color);
+                    if ($variant_id == 0) {
+                        return $this->sendError('Không tìm thấy biến thể ở order'. $order->order_number);
+                    }
 
                     $orderData = [
                         "external_id" => "order_sku_" . $key_order_number,
                         "label" => "order_sku_" . $key_order_number,
                         "line_items" => [
                         [
-                            "print_provider_id" => $data['print_provider_id'],
+                            "print_provider_id" => $provider_id,
                             "blueprint_id" => $order->blueprint_id,
-                            "variant_id" => $order->variant_id,
+                            "variant_id" => $variant_id,
                             "print_areas" => [
                                 "front" => $order->img_1,
                                 "back" => $order->img_2,
@@ -76,7 +83,7 @@ class OrderController extends BaseController
                     ];
                     
                     $client = new Client();
-                    $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shop_id.'/orders.json', [
+                    $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $this->keyPrintify,
                             'Content-Type'  => 'application/json',
@@ -400,39 +407,43 @@ class OrderController extends BaseController
     {
         try {
             DB::beginTransaction();
-            $orders = $request->all();
-            foreach ($orders as $order) {
+            $ids = $request->ids;
+            $type = $request->type ?? 0;
+            foreach ($ids as $id) {
 
-                $print_provider_id = $order['print_provider_id'];
-                $data = Order::find($order['id']);
+                // $print_provider_id = $order['print_provider_id'];
+                $data = Order::find($id);
 
                 if (!empty($data)) {
-                    $size = isset($data->size) ? $data->size : null;
-                    $color = isset($data->color) ? $data->color : null;
-                    $blueprint_id = $order['blueprint_id'] ?? $data->blueprint_id;
-                    $variant_id = $this->getVariantId($blueprint_id, $print_provider_id, $size, $color);
-                    if (!$variant_id) {
-                        DB::rollBack();
-                        return $this->sendError('Không tìm thể variant ở order'. $order->order_number);
+                    // $size = isset($data->size) ? $data->size : null;
+                    // $color = isset($data->color) ? $data->color : null;
+                    // $blueprint_id = $order['blueprint_id'] ?? $data->blueprint_id;
+                    // $variant_id = $this->getVariantId($blueprint_id, $print_provider_id, $size, $color);
+                    // if (!$variant_id) {
+                    //     DB::rollBack();
+                    //     return $this->sendError('Không tìm thể variant ở order'. $order->order_number);
+                    // }
+                    if ($type == 1) {
+                        $columns = [
+                            // 'variant_id' => $variant_id,
+                            // 'print_provider_id' => $print_provider_id,
+                            'is_approval' => true,
+                            'approval_by' => Auth::user()->id,
+                        ];
+                    } else {
+                        $columns['is_approval'] = false;
                     }
-
-                    $data = [
-                        'variant_id' => $variant_id,
-                        'print_provider_id' => $print_provider_id,
-                        'is_approval' => true,
-                        'approval_by' => Auth::user()->id,
-                    ];
-
-                    DB::table('orders')->where('id', $order['id'])->update($data);
+                    
+                    DB::table('orders')->where('id', $id)->update($columns);
                     
                 } else {
                     DB::rollBack();
                     return $this->sendError('Không tìm thấy order', 404);
                 }
-                DB::commit();
-                return $this->sendSuccess('Approval ok');
-
             }
+
+            DB::commit();
+            return $this->sendSuccess('Success');
         } catch (\Throwable $th) {
             dd($th);
             DB::rollBack();
@@ -478,6 +489,8 @@ class OrderController extends BaseController
         if (!empty($variant)) {
 
             $variant_id = $variant[0]['id'];
+        }else {
+            $variant_id = 0;
         }
 
         return $variant_id;
