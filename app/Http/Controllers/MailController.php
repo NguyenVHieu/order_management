@@ -74,6 +74,7 @@ class MailController extends BaseController
     public function fetchMailOrder()
     {
         try {
+            Helper::trackingInfo('fetchMailOrder start at ' . now());
             $client = \Webklex\IMAP\Facades\Client::account('default');
             $client->connect();
 
@@ -141,7 +142,7 @@ class MailController extends BaseController
                 }
 
                 $this->getInformationProduct($list_data);
-                
+                Helper::trackingInfo('fetchMailOrder end at ' . now());
                 return $this->sendSuccess('clone order ok');
             } 
         } catch (\Throwable $th) {

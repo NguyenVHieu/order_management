@@ -44,8 +44,6 @@ class OrderController extends BaseController
                     $order = DB::table('orders')->where('id', $data['order_id'])->first();
                     $order_number = $order->order_number ?? 0;
                     $key_order_number = $order_number. time();
-                    $linkFront = $this->saveImgeSku($data['1']);
-                    $linkBack = $this->saveImgeSku($data['2']);
 
                     $orderData = [
                         "external_id" => "order_sku_" . $key_order_number,
@@ -56,8 +54,8 @@ class OrderController extends BaseController
                             "blueprint_id" => $order->blueprint_id,
                             "variant_id" => $order->variant_id,
                             "print_areas" => [
-                                "front" => $linkFront,
-                                "back" => $linkBack,
+                                "front" => $order->img_1,
+                                "back" => $order->img_2,
                             ],
                             "quantity" => $order->quantity
                         ]
@@ -88,10 +86,7 @@ class OrderController extends BaseController
             
                     if ($response->getStatusCode() === 200) {
                         $data = [
-                            'print_provider_id' => $data['print_provider_id'], 
                             'is_push' => '1',
-                            '1' => $linkFront,
-                            '2' => $linkBack,
                         ];
                         DB::table('orders')->where('id', $order->id)->update($data);
                         $results[$order->order_number] = 'success';
@@ -191,18 +186,9 @@ class OrderController extends BaseController
             $orders = $request['orders'];
             foreach($orders as $data) 
             {
-                $linkFront = $this->saveImgeSku($data['1']);
-                $linkBack = $this->saveImgeSku($data['2']);
-                $linkLeft = $this->saveImgeSku($data['3']);
-                $linkRight = $this->saveImgeSku($data['4']);
-                $linkNeck = $this->saveImgeSku($data['5']);
-                $linkMockupFront = $this->saveImgeSku($data['6']);
-                $linkMockupBack = $this->saveImgeSku($data['7']);
-
-
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
 
-                if (!empty($linkFront) && !empty($linkBack)) {
+                if (!empty($order->img_1) && !empty($order->img_2)) {
                     $prodNum = 2;
                 }else {
                     $prodNum = 1;
@@ -221,6 +207,10 @@ class OrderController extends BaseController
                     ],
                 ]);
                 $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
+                if (empty($resSkuConvert['data'])) {
+                    return $this->sendError('Không tìm thấy sku');
+                }
+
                 $variantId = $resSkuConvert['data'][0]['variantId'];
 
                 $orderData = [
@@ -230,7 +220,7 @@ class OrderController extends BaseController
                         "firstName" => $order->first_name,
                         "lastName" => $order->last_name,
                         "countryCode" => "US",
-                        "provinceCode" => "AL",
+                        "provinceCode" => $order->state,
                         "addressLine1" => $order->address,
                         "city" => $order->city,
                         "zipcode" => $order->zip,
@@ -239,14 +229,13 @@ class OrderController extends BaseController
                         [
                         "variantId" => $variantId,
                         "quantity" => 1,
-                        "printAreaFront" => $linkFront,
-                        "printAreaBack" => $linkBack,
-                        "mockupFront" => $linkMockupFront,
-                        "mockupBack" => $linkMockupBack,
-                        "printAreaLeft" => $linkLeft,
-                        "printAreaRight" => $linkRight,
-                        "printAreaNeck" => $linkNeck,
-                        "customNote" => $order->personalization
+                        "printAreaFront" => $order->img_1,
+                        "printAreaBack" => $order->img_2,
+                        "mockupFront" => $order->img_6,
+                        "mockupBack" => $order->img_7, 
+                        "printAreaLeft" => $order->img_3 ?? '',
+                        "printAreaRight" => $order->img_4 ?? '',
+                        "printAreaNeck" => $order->img_5 ?? '',
                         ]
                     ]
                 ];
@@ -482,11 +471,11 @@ class OrderController extends BaseController
             $size = str_replace('″', '"', $size);
             $color = str_replace('″', '"', $color);
             if ($color != null) {
-                $result = stripos($title, $color) !== false;
+                $result = stripos($title, ' / '.$color) !== false || stripos($title, $color.' / ') !== false;
             }
 
             if ($size != null) {
-                $result = stripos($title, $size) !== false;
+                $result = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false;
             }
             
             return $result;

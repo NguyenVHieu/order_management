@@ -127,6 +127,20 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'track_error' => [
+            'driver' => 'daily',
+            'level' => 'error',
+            'days' => 365,
+            'path' => storage_path('logs/error_log.log'),
+        ],
+
+        'track_info' => [
+            'driver' => 'daily',
+            'level' => 'info',
+            'days' => 365,
+            'path' => storage_path('logs/info_log.log'),
+        ],
+
     ],
 
 ];
