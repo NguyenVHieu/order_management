@@ -94,13 +94,23 @@ class OrderController extends BaseController
                     ],
                     'json' => $orderData // Gửi dữ liệu đơn hàng
                 ]);        
+                // $order_success = json_decode($response->getBody()->getContents(), true);
         
                 if ($response->getStatusCode() === 200) {
+                    // $orderSucess = $client->get($this->baseUrlPrintify.'shops/18002634/orders/'.$order_success['id'].'.json', [
+                    //     'headers' => [
+                    //         'Authorization' => 'Bearer ' . $this->keyPrintify,
+                    //         'Content-Type'  => 'application/json',
+                    //     ],
+                    // ]);   
+                    // $resOrderSuccess = json_decode($orderSucess->getBody()->getContents(), true);
+
                     $data = [
                         'is_push' => '1',
                         'print_provider_id' => $provider_id,
                         'blueprint_id' => $blueprint_id,
-                        'variant_id' => $variant_id,
+                        'variant_id' => $variant_id
+                        // 'status_order' => $resOrderSuccess['status'] ?? '', 
                     ];
                     DB::table('orders')->where('id', $order->id)->update($data);
                     $results[$order->order_number] = 'success';
@@ -531,4 +541,5 @@ class OrderController extends BaseController
         
 
     }
+
 }
