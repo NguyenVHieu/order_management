@@ -50,12 +50,12 @@ class OrderController extends BaseController
                     $key_order_number = $order_number. time();
 
                     if (empty($order->size) && empty($order->color)) {
-                        return $this->sendError('Không tìm thấy size và color ở order'. $order->order_number);
+                        return $this->sendError('Không tìm thấy size và color ở order'. $order->order_number, 500);
                     }
 
                     $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
                     if ($variant_id == 0) {
-                        return $this->sendError('Không tìm thấy biến thể ở order'. $order->order_number);
+                        return $this->sendError('Không tìm thấy biến thể ở order'. $order->order_number, 500);
                     }
 
                     $orderData = [
