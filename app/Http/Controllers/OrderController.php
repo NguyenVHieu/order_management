@@ -49,6 +49,10 @@ class OrderController extends BaseController
                     $order_number = $order->order_number ?? 0;
                     $key_order_number = $order_number. time();
 
+                    if (empty($order->size) && empty($order->color)) {
+                        return $this->sendError('Không tìm thấy size và color ở order'. $order->order_number);
+                    }
+
                     $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
                     if ($variant_id == 0) {
                         return $this->sendError('Không tìm thấy biến thể ở order'. $order->order_number);
@@ -468,7 +472,9 @@ class OrderController extends BaseController
             $title = str_replace('″', '"', $variant['title']);
             $size = str_replace('″', '"', $size);
             $color = str_replace('″', '"', $color);
-            // dd($title, $size, $color);
+            $resultColor = true;
+            $resultSize = true;
+
             if ($color != null) {
                 $resultColor = stripos($title, ' / '.$color) !== false || stripos($title, $color.' / ') !== false;
             }
