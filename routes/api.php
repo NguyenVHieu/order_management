@@ -53,4 +53,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::controller(WebhookController::class)->group(function(){
     Route::get('/update-status-order', 'updateStatusOrder');
+    Route::get('/create_order', 'createOrder');
+    
 });

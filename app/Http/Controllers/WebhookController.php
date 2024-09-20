@@ -17,4 +17,13 @@ class WebhookController extends BaseController
             dd($th);
         }
     }
+
+    public function createOrder(Request $request)
+    {
+        try {
+            Helper::trackingInfo('body create webhook:' . json_encode($request->all()));
+        } catch (\Throwable $th) {
+            dd($th);
+        }
+    }
 }
