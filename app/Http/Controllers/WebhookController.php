@@ -12,10 +12,9 @@ class WebhookController extends BaseController
     public function updateStatusOrder(Request $request)
     {
         try {
-            dd(67);
-            Helper::trackingInfo('body webhook' . $request->all());
+            Helper::trackingInfo('body webhook:' . json_encode($request->all()));
         } catch (\Throwable $th) {
-           
+            dd($th);
         }
     }
 }
