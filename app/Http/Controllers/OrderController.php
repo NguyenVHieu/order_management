@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use App\Models\Order;
 use App\Models\Shop;
 use App\Repositories\OrderRepository;
+use Exception;
 
 class OrderController extends BaseController
 {
@@ -35,243 +36,233 @@ class OrderController extends BaseController
     }
 
     function pushOrderToPrintify($request) {
-        try {
-            $results = [];
-            $orders = $request->orders;
-            if (!empty($orders)) {
-                foreach ($orders as $data)
-                {
-                    
-
-                    $order = DB::table('orders')->where('id', $data['order_id'])->first();
-                    $provider_id = $data['print_provider_id'];
-                    $blueprint_id = isset($data['blueprint_id']) ? $data['blueprint_id'] : $order->blueprint_id;
-                    $order_number = $order->order_number ?? 0;
-                    $key_order_number = $order_number. time();
-
-                    if (empty($order->size) && empty($order->color)) {
-                        return $this->sendError('Không tìm thấy size và color ở order'. $order->order_number, 500);
-                    }
-
-                    $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
-                    if ($variant_id == 0) {
-                        return $this->sendError('Không tìm thấy biến thể ở order'. $order->order_number, 500);
-                    }
-
-                    $orderData = [
-                        "external_id" => "order_sku_" . $key_order_number,
-                        "label" => "order_sku_" . $key_order_number,
-                        "line_items" => [
-                        [
-                            "print_provider_id" => $provider_id,
-                            "blueprint_id" => $blueprint_id,
-                            "variant_id" => $variant_id,
-                            "print_areas" => [
-                                "front" => $order->img_1,
-                                "back" => $order->img_2,
-                            ],
-                            "quantity" => $order->quantity
-                        ]
-                        ],
-                        "shipping_method" => 1,
-                        "is_printify_express" => false,
-                        "is_economy_shipping" => false,
-                        "send_shipping_notification" => false,
-                        "address_to" => [
-                        "first_name" => $order->first_name,
-                        "last_name" => $order->last_name,
-                        "country" => "BE",
-                        "region" => "",
-                        "address1" => $order->address,
-                        "city" => $order->city,
-                        // "zip" => $order->zip
-                        ]
-                    ];
-                    
-                    $client = new Client();
-                    $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $this->keyPrintify,
-                            'Content-Type'  => 'application/json',
-                        ],
-                        'json' => $orderData // Gửi dữ liệu đơn hàng
-                    ]);        
-            
-                    if ($response->getStatusCode() === 200) {
-                        $data = [
-                            'is_push' => '1',
-                        ];
-                        DB::table('orders')->where('id', $order->id)->update($data);
-                        $results[$order->order_number] = 'success';
-                    } else {
-                        $results[$order->order_number] = 'failed';
-                    }
-                }
-                return $results;
-            }
-        } catch (\Throwable $th) {
-            dd($th);
-            return $this->sendError('error', $th->getMessage());
-        }
-    }
-
-    function pushOrderToMerchize($request) 
-    {
-        try {
-            $results = [];
-            $client = new Client();
-            $orders = $request['orders'];
-            if (!empty($orders)) {
-                foreach ($orders as $data)
-                {
-                    $order = DB::table('orders')->where('id', $data)->select('*')->first();
-   
-                    $orderData = [
-                        "order_id" => $order->order_number. time(),
-                        "identifier" => $order->order_number. time(),
-                        "shipping_info" => [
-                            "full_name" => $order->first_name . "" . $order->last_name,
-                            "address_1" => $order->address,
-                            "address_2" => "",
-                            "city" => $order->city,
-                            "state" => $order->state,
-                            "postcode" => $order->zip,
-                            "country" => $order->country,
-                            // "email" => "customer@example.com",
-                            // "phone" => "0123456789"
-                        ],
-                        "items" => [
-                            [
-                                "name" => "Example product",
-                                // "product_id" => $order->product_id,
-                                "merchize_sku" => "CSWSVN000000EA12",
-                                "quantity" => $order->quantity,
-                                "price" => $order->price,
-                                "currency" => "USD",
-                                "image" => $order->img_6,
-                                "design_front" => $order->img_1,
-                            ]
-                        ]
-                    ];
-                 
-                    $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $this->keyMechize,
-                            'Content-Type'  => 'application/json',
-                        ],
-                        'json' => $orderData // Gửi dữ liệu đơn hàng
-                    ]);
-                    
-                    if ($response->getStatusCode() === 200) {
-                        $results[$order->order_number] = 'success';
-                    } else {
-                        $results[$order->order_number] = 'failed';
-                    }
-
-                    return $results;
-                }
-            }
-        } catch (\Throwable $th) {
-            return $this->sendError('error'. $th->getMessage(), 500);
-        }
-        
-    }
-
-    function pushOrderToPrivate($request) 
-    {
-        try {
-            $results = [];
-            $client = new Client();
-            $resLogin = $client->post($this->baseUrlPrivate. '/login', [
-                'headers' => [
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => [
-                    'email' => 'lehanhhong2294@gmail.com',
-                    'password' => 'cacc6dd0'
-                ] // Gửi dữ liệu đơn hàng
-            ]);
-            $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
-            $token = $resLoginConvert['accessToken'];
-
-            $orders = $request['orders'];
-            foreach($orders as $data) 
+        $results = [];
+        $orders = $request->orders;
+        if (!empty($orders)) {
+            foreach ($orders as $data)
             {
-                $order = DB::table('orders')->where('id', $data)->first();
+                $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                $provider_id = $data['print_provider_id'];
+                $blueprint_id = isset($data['blueprint_id']) ? $data['blueprint_id'] : $order->blueprint_id;
+                $order_number = $order->order_number ?? 0;
+                $key_order_number = $order_number. time();
 
-                if (!empty($order->img_1) && !empty($order->img_2)) {
-                    $prodNum = 2;
-                }else {
-                    $prodNum = 1;
+                if (empty($order->size) && empty($order->color)) {
+                    throw new \Exception('Không tìm thấy size và color ở order'. $order->order_number);
                 }
 
-                $resSku = $client->get($this->baseUrlPrivate. '/sku', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $token,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'query' => [
-                        'prodType' => 'HOODIE',
-                        'prodSize' => str_replace("\r", "", trim($order->size)),
-                        'prodNum' => $prodNum,
-                        'prodColor' => $order->color,
-                    ],
-                ]);
-                $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
-                if (empty($resSkuConvert['data'])) {
-                    return $this->sendError('Không tìm thấy sku');
+                $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
+                if ($variant_id == 0) {
+                    throw new \Exception('Không tìm thấy biến thể ở order ' . $order->order_number);
                 }
-
-                $variantId = $resSkuConvert['data'][0]['variantId'];
 
                 $orderData = [
-                    "order" => [
-                        "orderId" => $order->order_number. time(),
-                        "shippingMethod" => "STANDARD",
-                        "firstName" => $order->first_name,
-                        "lastName" => $order->last_name,
-                        "countryCode" => "US",
-                        "provinceCode" => $order->state,
-                        "addressLine1" => $order->address,
-                        "city" => $order->city,
-                        "zipcode" => $order->zip,
+                    "external_id" => "order_sku_" . $key_order_number,
+                    "label" => "order_sku_" . $key_order_number,
+                    "line_items" => [
+                    [
+                        "print_provider_id" => $provider_id,
+                        "blueprint_id" => $blueprint_id,
+                        "variant_id" => $variant_id,
+                        "print_areas" => [
+                            "front" => $order->img_1,
+                            "back" => $order->img_2,
+                        ],
+                        "quantity" => $order->quantity
+                    ]
                     ],
-                    "product" => [
-                        [
-                        "variantId" => $variantId,
-                        "quantity" => 1,
-                        "printAreaFront" => $order->img_1,
-                        "printAreaBack" => $order->img_2,
-                        "mockupFront" => $order->img_6,
-                        "mockupBack" => $order->img_7, 
-                        // "printAreaLeft" => $order->img_3 ?? '',
-                        // "printAreaRight" => $order->img_4 ?? '',
-                        // "printAreaNeck" => $order->img_5 ?? '',
-                        ]
+                    "shipping_method" => 1,
+                    "is_printify_express" => false,
+                    "is_economy_shipping" => false,
+                    "send_shipping_notification" => false,
+                    "address_to" => [
+                    "first_name" => $order->first_name,
+                    "last_name" => $order->last_name,
+                    "country" => "US",
+                    "region" => "",
+                    "address1" => $order->address,
+                    "city" => $order->city,
+                    "zip" => $order->zip
                     ]
                 ];
-
-                $resOrder = $client->post($this->baseUrlPrivate. '/order', [
+                
+                $client = new Client();
+                $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
                     'headers' => [
-                        'Authorization' => 'Bearer ' . $token,
+                        'Authorization' => 'Bearer ' . $this->keyPrintify,
                         'Content-Type'  => 'application/json',
                     ],
                     'json' => $orderData // Gửi dữ liệu đơn hàng
-                ]);
-
-                if ($resOrder->getStatusCode() === 201) {
+                ]);        
+        
+                if ($response->getStatusCode() === 200) {
+                    $data = [
+                        'is_push' => '1',
+                        'print_provider_id' => $provider_id,
+                        'blueprint_id' => $blueprint_id,
+                        'variant_id' => $variant_id,
+                    ];
+                    DB::table('orders')->where('id', $order->id)->update($data);
                     $results[$order->order_number] = 'success';
                 } else {
                     $results[$order->order_number] = 'failed';
                 }
             }
-            
-            return $results;    
-
-        } catch (\Throwable $th) {
-            dd($th);
-            return $this->sendError('error'. $th->getMessage(), 500);
+            return $results;
         }
+        
+    }
+
+    function pushOrderToMerchize($request) 
+    {
+        $results = [];
+        $client = new Client();
+        $orders = $request['orders'];
+        if (!empty($orders)) {
+            foreach ($orders as $data)
+            {
+                $order = DB::table('orders')->where('id', $data)->select('*')->first();
+
+                $orderData = [
+                    "order_id" => $order->order_number. time(),
+                    "identifier" => $order->order_number. time(),
+                    "shipping_info" => [
+                        "full_name" => $order->first_name . "" . $order->last_name,
+                        "address_1" => $order->address,
+                        "address_2" => "",
+                        "city" => $order->city,
+                        "state" => $order->state,
+                        "postcode" => $order->zip,
+                        "country" => $order->country,
+                        // "email" => "customer@example.com",
+                        // "phone" => "0123456789"
+                    ],
+                    "items" => [
+                        [
+                            "name" => "Example product",
+                            // "product_id" => $order->product_id,
+                            "merchize_sku" => "CSWSVN000000EA12",
+                            "quantity" => $order->quantity,
+                            "price" => $order->price,
+                            "currency" => "USD",
+                            "image" => $order->img_6,
+                            "design_front" => $order->img_1,
+                        ]
+                    ]
+                ];
+                
+                $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->keyMechize,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'json' => $orderData // Gửi dữ liệu đơn hàng
+                ]);
+                
+                if ($response->getStatusCode() === 200) {
+                    $results[$order->order_number] = 'success';
+                } else {
+                    $results[$order->order_number] = 'failed';
+                }
+
+                return $results;
+            }
+        }  
+    }
+
+    function pushOrderToPrivate($request) 
+    {
+        $results = [];
+        $client = new Client();
+        $resLogin = $client->post($this->baseUrlPrivate. '/login', [
+            'headers' => [
+                'Content-Type'  => 'application/json',
+            ],
+            'json' => [
+                'email' => 'lehanhhong2294@gmail.com',
+                'password' => 'cacc6dd0'
+            ] // Gửi dữ liệu đơn hàng
+        ]);
+        $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+        if (empty($resLoginConvert['accessToken'])) {
+            throw new \Exception('Không tìm thấy token');
+        }
+
+        $token = $resLoginConvert['accessToken'];
+
+        $orders = $request['orders'];
+        foreach($orders as $data) 
+        {
+            $order = DB::table('orders')->where('id', $data)->first();
+
+            if (!empty($order->img_1) && !empty($order->img_2)) {
+                $prodNum = 2;
+            }else {
+                $prodNum = 1;
+            }
+
+            $resSku = $client->get($this->baseUrlPrivate. '/sku', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type'  => 'application/json',
+                ],
+                'query' => [
+                    'prodType' => 'HOODIE',
+                    'prodSize' => str_replace("\r", "", trim($order->size)),
+                    'prodNum' => $prodNum,
+                    'prodColor' => $order->color,
+                ],
+            ]);
+            $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
+            if (empty($resSkuConvert['data'])) {
+                throw new \Exception('Không tìm thấy sku ở order'. $order->order_number);
+            }
+
+            $variantId = $resSkuConvert['data'][0]['variantId'];
+
+            $orderData = [
+                "order" => [
+                    "orderId" => $order->order_number. time(),
+                    "shippingMethod" => "STANDARD",
+                    "firstName" => $order->first_name,
+                    "lastName" => $order->last_name,
+                    "countryCode" => "US",
+                    "provinceCode" => $order->state,
+                    "addressLine1" => $order->address,
+                    "city" => $order->city,
+                    "zipcode" => $order->zip,
+                ],
+                "product" => [
+                    [
+                    "variantId" => $variantId,
+                    "quantity" => 1,
+                    "printAreaFront" => $order->img_1,
+                    "printAreaBack" => $order->img_2,
+                    "mockupFront" => $order->img_6,
+                    "mockupBack" => $order->img_7, 
+                    "printAreaLeft" => $order->img_3 ?? '',
+                    "printAreaRight" => $order->img_4 ?? '',
+                    "printAreaNeck" => $order->img_5 ?? '',
+                    ]
+                ]
+            ];
+
+            $resOrder = $client->post($this->baseUrlPrivate. '/order', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => $orderData // Gửi dữ liệu đơn hàng
+            ]);
+
+            if ($resOrder->getStatusCode() === 201) {
+                $results[$order->order_number] = 'success';
+            } else {
+                $results[$order->order_number] = 'failed';
+            }
+        }
+        
+        return $results;    
     }
 
     public function getOrderDB(Request $req) 
@@ -341,20 +332,25 @@ class OrderController extends BaseController
 
     public function pushOrder(Request $request)
     {
-        $placeOrder = $request->place_order;
-        switch ($placeOrder) {
-            case 'printify':
-                $result = $this->pushOrderToPrintify($request);
-                return $this->sendSuccess($result);
-            case 'merchize':
-                $result = $this->pushOrderToMerchize($request);
-                return $this->sendSuccess($result);
-            case 'private':
-                $result = $this->pushOrderToPrivate($request);
-                return $this->sendSuccess($result);
-            default:
-                return $this->sendError('Function not implemented', 500);
+        try {
+            $placeOrder = $request->place_order;
+            switch ($placeOrder) {
+                case 'printify':
+                    $result = $this->pushOrderToPrintify($request);
+                    return $this->sendSuccess($result);
+                case 'merchize':
+                    $result = $this->pushOrderToMerchize($request);
+                    return $this->sendSuccess($result);
+                case 'private':
+                    $result = $this->pushOrderToPrivate($request);
+                    return $this->sendSuccess($result);
+                default:
+                    return $this->sendError('Function not implemented', 500);
+            }
+        } catch (\Throwable $th) {
+            return $this->sendError($th->getMessage(), 500);
         }
+        
     }
 
     public function saveImgeSku($image)
@@ -416,23 +412,10 @@ class OrderController extends BaseController
             $ids = $request->ids;
             $type = $request->type ?? 0;
             foreach ($ids as $id) {
-
-                // $print_provider_id = $order['print_provider_id'];
                 $data = Order::find($id);
-
                 if (!empty($data)) {
-                    // $size = isset($data->size) ? $data->size : null;
-                    // $color = isset($data->color) ? $data->color : null;
-                    // $blueprint_id = $order['blueprint_id'] ?? $data->blueprint_id;
-                    // $variant_id = $this->getVariantId($blueprint_id, $print_provider_id, $size, $color);
-                    // if (!$variant_id) {
-                    //     DB::rollBack();
-                    //     return $this->sendError('Không tìm thể variant ở order'. $order->order_number);
-                    // }
                     if ($type == 1) {
                         $columns = [
-                            // 'variant_id' => $variant_id,
-                            // 'print_provider_id' => $print_provider_id,
                             'is_approval' => true,
                             'approval_by' => Auth::user()->id,
                         ];
