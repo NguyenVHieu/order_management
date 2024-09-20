@@ -75,76 +75,76 @@ class MailController extends BaseController
     {
         try {
             Helper::trackingInfo('fetchMailOrder start at ' . now());
-            $client = \Webklex\IMAP\Facades\Client::account('default');
-            $client->connect();
+            // $client = \Webklex\IMAP\Facades\Client::account('default');
+            // $client->connect();
 
-            $inbox = $client->getFolder('INBOX');
-            // $today = Carbon::now()->startOfMonth(); 
-            // dd($today);
+            // $inbox = $client->getFolder('INBOX');
+            // // $today = Carbon::now()->startOfMonth(); 
+            // // dd($today);
 
-            $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
+            // $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
             
-            $list_data = [];
-            if (count($messages) > 0) {
-                foreach ($messages as $message) {
-                    // Trích xuất thông tin từ email
-                    $subject = $message->getSubject();
-                    $from = $message->getFrom()[0]->mail;
-                    $date = $message->getDate();
+            // $list_data = [];
+            // if (count($messages) > 0) {
+            //     foreach ($messages as $message) {
+            //         // Trích xuất thông tin từ email
+            //         $subject = $message->getSubject();
+            //         $from = $message->getFrom()[0]->mail;
+            //         $date = $message->getDate();
                     
-                    $emailBody = $this->removeLinks($message->getTextBody());
-                    $emailHtml = $message->getHTMLBody();
-                    $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
-                    $thumb = $this->extractInfo($thumbRegex, $emailHtml);
+            //         $emailBody = $this->removeLinks($message->getTextBody());
+            //         $emailHtml = $message->getHTMLBody();
+            //         $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
+            //         $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
-                    $patterns = [
-                        'orderNumber' => '/Your order number is:\s*(.*)/',
-                        'shippingAddress' => '/Shipping address \*(.*?)\*/s',
-                        'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nSize:|\nColors:|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
-                        'size' => '/Size:\s*(.*)/',
-                        'color' => '/Colors:\s*(.*)/',
-                        'personalization' => '/Personalization:\s*(.*)/',
-                        'shop' => '/Shop:\s*(.*)/',
-                        // 'transactionID' => '/Transaction ID:\s*(\d+)/',
-                        'quantity' => '/Quantity:\s*(\d+)/',
-                        'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'itemTotal' => '/Item total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'discount' => '/Discount:\s*- (?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'subtotal' => '/Subtotal:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'shipping' => '/Shipping:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'salesTax' => '/Sales tax:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'orderTotal' => '/Order total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/'
-                    ];
+            //         $patterns = [
+            //             'orderNumber' => '/Your order number is:\s*(.*)/',
+            //             'shippingAddress' => '/Shipping address \*(.*?)\*/s',
+            //             'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nSize:|\nColors:|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
+            //             'size' => '/Size:\s*(.*)/',
+            //             'color' => '/Colors:\s*(.*)/',
+            //             'personalization' => '/Personalization:\s*(.*)/',
+            //             'shop' => '/Shop:\s*(.*)/',
+            //             // 'transactionID' => '/Transaction ID:\s*(\d+)/',
+            //             'quantity' => '/Quantity:\s*(\d+)/',
+            //             'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+            //             'itemTotal' => '/Item total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+            //             'discount' => '/Discount:\s*- (?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+            //             'subtotal' => '/Subtotal:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+            //             'shipping' => '/Shipping:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+            //             'salesTax' => '/Sales tax:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
+            //             'orderTotal' => '/Order total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/'
+            //         ];
             
-                    $data = [];
-                    foreach ($patterns as $key => $pattern) {
+            //         $data = [];
+            //         foreach ($patterns as $key => $pattern) {
 
-                        if ($key === 'shippingAddress' || $key === 'product') {
-                            $data[$key] = $this->extractInfo($pattern, $emailBody, true);
+            //             if ($key === 'shippingAddress' || $key === 'product') {
+            //                 $data[$key] = $this->extractInfo($pattern, $emailBody, true);
                             
-                        } else {
-                            $data[$key] = $this->extractInfo($pattern, $emailBody);
-                            if (is_array($data[$key]) && $key != 'shop') {
-                                $data[$key]  = json_encode(array_values($data[$key]));
-                            }
-                        }
-                        $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
+            //             } else {
+            //                 $data[$key] = $this->extractInfo($pattern, $emailBody);
+            //                 if (is_array($data[$key]) && $key != 'shop') {
+            //                     $data[$key]  = json_encode(array_values($data[$key]));
+            //                 }
+            //             }
+            //             $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
                         
                         
-                    }
-                    $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
-                    $data['product'] = str_replace(['<', "\n"], '', $data['product']);
-                    $data['thumb'] = is_array($thumb) ? json_encode(array_values($thumb)) : $thumb;
-                    $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
-                    $data['shop'] = $data['shop'][0] ?? 'N/A';
-                    $list_data[] = $data;
+            //         }
+            //         $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
+            //         $data['product'] = str_replace(['<', "\n"], '', $data['product']);
+            //         $data['thumb'] = is_array($thumb) ? json_encode(array_values($thumb)) : $thumb;
+            //         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
+            //         $data['shop'] = $data['shop'][0] ?? 'N/A';
+            //         $list_data[] = $data;
 
-                }
+            //     }
 
-                $this->getInformationProduct($list_data);
+            //     $this->getInformationProduct($list_data);
                 Helper::trackingInfo('fetchMailOrder end at ' . now());
                 return $this->sendSuccess('clone order ok');
-            } 
+            // } 
         } catch (\Throwable $th) {
             dd($th);
             return $this->sendError($th->getMessage());}
