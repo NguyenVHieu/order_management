@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -44,8 +45,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::controller(MailController::class)->group(function(){
             Route::get('/fetch-mail-order', 'fetchMailOrder');
         });
+        
     });
 
     
 });
 
+Route::controller(WebhookController::class)->group(function(){
+    Route::post('/update-status-order', 'updateStatusOrder');
+});
