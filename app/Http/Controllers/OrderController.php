@@ -13,6 +13,8 @@ use App\Models\Order;
 use App\Models\Shop;
 use App\Repositories\OrderRepository;
 use Exception;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class OrderController extends BaseController
 {
@@ -94,23 +96,14 @@ class OrderController extends BaseController
                     ],
                     'json' => $orderData // Gửi dữ liệu đơn hàng
                 ]);        
-                // $order_success = json_decode($response->getBody()->getContents(), true);
-        
+                $res = json_decode($response->getBody()->getContents(), true);
                 if ($response->getStatusCode() === 200) {
-                    // $orderSucess = $client->get($this->baseUrlPrintify.'shops/18002634/orders/'.$order_success['id'].'.json', [
-                    //     'headers' => [
-                    //         'Authorization' => 'Bearer ' . $this->keyPrintify,
-                    //         'Content-Type'  => 'application/json',
-                    //     ],
-                    // ]);   
-                    // $resOrderSuccess = json_decode($orderSucess->getBody()->getContents(), true);
-
                     $data = [
                         'is_push' => '1',
                         'print_provider_id' => $provider_id,
                         'blueprint_id' => $blueprint_id,
-                        'variant_id' => $variant_id
-                        // 'status_order' => $resOrderSuccess['status'] ?? '', 
+                        'variant_id' => $variant_id,
+                        'order_id' => $res['id'],
                     ];
                     DB::table('orders')->where('id', $order->id)->update($data);
                     $results[$order->order_number] = 'success';
@@ -275,6 +268,95 @@ class OrderController extends BaseController
         return $results;    
     }
 
+    function pushOrderToOtb($request) 
+    {
+        $results = [];
+        $date = date('YmdHis');
+        $nameOutput = 'OTB_'. $date .'.xlsx';
+        $pathFileOriginal = public_path('/files/OTB-template.xlsx');
+        $outputFileOtb = public_path('/files/fileExportOtb/'.$nameOutput);
+
+        $spreadsheet = IOFactory::load($pathFileOriginal);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $ids = $request->orders;
+        $orders = DB::table('orders')->whereIn('id', $ids)->get();
+
+        $row = 2; 
+
+        foreach ($orders as $order) {
+            $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
+            $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
+            $sheet->setCellValue('C' . $row, $order->address); // Cột C
+            $sheet->setCellValue('D' . $row, $order->apartment); // Cột D
+            $sheet->setCellValue('E' . $row, $order->city);
+            $sheet->setCellValue('F' . $row, $order->state);
+            $sheet->setCellValue('G' . $row, $order->zip);
+            $sheet->setCellValue('H' . $row, $order->country);
+            $sheet->setCellValue('K' . $row, $order->quantity);
+            $sheet->setCellValue('L' . $row, 'CLASSIC_TSHIRT');
+            $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
+            $sheet->setCellValue('N' . $row, $order->color);
+            $sheet->setCellValue('O' . $row, $order->size);
+            $sheet->setCellValue('S' . $row, $order->img_1);
+            // Thêm các cột khác nếu cần
+            $row++;
+        }
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($outputFileOtb);
+
+        $client = new Client();
+
+        $resLogin = $client->request('POST', 'https://otbzone.com/bot/api/v1/auth/authenticate', [
+            'headers' => [
+                'Content-Type' => 'application/json',
+            ],
+            'json' => [
+                'password' => 'TABlAGgAYQBuAGgAJgAyADIAOQA0AA==',
+                'rememberMe' => false,
+                'username' => 'lehanhhong2294@gmail.com',
+            ],
+        ]);
+
+        $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+        $token = trim($resLoginConvert['data']['accessToken']['token']) ?? null;
+        
+        if (!$token) {
+            throw new \Exception('Không tìm thấy token');
+        }
+
+        $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/import-queues', [
+            'headers' => [
+                'Authorization' => 'Bearer '.$token,
+            ],
+            
+            'multipart' => [
+                [
+                    'name'     => 'type',
+                    'contents' => 'INSTANT_ORDER'
+                ],
+                [
+                    'name'     => 'images',
+                    'contents' => fopen($outputFileOtb, 'r'),
+                    'filename' => $nameOutput
+                ],
+            ],
+        ]);
+
+        $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
+        $body = $response->getBody(); // Lấy nội dung phản hồi
+
+        if ($statusCode == 200) {
+            $results[$order->order_number] = 'success';
+            
+        } else {
+            $results[$order->order_number] = 'failed';
+        }
+                
+        return $results;
+    }
+
     public function getOrderDB(Request $req) 
     {
         try {
@@ -354,10 +436,14 @@ class OrderController extends BaseController
                 case 'private':
                     $result = $this->pushOrderToPrivate($request);
                     return $this->sendSuccess($result);
+                case 'otb':
+                    $result = $this->pushOrderToOtb($request);
+                    return $this->sendSuccess($result);
                 default:
                     return $this->sendError('Function not implemented', 500);
             }
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError($th->getMessage(), 500);
         }
         
