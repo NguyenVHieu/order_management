@@ -279,12 +279,13 @@ class OrderController extends BaseController
         $spreadsheet = IOFactory::load($pathFileOriginal);
         $sheet = $spreadsheet->getActiveSheet();
 
-        $ids = $request->orders;
-        $orders = DB::table('orders')->whereIn('id', $ids)->get();
+        $orders = $request->orders;
 
         $row = 2; 
 
         foreach ($orders as $order) {
+            $order = DB::table('orders')->where('id', $order['order_id'])->first();
+
             $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
             $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
             $sheet->setCellValue('C' . $row, $order->address); // Cột C
