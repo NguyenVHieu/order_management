@@ -16,7 +16,7 @@ class WebhookController extends BaseController
             $resource = $request['resource'];
             $order_id = $resource['id'];
             $status = $resource['data']['status'];
-            DB::table('orders')->where('order_id', $order_id)->update(['status' => $status]);
+            DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $status]);
             Helper::trackingInfo('Webhook cập nhật status thành công');
 
         } catch (\Throwable $th) {
