@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('key_blueprints', function (Blueprint $table) {
             $table->id();
             $table->string('style')->nullable();
-            $table->string('color')->nullable();
-            $table->string('printify')->nullable();
+            $table->string('product_printify_id')->nullable();
+            $table->string('product_prinify_name')->nullable();
             $table->string('merchize')->nullable();
             $table->string('private')->nullable();
             $table->string('hubfulfill')->nullable();

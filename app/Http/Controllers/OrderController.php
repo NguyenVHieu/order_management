@@ -25,6 +25,8 @@ class OrderController extends BaseController
     protected $keyMechize;
     protected $orderRepository;
     protected $baseUrlPrivate;
+    protected $keyHubfulfill;
+    protected $baseUrlHubfulfill;
 
     public function __construct(OrderRepository $orderRepository)
     {   
@@ -32,8 +34,10 @@ class OrderController extends BaseController
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
+        $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
         $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
+        $this->keyHubfulfill = 'fa5677f70014b9d618d6aaa9567bab3fca9083b37b165a03cf93b2bca12737f1';
         $this->orderRepository = $orderRepository;
     }
 
@@ -358,6 +362,53 @@ class OrderController extends BaseController
         return $results;
     }
 
+    function pushOrderToHubfulfill($request)
+    {
+        $orders = $request->orders;
+        foreach($orders as $data) {
+            $order = DB::table('orders')->where('id', $data['order_id'])->first();
+            $key = $order->order_number .'_'. time();
+            $orderData = [
+                "order_id" => $key,
+                "items" => [
+                    [
+                        "sku" => "TS002",
+                        "quantity" => $order->quantity,
+                        // "note" => ,
+                        "design" => [
+                            "mockup_url" => $order->img_6 ?? ''
+                        ]
+                    ]
+                ],
+
+                "shipping" => [
+                    "shipping_name" => $order->first_name .' '. $order->last_name,
+                    "shipping_address_1" => $order->address,
+                    // "shipping_address_2" => "",
+                    "shipping_city" => $order->city,
+                    "shipping_zip" => $order->zip,
+                    "shipping_state" => $order->state,
+                    "shipping_country" => $order->country,
+                    // "shipping_phone" => "(609) 896-3798"
+                ],
+                "shipping_method" => "VNEXP"
+            ];
+            dd($orderData);
+
+            $client = new Client();
+            $response = $client->post($this->baseUrlHubfulfill.'/orders', [
+                'headers' => [
+                    'X-API-KEY' => $this->keyHubfulfill,
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => $orderData
+            ]);        
+            $res = json_decode($response->getBody()->getContents(), true);
+            dd($res);
+        }
+        
+    }
+
     public function getOrderDB(Request $req) 
     {
         try {
@@ -439,6 +490,9 @@ class OrderController extends BaseController
                     return $this->sendSuccess($result);
                 case 'otb':
                     $result = $this->pushOrderToOtb($request);
+                    return $this->sendSuccess($result);
+                case 'hubfulfill':
+                    $result = $this->pushOrderToHubfulfill($request);
                     return $this->sendSuccess($result);
                 default:
                     return $this->sendError('Function not implemented', 500);
