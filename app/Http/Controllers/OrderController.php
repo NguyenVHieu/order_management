@@ -27,6 +27,7 @@ class OrderController extends BaseController
     protected $baseUrlPrivate;
     protected $keyHubfulfill;
     protected $baseUrlHubfulfill;
+    protected $baseUrlLenful;
 
     public function __construct(OrderRepository $orderRepository)
     {   
@@ -35,6 +36,7 @@ class OrderController extends BaseController
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
+        $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
         $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
         $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
         $this->keyHubfulfill = 'fa5677f70014b9d618d6aaa9567bab3fca9083b37b165a03cf93b2bca12737f1';
@@ -414,6 +416,71 @@ class OrderController extends BaseController
         
     }
 
+    function pushOrderToLenful($request)
+    {
+        $orders = $request->orders;
+        foreach ($orders as $data) {
+            $order = DB::table('orders')->where('id', $data['order_id'])->first();
+            $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
+            if ($sku == 0) {
+                throw new \Exception('Không tìm thấy biến thể ở order ' . $order->order_number); 
+            }
+            
+            $orderData = [
+                "order_number" => "#". $order->order_number,
+                "first_name" => $order->first_name,
+                "last_name" => $order->last_name,
+                // "email" => "email_address@gmail.com",
+                // "phone" => "0000000",
+                // "country_code" => "US",
+                // "province" => "New York",
+                "city" => $order->city,
+                "zip" => $order->zip,
+                "address_1" => $order->address,
+                "items" => [ 
+                    "design_sku" => "LFCH13M-DESIGN",
+                    "product_sku" => "LFCH13M",
+                    "quantity" => 1,
+                    "mockups" => [
+                        $order->img_6
+                    ],
+                    "designs" => [
+                        [
+                            "position" => 1,
+                            "link" => $order->img_1,
+                        ]
+                    ],
+                    "shippings" => [
+                        0
+                    ]
+                ]
+            ];
+
+            $client = new Client();
+            $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
+                'form_params' => [
+                    'user_name' => 'lehanhhong2294@gmail.com',
+                    'password' => '928a58ecc3',
+                ],
+            ]);
+
+            $resLoginFormat = json_decode($resLogin->getBody()->getContents(), true);
+            $token = $resLoginFormat['access_token'] ?? '';
+            if (empty($token)) {
+                return $this->sendError('Unauthorized');
+            }
+            $resOrder = $client->post($this->baseUrlLenful.'/order/66e024d4682685fd3b9f35d0/create', [
+                'headers' => [
+                    'content'
+                ]
+            ]);
+
+
+
+        }
+        
+    }
+
     public function getOrderDB(Request $req) 
     {
         try {
@@ -430,9 +497,9 @@ class OrderController extends BaseController
                 'orders.id as order_id',
             ];
             $blueprints = DB::table('key_blueprints')
-                        ->leftJoin('blueprints', 'key_blueprints.printify', '=', 'blueprints.name')
-                        ->select('blueprints.blueprint_id as value', 'key_blueprints.printify as label')->distinct()
-                        ->where('key_blueprints.printify', '!=', null)
+                        ->leftJoin('blueprints', 'key_blueprints.product_printify_name', '=', 'blueprints.name')
+                        ->select('blueprints.blueprint_id as value', 'key_blueprints.product_printify_name as label')->distinct()
+                        ->where('key_blueprints.product_printify_name', '!=', null)
                         ->get();
 
             $orders = $this->orderRepository->index($params, $columns);
@@ -498,6 +565,9 @@ class OrderController extends BaseController
                     return $this->sendSuccess($result);
                 case 'hubfulfill':
                     $result = $this->pushOrderToHubfulfill($request);
+                    return $this->sendSuccess($result);
+                case 'lenful':
+                    $result = $this->pushOrderToLenful($request);
                     return $this->sendSuccess($result);
                 default:
                     return $this->sendError('Function not implemented', 500);
@@ -642,6 +712,62 @@ class OrderController extends BaseController
 
         return $variant_id;
         
+    }
+
+    public function getSkuLenful($product_name, $size, $color)
+    {
+        $client = new Client();
+        $response = $client->get($this->baseUrlLenful.'/product', [
+            'query' => [
+                'page' => 1,
+                'limit' => 10,
+                'fields' => 'variants',
+                'keyword' => $product_name
+            ],
+        ]);
+
+        $resFormat = json_decode($response->getBody()->getContents(), true);
+
+        $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color) {
+            
+            
+            $option = $variant['option_values'];
+            $resultColor = true;
+            $resultSize = true;
+            
+
+            if (!empty($color)) {
+                if (in_array($color, $option)) {
+                    $resultColor = true;
+                } else {
+                    $resultColor = false;
+                }
+            }
+
+            if (!empty($size)) {
+                if (in_array($size, $option)) {
+                    $resultSize = true;
+                } else {
+                    $resultSize = false;
+                }
+            }
+
+            if ($resultColor && $resultSize) {
+                return $variant;
+            } else {
+                return false;
+            }
+        });
+
+        $variant = array_values($matchedVariant);
+
+        if (!empty($variant)) {
+            $sku = $variant[0]['sku'];
+        }else {
+            $sku = 0;
+        }
+
+        return $sku;
     }
 
     public function saveImgOrder(Request $request)
