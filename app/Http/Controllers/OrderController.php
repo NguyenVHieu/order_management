@@ -364,6 +364,7 @@ class OrderController extends BaseController
 
     function pushOrderToHubfulfill($request)
     {
+        $results = [];
         $orders = $request->orders;
         foreach($orders as $data) {
             $order = DB::table('orders')->where('id', $data['order_id'])->first();
@@ -373,7 +374,7 @@ class OrderController extends BaseController
                 "items" => [
                     [
                         "sku" => "TS002",
-                        "quantity" => $order->quantity,
+                        "quantity" => (int)$order->quantity,
                         // "note" => ,
                         "design" => [
                             "mockup_url" => $order->img_6 ?? ''
@@ -391,9 +392,8 @@ class OrderController extends BaseController
                     "shipping_country" => $order->country,
                     // "shipping_phone" => "(609) 896-3798"
                 ],
-                "shipping_method" => "VNEXP"
+                "shipping_method" => "USUSPSEX"
             ];
-            dd($orderData);
 
             $client = new Client();
             $response = $client->post($this->baseUrlHubfulfill.'/orders', [
@@ -403,9 +403,14 @@ class OrderController extends BaseController
                 ],
                 'json' => $orderData
             ]);        
-            $res = json_decode($response->getBody()->getContents(), true);
-            dd($res);
+            if ($response->getStatusCode() == 200){
+                $results[$order->order_number] = 'success';
+            }else {
+                $results[$order->order_number] = 'failed';
+            }
         }
+
+        return $results;
         
     }
 
