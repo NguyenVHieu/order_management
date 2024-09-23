@@ -169,6 +169,7 @@ class OrderController extends BaseController
                 ]);
                 
                 if ($response->getStatusCode() === 200) {
+                    DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
                     $results[$order->order_number] = 'success';
                 } else {
                     $results[$order->order_number] = 'failed';
@@ -265,6 +266,7 @@ class OrderController extends BaseController
             ]);
 
             if ($resOrder->getStatusCode() === 201) {
+                DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
                 $results[$order->order_number] = 'success';
             } else {
                 $results[$order->order_number] = 'failed';
@@ -277,6 +279,7 @@ class OrderController extends BaseController
     function pushOrderToOtb($request) 
     {
         $results = [];
+        $ids = [];
         $date = date('YmdHis');
         $nameOutput = 'OTB_'. $date .'.xlsx';
         $pathFileOriginal = public_path('/files/OTB-template.xlsx');
@@ -291,7 +294,7 @@ class OrderController extends BaseController
 
         foreach ($orders as $order) {
             $order = DB::table('orders')->where('id', $order['order_id'])->first();
-
+            $ids[] = $order->id;
             $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
             $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
             $sheet->setCellValue('C' . $row, $order->address); // Cột C
@@ -355,6 +358,7 @@ class OrderController extends BaseController
         $body = $response->getBody(); // Lấy nội dung phản hồi
 
         if ($statusCode == 200) {
+            DB::table('orders')->whereIn('id', $ids)->update(['is_push' => 1]);
             $results[$order->order_number] = 'success';
             
         } else {
@@ -406,6 +410,7 @@ class OrderController extends BaseController
                 'json' => $orderData
             ]);        
             if ($response->getStatusCode() == 200){
+                DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
                 $results[$order->order_number] = 'success';
             }else {
                 $results[$order->order_number] = 'failed';
@@ -418,6 +423,7 @@ class OrderController extends BaseController
 
     function pushOrderToLenful($request)
     {
+        $results = [];
         $orders = $request->orders;
         foreach ($orders as $data) {
             $order = DB::table('orders')->where('id', $data['order_id'])->first();
@@ -427,33 +433,32 @@ class OrderController extends BaseController
             }
             
             $orderData = [
-                "order_number" => "#". $order->order_number,
+                "order_number" => "#1". $order->order_number,
                 "first_name" => $order->first_name,
                 "last_name" => $order->last_name,
-                // "email" => "email_address@gmail.com",
-                // "phone" => "0000000",
-                // "country_code" => "US",
-                // "province" => "New York",
+                "country_code" => "US",
                 "city" => $order->city,
                 "zip" => $order->zip,
                 "address_1" => $order->address,
                 "items" => [ 
-                    "design_sku" => "LFCH13M-DESIGN",
-                    "product_sku" => "LFCH13M",
-                    "quantity" => 1,
-                    "mockups" => [
-                        $order->img_6
-                    ],
-                    "designs" => [
-                        [
-                            "position" => 1,
-                            "link" => $order->img_1,
-                        ]
-                    ],
-                    "shippings" => [
-                        0
+                    [
+                        "design_sku" => $sku."-DESIGN",
+                        "product_sku" => $sku,
+                        "quantity" => 1,
+                        "mockups" => [
+                            $order->img_6
+                        ],
+                        "designs" => [
+                            [
+                                "position" => 1,
+                                "link" => $order->img_1,
+                            ]
+                        ],
+
+                        "shippings" => [0]
                     ]
                 ]
+                
             ];
 
             $client = new Client();
@@ -471,13 +476,21 @@ class OrderController extends BaseController
             }
             $resOrder = $client->post($this->baseUrlLenful.'/order/66e024d4682685fd3b9f35d0/create', [
                 'headers' => [
-                    'content'
-                ]
+                        'Authorization' => 'Bearer ' . $token,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'json' => $orderData // Gửi dữ liệu đơn hàng
             ]);
+            
+            if ($resOrder->getStatusCode() === 200) {
+                DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
+                $results[$order->order_number] = 'success';
 
-
-
+            } else {
+                $results[$order->order_number] = 'failed';
+            }
         }
+        return $results;
         
     }
 
