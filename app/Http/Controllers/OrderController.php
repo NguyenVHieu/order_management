@@ -586,7 +586,6 @@ class OrderController extends BaseController
                     return $this->sendError('Function not implemented', 500);
             }
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError($th->getMessage(), 500);
         }
         
@@ -740,6 +739,9 @@ class OrderController extends BaseController
         ]);
 
         $resFormat = json_decode($response->getBody()->getContents(), true);
+        if (empty($resFormat['data'][0]['variants'])) {
+            throw new \Exception('Không tìm thấy product'); 
+        }
 
         $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color) {
             
