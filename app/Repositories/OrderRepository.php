@@ -23,9 +23,7 @@ class OrderRepository implements OrderRepositoryInterface
         });
 
         if ($params['userType'] != -1) {
-            if ($params['userType'] == 1) {
-                $query->where('orders.is_approval', false);
-            }else if ($params['userType'] == 2) {
+            if ($params['userType'] == 2) {
                 $query->where('orders.is_approval', true);
             }
 

@@ -646,6 +646,7 @@ class OrderController extends BaseController
             DB::beginTransaction();
             $ids = $request->ids;
             $type = $request->type ?? 0;
+            $place_order = $request->place_order;
             foreach ($ids as $id) {
                 $data = Order::find($id);
                 if (!empty($data)) {
@@ -653,6 +654,7 @@ class OrderController extends BaseController
                         $columns = [
                             'is_approval' => true,
                             'approval_by' => Auth::user()->id,
+                            'place_order' => $place_order,
                         ];
                     } else {
                         $columns['is_approval'] = false;
@@ -740,7 +742,6 @@ class OrderController extends BaseController
         }
 
         $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color) {
-            
             
             $option = $variant['option_values'];
             $resultColor = true;
