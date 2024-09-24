@@ -74,7 +74,7 @@ class OrderController extends BaseController
                         "variant_id" => $variant_id,
                         "print_areas" => [
                             "front" => $order->img_1,
-                            "back" => $order->img_2,
+                            // "back" => $order->img_2,
                         ],
                         "quantity" => $order->quantity
                     ]
@@ -130,7 +130,7 @@ class OrderController extends BaseController
         if (!empty($orders)) {
             foreach ($orders as $data)
             {
-                $order = DB::table('orders')->where('id', $data)->select('*')->first();
+                $order = DB::table('orders')->where('id', $data['order_id'])->first();
 
                 $orderData = [
                     "order_id" => $order->order_number. time(),
@@ -391,12 +391,10 @@ class OrderController extends BaseController
                 "shipping" => [
                     "shipping_name" => $order->first_name .' '. $order->last_name,
                     "shipping_address_1" => $order->address,
-                    // "shipping_address_2" => "",
                     "shipping_city" => $order->city,
                     "shipping_zip" => $order->zip,
                     "shipping_state" => $order->state,
                     "shipping_country" => $order->country,
-                    // "shipping_phone" => "(609) 896-3798"
                 ],
                 "shipping_method" => "USUSPSEX"
             ];
@@ -525,7 +523,6 @@ class OrderController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('error', 500);
         }
     }
@@ -672,7 +669,6 @@ class OrderController extends BaseController
             DB::commit();
             return $this->sendSuccess('Success');
         } catch (\Throwable $th) {
-            dd($th);
             DB::rollBack();
             return $this->sendError($th->getMessage());
         }
@@ -690,7 +686,7 @@ class OrderController extends BaseController
         $resFormat = json_decode($resVariant->getBody()->getContents(), true);
         $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color) {
             
-            $title = str_replace('″', '"', $variant['title']);
+            $title = str_replace('″', "''", $variant['title']);
             $size = str_replace('″', '"', $size);
             $color = str_replace('″', '"', $color);
             $resultColor = true;
