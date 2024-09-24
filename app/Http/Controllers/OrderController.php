@@ -646,7 +646,6 @@ class OrderController extends BaseController
             DB::beginTransaction();
             $ids = $request->ids;
             $type = $request->type ?? 0;
-            $place_order = $request->place_order;
             foreach ($ids as $id) {
                 $data = Order::find($id);
                 if (!empty($data)) {
@@ -654,7 +653,6 @@ class OrderController extends BaseController
                         $columns = [
                             'is_approval' => true,
                             'approval_by' => Auth::user()->id,
-                            'place_order' => $place_order,
                         ];
                     } else {
                         $columns['is_approval'] = false;
@@ -808,6 +806,8 @@ class OrderController extends BaseController
             if (isset($request->r_img_7)) {
                 $data['img_7'] = $this->saveImgeSku($request->r_img_7);
             }
+
+            $data['place_order'] = $request->place_order;
 
             $order = DB::table('orders')->where('id', $request->id)->first();
 
