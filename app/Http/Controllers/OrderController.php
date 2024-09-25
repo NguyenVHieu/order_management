@@ -57,7 +57,7 @@ class OrderController extends BaseController
 
         foreach($listOrder as $key => $value) {
             $blueprint_id = !empty($data['blueprint_id']) ? $data['blueprint_id'] : $value->blueprint_id;
-            $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
+            $variant_id = $this->getVariantId($blueprint_id, $provider_id, $value->size, $value->color);
             if ($variant_id == 0) {
                 $results[$order->order_number] = 'Hết màu hoặc size:' .$value->color.' '.$value->size;
                 continue;
@@ -132,6 +132,17 @@ class OrderController extends BaseController
 
     function pushOrderToMerchize($order) 
     {
+        $lineItems = [];
+
+        $listOrder = $this->orderRepository->listOrder($order->order_number);
+        if(count($listOrder) > 0) 
+        {
+            foreach($listOrder as $data) {
+                $lineItems[] = [
+                    "name" => "Example product",
+                ];
+            }
+        }
         $client = new Client();
             $orderData = [
                 "order_id" => $order->order_number. time(),
@@ -567,24 +578,23 @@ class OrderController extends BaseController
                         $results = $this->pushOrderToPrintify($order, $data);
                         break;
                     case 'merchize':
-                        $results[$order->order_number] = $this->pushOrderToMerchize($order);
+                        $results = $this->pushOrderToMerchize($order);
                         break;
                     case 'private':
-                        $results[$order->order_number] = $this->pushOrderToPrivate($order);
+                        $results = $this->pushOrderToPrivate($order);
                         break;
                     case 'otb':
-                        $results[$order->order_number] = $this->pushOrderToOtb($order);
+                        $results = $this->pushOrderToOtb($order);
                         break;
                     case 'hubfulfill':
-                        $results[$order->order_number] = $this->pushOrderToHubfulfill($order);
+                        $results = $this->pushOrderToHubfulfill($order);
                         break;
                     case 'lenful':
-                        $results[$order->order_number] = $this->pushOrderToLenful($order);
+                        $results = $this->pushOrderToLenful($order);
                         break;
                     default:
-                        $results[$order->order_number] = 'không tìm thấy nơi order';
-                        break;
-                        
+                        $results = 'không tìm thấy nơi order';
+                        break;   
                 }
 
                 return $this->sendSuccess($results);

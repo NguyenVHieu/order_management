@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Order;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 class OrderRepository implements OrderRepositoryInterface
 {
@@ -37,6 +38,10 @@ class OrderRepository implements OrderRepositoryInterface
     }
 
 
-
-    
+    public function listOrder($order_number) 
+    {
+        return DB::table('orders')->where('order_number', $order_number)
+                    ->where('is_push', false)
+                    ->get();
+    }
 }
