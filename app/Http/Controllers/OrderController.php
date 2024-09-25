@@ -46,6 +46,7 @@ class OrderController extends BaseController
     function pushOrderToPrintify($order, $data) {
         $lineItems = [];
         $results = [];
+        $info = [];
         $provider_id = $data['print_provider_id'];
         $order_number = $order->order_number ?? 0;
         $key_order_number = $order_number. time();
@@ -55,11 +56,20 @@ class OrderController extends BaseController
                                         ->get();
 
         foreach($listOrder as $key => $value) {
-            $variant_id = $this->getVariantId($value->blueprint_id, $provider_id, $order->size, $order->color);
+            $blueprint_id = !empty($data['blueprint_id']) ? $data['blueprint_id'] : $value->blueprint_id;
+            $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
             if ($variant_id == 0) {
                 $results[$order->order_number] = 'Hết màu hoặc size:' .$value->color.' '.$value->size;
                 continue;
             }
+
+            $info[$value->id] = [
+                'variant_id' => $variant_id,
+                'blueprint_id' => $blueprint_id,
+                'print_provider_id' => $provider_id,
+                'is_push' => true
+            ];
+
             $item = [
                 "print_provider_id" => $provider_id,
                 "blueprint_id" => !empty($data['blueprint_id']) ? $data['blueprint_id'] : $value->blueprint_id,
@@ -73,49 +83,48 @@ class OrderController extends BaseController
             $lineItems[] = $item;
         }
 
-        $orderData = [
-            "external_id" => "order_sku_" . $key_order_number,
-            "label" => "order_sku_" . $key_order_number,
-            "line_items" => [
-                $lineItems
-            ],
-
-            "shipping_method" => 1,
-            "is_printify_express" => false,
-            "is_economy_shipping" => false,
-            "send_shipping_notification" => false,
-            "address_to" => [
-            "first_name" => $order->first_name,
-            "last_name" => $order->last_name,
-            "country" => "US",
-            "region" => $order->state,
-            "address1" => $order->address,
-            "city" => $order->city,
-            "zip" => $order->zip
-            ]
-        ];
-        
-        $client = new Client();
-        $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->keyPrintify,
-                'Content-Type'  => 'application/json',
-            ],
-            'json' => $orderData // Gửi dữ liệu đơn hàng
-        ]);        
-        // $res = json_decode($response->getBody()->getContents(), true);
-        if ($response->getStatusCode() === 200) {
-            // $data = [
-            //     'is_push' => '1',
-            //     'print_provider_id' => $provider_id,
-            //     'blueprint_id' => $blueprint_id,
-            //     'variant_id' => $variant_id,
-            //     'order_id' => $res['id'],
-            // ];
-            // DB::table('orders')->where('id', $order->id)->update($data);
-            $results[$order->order_number] = 'success';
+        if (count($lineItems) > 0) {
+            $orderData = [
+                "external_id" => "order_sku_" . $key_order_number,
+                "label" => "order_sku_" . $key_order_number,
+                "line_items" => array_values($lineItems),
+                "shipping_method" => 1,
+                "is_printify_express" => false,
+                "is_economy_shipping" => false,
+                "send_shipping_notification" => false,
+                "address_to" => [
+                "first_name" => $order->first_name,
+                "last_name" => $order->last_name,
+                "country" => "US",
+                "region" => $order->state,
+                "address1" => $order->address,
+                "city" => $order->city,
+                "zip" => $order->zip
+                ]
+            ];
+            
+            $client = new Client();
+            $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->keyPrintify,
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => $orderData // Gửi dữ liệu đơn hàng
+            ]);        
+            $res = json_decode($response->getBody()->getContents(), true);
+            if ($response->getStatusCode() === 200) {
+                if (count($info) > 0) {
+                    foreach($info as $key => $value) {
+                        $value['order_id'] = $res['id'];
+                        DB::table('orders')->where('id', $key)->update($value);
+                    }
+                }
+                $results[$order->order_number] = 'success';
+            } else {
+                $results[$order->order_number] = 'failed';
+            }
         } else {
-            $results[$order->order_number] = 'failed';
+            throw new \Exception('Không có order nào hợp lệ');
         }
 
         return $results;

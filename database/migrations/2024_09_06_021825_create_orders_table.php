@@ -21,9 +21,9 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->string('style')->nullable();
             $table->string('personalization')->nullable();
-            $table->string('variant_id')->nullable();
-            $table->string('print_provider_id')->nullable();
-            $table->string('blueprint_id')->nullable();
+            $table->unsignedBigInteger('variant_id')->nullable();
+            $table->unsignedBigInteger('print_provider_id')->nullable();
+            $table->unsignedBigInteger('blueprint_id')->nullable();
             $table->string('thumbnail', 1024)->nullable();
             $table->string('sku')->nullable();
             $table->integer('quantity')->nullable();
