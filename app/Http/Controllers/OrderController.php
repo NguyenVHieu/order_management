@@ -43,7 +43,8 @@ class OrderController extends BaseController
         $this->orderRepository = $orderRepository;
     }
 
-    function pushOrderToPrintify($order) {
+    function pushOrderToPrintify($order, $data) {
+        $lineItems = [];
         $provider_id = $data['print_provider_id'];
         $blueprint_id = isset($data['blueprint_id']) ? $data['blueprint_id'] : $order->blueprint_id;
         $order_number = $order->order_number ?? 0;
@@ -52,11 +53,23 @@ class OrderController extends BaseController
         if (empty($order->size) && empty($order->color)) {
             throw new \Exception('Không tìm thấy size và color ở order'. $order->order_number);
         }
+        if ($order->multi == true) {
+
+            $styles = json_decode($order->style);
+            foreach($styles as $key => $style) {
+                $lineItems
+            }
+            
+        }
+        
 
         $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
         if ($variant_id == 0) {
             throw new \Exception('Không tìm thấy biến thể ở order ' . $order->order_number);
         }
+
+        
+        
 
         $orderData = [
             "external_id" => "order_sku_" . $key_order_number,

@@ -39,7 +39,9 @@ class MailController extends BaseController
                 'product_name' => $param['product'],
                 'price' => $param['price'],
                 'shop_id' => $shop->id ?? null,
-                'size' => $param['size'] != 'N/A' ? $param['size'] : null,
+                'size' => $param['size'] ?? null,
+                'blueprint_id' => $param['blueprint_id'] ?? null,
+                'style' => $param['style'] != 'N/A' ? $param['style'] : null,
                 'color' => $param['color'] != 'N/A' ? $param['color'] : null,
                 'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
                 'thumbnail' => $param['thumb'],
@@ -62,6 +64,7 @@ class MailController extends BaseController
                 'user_id' => Auth::user()->id,
                 'is_push' => false,
                 'is_approval' => false,
+                'multi' => $param['multi']
             ];
 
             $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
@@ -99,13 +102,12 @@ class MailController extends BaseController
 
                     $patterns = [
                         'orderNumber' => '/Your order number is:\s*(.*)/',
-                        'shippingAddress' => '/Shipping address \*(.*?)\*/s',
-                        'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nSize:|\nColors:|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
-                        'size' => '/Size:\s*(.*)/',
-                        'color' => '/Colors:\s*(.*)/',
+                        'shippingAddress' => '/Shipping address\s*(.*?)\s*(?=USPS®|Shipping internationally|\z)/s',
+                        'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nStyle:|\nPrimary color (Matching with color chart):|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
+                        'style' => '/Style:\s*(.*)/',
+                        'color' => '/Primary color \(Matching with color chart\):\s*(.*)/i',
                         'personalization' => '/Personalization:\s*(.*)/',
-                        'shop' => '/Shop:\s*(.*)/',
-                        // 'transactionID' => '/Transaction ID:\s*(\d+)/',
+                        'shop' => '/Shop:\s*(.*?)(?=\n|$)/i',
                         'quantity' => '/Quantity:\s*(\d+)/',
                         'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
                         'itemTotal' => '/Item total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
@@ -118,28 +120,59 @@ class MailController extends BaseController
             
                     $data = [];
                     foreach ($patterns as $key => $pattern) {
-
                         if ($key === 'shippingAddress' || $key === 'product') {
                             $data[$key] = $this->extractInfo($pattern, $emailBody, true);
-                            
                         } else {
                             $data[$key] = $this->extractInfo($pattern, $emailBody);
-                            if (is_array($data[$key]) && $key != 'shop') {
-                                $data[$key]  = json_encode(array_values($data[$key]));
-                            }
                         }
                         $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
-                        
-                        
                     }
+                    // dd($data);
+
                     $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
-                    $data['product'] = str_replace(['<', "\n"], '', $data['product']);
-                    $data['thumb'] = is_array($thumb) ? json_encode(array_values($thumb)) : $thumb;
+                    
+                    $filteredArray = array_filter($data['shippingAddress'], function($item) {
+                        return strpos($item, '*') === false; // Giữ lại các phần tử không có ký tự '*'
+                    });
+                    $data['shippingAddress'] = array_values($filteredArray);
                     $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
-                    $data['shop'] = $data['shop'][0] ?? 'N/A';
-                    $list_data[] = $data;
+                    $data['shop'] = is_array($data['shop']) ? $data['shop'][0] : $data['shop'];
+                    $data['product'] = str_replace(['<', "\n"], '', $data['product']);
+                    
+
+                    if (is_array($data['style'])){
+                        $countStyle = count($data['style']);
+                        for ($i=0; $i < $countStyle; $i++) {
+                            $item = [];
+                            $item['style'] = $data['style'][$i];
+                            $item['color'] = $data['color'][$i];
+                            $item['personalization'] = $data['personalization'][$i];
+                            $item['price'] = $data['price'][$i];
+                            $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
+                            $item['thumb'] = $thumb[$i];
+                            $item['size'] = $this->getSize($item['style']);
+                            $item['blueprint_id'] = $this->getBlueprintId($item['style']);
+                            $mergedArray = array_merge($data, $item);
+                            $list_data[] = $mergedArray;   
+                        }
+                        
+                    }else {
+                        $list_data[] = $data;
+                    }
+
+                    // $data['thumb'] = is_array($thumb) ? json_encode(array_values($thumb)) : $thumb;
+                    
+                    
+                    // $size = $this->getSize($data['style']);
+                    // $blueprint_id = $this->getBlueprintId($data['style']);
+                    // $data['style'] = is_array($data['style']) ? json_encode(array_values($data['style'])) : $data['style'];
+                    // $data['size'] = is_array($size) ? json_encode(array_values($size)) : $size;
+                    // $data['blueprint_id'] = is_array($blueprint_id) ? json_encode(array_values($blueprint_id)) : $blueprint_id;
+
+                    // $list_data[] = $data;
 
                 }
+                dd($list_data);
 
                 $this->getInformationProduct($list_data);
                 Helper::trackingInfo('fetchMailOrder end at ' . now());
@@ -164,6 +197,18 @@ class MailController extends BaseController
     private function removeLinks($body)
     {
         return preg_replace('/http[^\s]+/', '', $body);
+    }
+
+    public function getSize($style) 
+    {
+        $size = explode(" ", $style);
+        return $size[count($size) -1];
+    }
+
+    public function getBlueprintId($style)
+    {
+        $blueprint = DB::table('key_blueprints')->where('style', $style)->first();
+        return $blueprint->product_printify_id ?? null;
     }
 
     
