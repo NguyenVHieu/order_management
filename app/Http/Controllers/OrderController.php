@@ -137,9 +137,15 @@ class OrderController extends BaseController
         $listOrder = $this->orderRepository->listOrder($order->order_number);
         if(count($listOrder) > 0) 
         {
-            foreach($listOrder as $data) {
+            foreach($listOrder as $value) {
                 $lineItems[] = [
-                    "name" => "Example product",
+                    "name" => "Product",
+                    "merchize_sku" => "CSWSVN000000EA12",
+                    "quantity" => $value->quantity,
+                    "price" => $value->price,
+                    "currency" => "USD",
+                    "image" => $value->img_6,
+                    "design_front" => $value->img_1,
                 ];
             }
         }
@@ -569,7 +575,7 @@ class OrderController extends BaseController
             $placeOrder = $request->place_order ?? null;
             $orders = $request->orders;
             $results = [];
-        
+            
             foreach($orders as $data) {
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
                 $platform = $placeOrder != null  ? $placeOrder : $order->place_order;
