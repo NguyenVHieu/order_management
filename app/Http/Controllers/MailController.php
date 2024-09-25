@@ -63,7 +63,8 @@ class MailController extends BaseController
                 'city' => $city,
                 'user_id' => Auth::user()->id,
                 'is_push' => false,
-                'is_approval' => false            
+                'is_approval' => false,
+                'multi' => $param['multi'],            
             ];
 
             // $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
@@ -151,6 +152,7 @@ class MailController extends BaseController
                             $item['thumb'] = $thumb[$i];
                             $item['size'] = $this->getSize($item['style']);
                             $item['blueprint_id'] = $this->getBlueprintId($item['style']);
+                            $item['multi'] = true;
                             $mergedArray = array_merge($data, $item);
                             $list_data[] = $mergedArray;   
                         }
@@ -159,7 +161,7 @@ class MailController extends BaseController
                         $data['thumb'] = $thumb;
                         $data['size'] = $this->getSize($data['style']);
                         $data['blueprint_id'] = $this->getBlueprintId($data['style']);
-
+                        $data['multi'] = false;
                         $list_data[] = $data;
                     }
 

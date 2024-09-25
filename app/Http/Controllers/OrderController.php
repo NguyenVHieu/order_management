@@ -45,47 +45,41 @@ class OrderController extends BaseController
 
     function pushOrderToPrintify($order, $data) {
         $lineItems = [];
+        $results = [];
         $provider_id = $data['print_provider_id'];
-        $blueprint_id = isset($data['blueprint_id']) ? $data['blueprint_id'] : $order->blueprint_id;
         $order_number = $order->order_number ?? 0;
         $key_order_number = $order_number. time();
 
-        if (empty($order->size) && empty($order->color)) {
-            throw new \Exception('Không tìm thấy size và color ở order'. $order->order_number);
-        }
-        if ($order->multi == true) {
+        $listOrder = DB::table('orders')->where('order_number', $order_number)
+                                        ->where('is_push', false)
+                                        ->get();
 
-            $styles = json_decode($order->style);
-            foreach($styles as $key => $style) {
-                // $lineItems
+        foreach($listOrder as $key => $value) {
+            $variant_id = $this->getVariantId($value->blueprint_id, $provider_id, $order->size, $order->color);
+            if ($variant_id == 0) {
+                $results[$order->order_number] = 'Hết màu hoặc size:' .$value->color.' '.$value->size;
+                continue;
             }
-            
+            $item = [
+                "print_provider_id" => $provider_id,
+                "blueprint_id" => !empty($data['blueprint_id']) ? $data['blueprint_id'] : $value->blueprint_id,
+                "variant_id" => $variant_id,
+                "print_areas" => [
+                    "front" => $value->img_1,
+                    // "back" => $order->img_2,
+                ],
+                "quantity" => $order->quantity
+            ];
+            $lineItems[] = $item;
         }
-        
-
-        $variant_id = $this->getVariantId($blueprint_id, $provider_id, $order->size, $order->color);
-        if ($variant_id == 0) {
-            throw new \Exception('Không tìm thấy biến thể ở order ' . $order->order_number);
-        }
-
-        
-        
 
         $orderData = [
             "external_id" => "order_sku_" . $key_order_number,
             "label" => "order_sku_" . $key_order_number,
             "line_items" => [
-            [
-                "print_provider_id" => $provider_id,
-                "blueprint_id" => $blueprint_id,
-                "variant_id" => $variant_id,
-                "print_areas" => [
-                    "front" => $order->img_1,
-                    // "back" => $order->img_2,
-                ],
-                "quantity" => $order->quantity
-            ]
+                $lineItems
             ],
+
             "shipping_method" => 1,
             "is_printify_express" => false,
             "is_economy_shipping" => false,
@@ -94,7 +88,7 @@ class OrderController extends BaseController
             "first_name" => $order->first_name,
             "last_name" => $order->last_name,
             "country" => "US",
-            "region" => "",
+            "region" => $order->state,
             "address1" => $order->address,
             "city" => $order->city,
             "zip" => $order->zip
@@ -109,20 +103,22 @@ class OrderController extends BaseController
             ],
             'json' => $orderData // Gửi dữ liệu đơn hàng
         ]);        
-        $res = json_decode($response->getBody()->getContents(), true);
+        // $res = json_decode($response->getBody()->getContents(), true);
         if ($response->getStatusCode() === 200) {
-            $data = [
-                'is_push' => '1',
-                'print_provider_id' => $provider_id,
-                'blueprint_id' => $blueprint_id,
-                'variant_id' => $variant_id,
-                'order_id' => $res['id'],
-            ];
-            DB::table('orders')->where('id', $order->id)->update($data);
+            // $data = [
+            //     'is_push' => '1',
+            //     'print_provider_id' => $provider_id,
+            //     'blueprint_id' => $blueprint_id,
+            //     'variant_id' => $variant_id,
+            //     'order_id' => $res['id'],
+            // ];
+            // DB::table('orders')->where('id', $order->id)->update($data);
             $results[$order->order_number] = 'success';
         } else {
             $results[$order->order_number] = 'failed';
         }
+
+        return $results;
     }
 
     function pushOrderToMerchize($order) 
@@ -559,7 +555,7 @@ class OrderController extends BaseController
                 $platform = $placeOrder != null  ? $placeOrder : $order->place_order;
                 switch ($platform) {
                     case 'printify':
-                        $results[$order->order_number] = $this->pushOrderToPrintify($order, $data);
+                        $results = $this->pushOrderToPrintify($order, $data);
                         break;
                     case 'merchize':
                         $results[$order->order_number] = $this->pushOrderToMerchize($order);
@@ -813,14 +809,13 @@ class OrderController extends BaseController
             $data['place_order'] = $request->place_order;
 
             $order = DB::table('orders')->where('id', $request->id)->first();
-
-            if (!$order) {
-                return $this->sendError('Không tìm thấy order', 404);
-            }
-
-            if (!empty($data)) {
+            if ($request->all == true) {
+                DB::table('orders')->where('order_number', $order->order_number)->update($data);
+            }else {
                 DB::table('orders')->where('id', $request->id)->update($data);
+                DB::table('orders')->where('order_number', $order->order_number)->update(['place_order' => $data['place_order']]);
             }
+            
             return $this->sendSuccess('ok');
         } catch (\Throwable $th) {
             return $this->sendError('error'. $th->getMessage(), 500);
