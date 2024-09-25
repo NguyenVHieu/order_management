@@ -57,7 +57,7 @@ class OrderController extends BaseController
 
             $styles = json_decode($order->style);
             foreach($styles as $key => $style) {
-                $lineItems
+                // $lineItems
             }
             
         }

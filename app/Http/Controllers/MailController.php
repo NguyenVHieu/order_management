@@ -63,14 +63,13 @@ class MailController extends BaseController
                 'city' => $city,
                 'user_id' => Auth::user()->id,
                 'is_push' => false,
-                'is_approval' => false,
-                'multi' => $param['multi']
+                'is_approval' => false            
             ];
 
-            $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
-            if (empty($order)) {
-                DB::table('orders')->insert($data);
-            }
+            // $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
+            // if (empty($order)) {
+            DB::table('orders')->insert($data);
+            // }
         }
     }
 
@@ -157,6 +156,10 @@ class MailController extends BaseController
                         }
                         
                     }else {
+                        $data['thumb'] = $thumb;
+                        $data['size'] = $this->getSize($data['style']);
+                        $data['blueprint_id'] = $this->getBlueprintId($data['style']);
+
                         $list_data[] = $data;
                     }
 
@@ -172,7 +175,6 @@ class MailController extends BaseController
                     // $list_data[] = $data;
 
                 }
-                dd($list_data);
 
                 $this->getInformationProduct($list_data);
                 Helper::trackingInfo('fetchMailOrder end at ' . now());
