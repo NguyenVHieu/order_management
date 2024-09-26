@@ -54,6 +54,7 @@ class OrderController extends BaseController
             foreach($orders as $order) {
                 $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
                 if ($variant_id == 0) {
+                    $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Hết màu hoặc size!';
                     $lineItems = [];
                     break;
                 }
@@ -75,6 +76,7 @@ class OrderController extends BaseController
                     ],
                     "quantity" => $order->quantity
                 ];
+
                 $lineItems[] = $item;
             }
 
@@ -118,9 +120,7 @@ class OrderController extends BaseController
                 } else {
                     $results[$key] = 'failed';
                 }
-            }else{
-                $results[$key] = 'Order không hợp lệ!';
-            }    
+            } 
         }
 
         return $results;
