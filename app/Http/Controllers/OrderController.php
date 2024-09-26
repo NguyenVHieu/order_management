@@ -46,6 +46,7 @@ class OrderController extends BaseController
     function pushOrderToPrintify($data) {
         $results = [];
         foreach($data as $key => $orders) {
+            // dd($orders);
             try {
                 $key_order_number = $key. time();
                 $lineItems = [];
@@ -53,7 +54,6 @@ class OrderController extends BaseController
                 $check = true;
 
                 foreach($orders as $order) {
-                    
                     $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
                     if ($variant_id == 0) {
                         $check = false;
@@ -66,6 +66,7 @@ class OrderController extends BaseController
                         'variant_id' => $variant_id,
                         'blueprint_id' => $order->blueprint_id,
                         'print_provider_id' => $order->print_provider_id,
+                        'place_order' => 'printify',
                         'is_push' => true
                     ];
 
@@ -103,6 +104,7 @@ class OrderController extends BaseController
                         ]
                     ];
                     
+                    
                     $client = new Client();
                     $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
                         'headers' => [
@@ -137,65 +139,69 @@ class OrderController extends BaseController
         $lineItems = [];
         $results = [];
         foreach($data as $key => $orders) {
-            $key_order_number = $key. time();
-            foreach($orders as $order) {
-                $lineItems[] = [
-                    "name" => "Product API". $order->order_number,
-                    "quantity" => $order->quantity,
-                    "price" => $order->price,
-                    "currency" => "USD",
-                    "image" => $order->img_6,
-                    "design_front" => $order->img_1,
-                    "attributes" =>  [
-                        [
-                            "name" =>  "product",
-                            "option" =>  "T-shirt"
-                        ],
-                        [
-                            "name" =>  "Color",
-                            "option" =>  "Black"
-                        ],
-                        [
-                            "name" =>  "Size",
-                            "option" =>  "M"
+            try {
+                $key_order_number = $key. time();
+                foreach($orders as $order) {
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $lineItems[] = [
+                        "name" => "Product API". $order->order_number,
+                        "quantity" => $order->quantity,
+                        "image" => $order->img_6,
+                        "design_front" => $order->img_1,
+                        "attributes" =>  [
+                            [
+                                "name" =>  "product",
+                                "option" =>  $product->merchize ?? ''
+                            ],
+                            [
+                                "name" =>  "Color",
+                                "option" =>  $order->color ?? ''
+                            ],
+                            [
+                                "name" =>  "Size",
+                                "option" =>  $order->size ?? ''
+                            ]
                         ]
-                    ]
-                ];
-            }
-            if (count($lineItems) > 0) {
-                $client = new Client();
-                $orderData = [
-                    "order_id" =>  $key_order_number,
-                    "identifier" =>  $key_order_number,
-                    "shipping_info" => [
-                        "full_name" => $order->first_name . "" . $order->last_name,
-                        "address_1" => $order->address,
-                        "address_2" => "",
-                        "city" => $order->city,
-                        "state" => $order->state,
-                        "postcode" => $order->zip,
-                        "country" => $order->country,
-                        // "email" => "customer@example.com",
-                        // "phone" => "0123456789"
-                    ],
-                    "items" => array_values($lineItems),
-                ];
-                    
-                $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->keyMechize,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'json' => $orderData // Gửi dữ liệu đơn hàng
-                ]);
-                
-                if ($response->getStatusCode() === 200) {
-                    DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
-                    $results[$key] = 'success';
-                } else {
-                    $results[$key] = 'failed';
+                    ];
                 }
+
+                if (count($lineItems) > 0) {
+                    $client = new Client();
+                    $orderData = [
+                        "order_id" =>  $key_order_number,
+                        "identifier" =>  $key_order_number,
+                        "shipping_info" => [
+                            "full_name" => $order->first_name . "" . $order->last_name,
+                            "address_1" => $order->address,
+                            "address_2" => "",
+                            "city" => $order->city,
+                            "state" => $order->state,
+                            "postcode" => $order->zip,
+                            "country" => $order->country,
+                        ],
+                        "items" => array_values($lineItems),
+                    ];
+                        
+                    $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $this->keyMechize,
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => $orderData // Gửi dữ liệu đơn hàng
+                    ]);
+                    $res = json_decode($response->getBody()->getContents(), true);
+                
+                    if ($response->getStatusCode() === 200) {
+                        DB::table('orders')->where('id', $order->id)->update(['is_push' => 1, 'order_id' => $res['data']['_id'], 'place_order' => 'merchize']); 
+                        $results[$key] = 'Success';
+                    } else {
+                        $results[$key] = 'Failed';
+                    }
+                }
+            } catch (\Throwable $th) {
+                $results[$key] = 'Lỗi khi tạo order';
             }
+            
         } 
 
         return $results;
@@ -203,59 +209,64 @@ class OrderController extends BaseController
 
     function pushOrderToPrivate($data) 
     {
-        $client = new Client();
-        $resLogin = $client->post($this->baseUrlPrivate. '/login', [
-            'headers' => [
-                'Content-Type'  => 'application/json',
-            ],
-            'json' => [
-                'email' => 'lehanhhong2294@gmail.com',
-                'password' => 'cacc6dd0'
-            ] // Gửi dữ liệu đơn hàng
-        ]);
+        try {
+            $client = new Client();
+            $resLogin = $client->post($this->baseUrlPrivate. '/login', [
+                'headers' => [
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => [
+                    'email' => 'lehanhhong2294@gmail.com',
+                    'password' => 'cacc6dd0'
+                ] // Gửi dữ liệu đơn hàng
+            ]);
 
-        $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
-        if (empty($resLoginConvert['accessToken'])) {
-            throw new \Exception('Không tìm thấy token');
+            $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+            if (empty($resLoginConvert['accessToken'])) {
+                return ['401' => 'Đăng nhập Private fullfillment không thành công'];
+            }
+
+            $token = $resLoginConvert['accessToken'];
+        } catch (\Throwable $th) {
+            return ['401' => 'Đăng nhập Private fullfillment không thành công'];
         }
-
-        $token = $resLoginConvert['accessToken'];
+        
         $lineItems = [];
-        foreach($data as $key => $orders) 
-        {   
-            $check = true;
-            foreach($orders as $order) {
-                if (!empty($order->img_1) && !empty($order->img_2)) {
-                    $prodNum = 2;
-                }else {
-                    $prodNum = 1;
-                }
-
-                $resSku = $client->get($this->baseUrlPrivate. '/sku', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $token,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'query' => [
-                        'prodType' => 'HOODIE',
-                        'prodSize' => str_replace("\r", "", trim($order->size)),
-                        'prodNum' => $prodNum,
-                        'prodColor' => $order->color,
-                    ],
-                ]);
-
-                $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
-
-                if (empty($resSkuConvert['data'])) {
-                    $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Hết màu hoặc hết size!';
-                    $check = false;
-                }else {
-                    $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Hết màu hoặc hết size!';
-                }
+        $results = [];
+        foreach($data as $key => $orders) {   
+            try {
+                $check = true;
+                foreach($orders as $order) {
+                    if (!empty($order->img_1) && !empty($order->img_2)) {
+                        $prodNum = 2;
+                    }else {
+                        $prodNum = 1;
+                    }
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $resSku = $client->get($this->baseUrlPrivate. '/sku', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $token,
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'query' => [
+                            'prodType' => $product->private,
+                            'prodSize' => str_replace("\r", "", trim($order->size)),
+                            'prodNum' => $prodNum,
+                            'prodColor' => $order->color,
+                        ],
+                    ]);
     
-                $variantId = $resSkuConvert['data'][0]['variantId'] ?? 0;
-                $lineItems[] = [
-                    [
+                    $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
+    
+                    if (empty($resSkuConvert['data'])) {
+                        $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Hết màu hoặc hết size!';
+                        $check = false;
+                    }else {
+                        $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Success!';
+                    }
+        
+                    $variantId = $resSkuConvert['data'][0]['variantId'] ?? 0;
+                    $lineItems[] = [
                         "variantId" => $variantId,
                         "quantity" => 1,
                         "printAreaFront" => $order->img_1,
@@ -265,210 +276,248 @@ class OrderController extends BaseController
                         "printAreaLeft" => $order->img_3 ?? '',
                         "printAreaRight" => $order->img_4 ?? '',
                         "printAreaNeck" => $order->img_5 ?? '',
-                    ]
-                ];
+                    ];
+    
+                }
 
-            }
-            if (count($lineItems) > 0 && $check == true) {
-                $orderData = [
-                    "order" => [
-                        "orderId" => $order->order_number. time(),
-                        "shippingMethod" => "STANDARD",
-                        "firstName" => $order->first_name,
-                        "lastName" => $order->last_name,
-                        "countryCode" => "US",
-                        "provinceCode" => $order->state,
-                        "addressLine1" => $order->address,
-                        "city" => $order->city,
-                        "zipcode" => $order->zip,
+                if (count($lineItems) > 0 && $check == true) {
+                    $orderData = [
+                        "order" => [
+                            "orderId" => $order->order_number. time(),
+                            "shippingMethod" => "STANDARD",
+                            "firstName" => $order->first_name,
+                            "lastName" => $order->last_name,
+                            "countryCode" => "US",
+                            "provinceCode" => $order->state,
+                            "addressLine1" => $order->address,
+                            "city" => $order->city,
+                            "zipcode" => $order->zip,
+                        ],
+                        "product" => array_values($lineItems)
+                    ];
+                }
+    
+                $resOrder = $client->post($this->baseUrlPrivate. '/order', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $token,
+                        'Content-Type'  => 'application/json',
                     ],
-                    "product" => array_values($lineItems)
-                ];
-            }
+                    'json' => $orderData // Gửi dữ liệu đơn hàng
+                ]);
 
-            $resOrder = $client->post($this->baseUrlPrivate. '/order', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => $orderData // Gửi dữ liệu đơn hàng
-            ]);
+                dd($resOrder->getBody()->getContents());
 
-            if ($resOrder->getStatusCode() === 201) {
-                DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
-                $results[$key] = 'success';
-            } else {
-                $results[$key] = 'failed';
-            }
+    
+                if ($resOrder->getStatusCode() === 201) {
+                    DB::table('orders')->where('id', $order->id)->update(['is_push' => 1, 'place_order' => 'private']);
+                } else {
+                    $results[$key] = 'Failed';
+                }
+            } catch (\Throwable $th) {
+                dd($th);
+                $results = [];
+                $results[$key] = 'Lỗi khi tạo order';
+            }    
         }
         
         return $results;    
     }
 
-    function pushOrderToOtb($request) 
+    function pushOrderToOtb($data) 
     {
-        $results = [];
-        $ids = [];
-        $date = date('YmdHis');
-        $nameOutput = 'OTB_'. $date .'.xlsx';
-        $pathFileOriginal = public_path('/files/OTB-template.xlsx');
-        $outputFileOtb = public_path('/files/fileExportOtb/'.$nameOutput);
+        try {
+            $ids = [];
+            $date = date('YmdHis');
+            $nameOutput = 'OTB_'. $date .'.xlsx';
+            $pathFileOriginal = public_path('/files/OTB-template.xlsx');
+            $outputFileOtb = public_path('/files/fileExportOtb/'.$nameOutput);
 
-        $spreadsheet = IOFactory::load($pathFileOriginal);
-        $sheet = $spreadsheet->getActiveSheet();
+            $spreadsheet = IOFactory::load($pathFileOriginal);
+            $sheet = $spreadsheet->getActiveSheet();
 
-        $orders = $request->orders;
+            $row = 2; 
 
-        $row = 2; 
 
-        foreach ($orders as $order) {
-            $order = DB::table('orders')->where('id', $order['order_id'])->first();
-            $ids[] = $order->id;
-            $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
-            $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
-            $sheet->setCellValue('C' . $row, $order->address); // Cột C
-            $sheet->setCellValue('D' . $row, $order->apartment); // Cột D
-            $sheet->setCellValue('E' . $row, $order->city);
-            $sheet->setCellValue('F' . $row, $order->state);
-            $sheet->setCellValue('G' . $row, $order->zip);
-            $sheet->setCellValue('H' . $row, $order->country);
-            $sheet->setCellValue('K' . $row, $order->quantity);
-            $sheet->setCellValue('L' . $row, 'CLASSIC_TSHIRT');
-            $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
-            $sheet->setCellValue('N' . $row, $order->color);
-            $sheet->setCellValue('O' . $row, $order->size);
-            $sheet->setCellValue('S' . $row, $order->img_1);
-            // Thêm các cột khác nếu cần
-            $row++;
-        }
-
-        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $writer->save($outputFileOtb);
-
-        $client = new Client();
-
-        $resLogin = $client->request('POST', 'https://otbzone.com/bot/api/v1/auth/authenticate', [
-            'headers' => [
-                'Content-Type' => 'application/json',
-            ],
-            'json' => [
-                'password' => 'TABlAGgAYQBuAGgAJgAyADIAOQA0AA==',
-                'rememberMe' => false,
-                'username' => 'lehanhhong2294@gmail.com',
-            ],
-        ]);
-
-        $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
-        $token = trim($resLoginConvert['data']['accessToken']['token']) ?? null;
-        
-        if (!$token) {
-            throw new \Exception('Không tìm thấy token');
-        }
-
-        $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/import-queues', [
-            'headers' => [
-                'Authorization' => 'Bearer '.$token,
-            ],
-            
-            'multipart' => [
-                [
-                    'name'     => 'type',
-                    'contents' => 'INSTANT_ORDER'
-                ],
-                [
-                    'name'     => 'images',
-                    'contents' => fopen($outputFileOtb, 'r'),
-                    'filename' => $nameOutput
-                ],
-            ],
-        ]);
-
-        $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
-        $body = $response->getBody(); // Lấy nội dung phản hồi
-
-        if ($statusCode == 200) {
-            DB::table('orders')->whereIn('id', $ids)->update(['is_push' => 1]);
-            $results[$order->order_number] = 'success';
-            
-        } else {
-            $results[$order->order_number] = 'failed';
-        }
+            foreach ($data as $orders) {
+                foreach ($orders as $order) {
+                    $ids[] = $order->id;
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
+                    $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
+                    $sheet->setCellValue('C' . $row, $order->address); // Cột C
+                    $sheet->setCellValue('D' . $row, $order->apartment); // Cột D
+                    $sheet->setCellValue('E' . $row, $order->city);
+                    $sheet->setCellValue('F' . $row, $order->state);
+                    $sheet->setCellValue('G' . $row, $order->zip);
+                    $sheet->setCellValue('H' . $row, $order->country);
+                    $sheet->setCellValue('K' . $row, $order->quantity);
+                    $sheet->setCellValue('L' . $row, $product->otb);
+                    $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
+                    $sheet->setCellValue('N' . $row, $order->color);
+                    $sheet->setCellValue('O' . $row, $order->size);
+                    $sheet->setCellValue('S' . $row, $order->img_1);
+                    $row++;
+                }
                 
-        return $results;
+            }
+
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer->save($outputFileOtb);
+
+            $client = new Client();
+
+            $resLogin = $client->request('POST', 'https://otbzone.com/bot/api/v1/auth/authenticate', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'password' => 'TABlAGgAYQBuAGgAJgAyADIAOQA0AA==',
+                    'rememberMe' => false,
+                    'username' => 'lehanhhong2294@gmail.com',
+                ],
+            ]);
+
+            $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+            $token = trim($resLoginConvert['data']['accessToken']['token']) ?? null;
+            
+            if (!$token) {
+                return ['401' => 'Đăng nhập OTB không thành công'];
+            }
+
+            $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/import-queues', [
+                'headers' => [
+                    'Authorization' => 'Bearer '.$token,
+                ],
+                
+                'multipart' => [
+                    [
+                        'name'     => 'type',
+                        'contents' => 'INSTANT_ORDER'
+                    ],
+                    [
+                        'name'     => 'images',
+                        'contents' => fopen($outputFileOtb, 'r'),
+                        'filename' => $nameOutput
+                    ],
+                ],
+            ]);
+
+            $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
+            $body = $response->getBody(); // Lấy nội dung phản hồi
+
+            if ($statusCode == 200) {
+                DB::table('orders')->whereIn('id', $ids)->update(['is_push' => 1, 'place_order' => 'otb']);
+                return [1 => "Order OTB Success"];
+                
+            } else {
+                return [1 => "Order OTB Failed"];
+            }
+        } catch (\Throwable $th) {
+            return [1 => "Order OTB Failed"];
+        }      
     }
 
-    function pushOrderToHubfulfill($request)
+    function pushOrderToHubfulfill($data)
     {
         $results = [];
-        $orders = $request->orders;
-        foreach($orders as $data) {
-            $order = DB::table('orders')->where('id', $data['order_id'])->first();
-            $key = $order->order_number .'_'. time();
-            $orderData = [
-                "order_id" => $key,
-                "items" => [
-                    [
-                        "sku" => "TS002",
+        foreach($data as $key => $orders) {
+            try {
+                $lineItems = [];
+                $arr_shippng = config('constants.shipping_hubfulfill');
+                
+                foreach ($orders as $order) {
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $lineItems[] = [
+                        "sku" => 'TS002',
                         "quantity" => (int)$order->quantity,
-                        // "note" => ,
                         "design" => [
                             "mockup_url" => $order->img_6 ?? ''
                         ]
-                    ]
-                ],
+                    ];
+                }
 
-                "shipping" => [
-                    "shipping_name" => $order->first_name .' '. $order->last_name,
-                    "shipping_address_1" => $order->address,
-                    "shipping_city" => $order->city,
-                    "shipping_zip" => $order->zip,
-                    "shipping_state" => $order->state,
-                    "shipping_country" => $order->country,
-                ],
-                "shipping_method" => "USUSPSEX"
-            ];
+                $shipping_method = $arr_shippng[$order->country] ?? '';
+                if ($shipping_method == '') {
+                    $results[$order->order_number] = 'Không tìm thấy phương thức vận chuyển';
+                    continue;
+                }
 
-            $client = new Client();
-            $response = $client->post($this->baseUrlHubfulfill.'/orders', [
-                'headers' => [
-                    'X-API-KEY' => $this->keyHubfulfill,
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => $orderData
-            ]);        
-            if ($response->getStatusCode() == 200){
-                DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
-                $results[$order->order_number] = 'success';
-            }else {
-                $results[$order->order_number] = 'failed';
+                if (count($lineItems) > 0) {
+                    $orderData = [
+                        "order_id" => $key. time(),
+                        "items" => $lineItems,
+                        "shipping" => [
+                            "shipping_name" => $order->first_name .' '. $order->last_name,
+                            "shipping_address_1" => $order->address,
+                            "shipping_city" => $order->city,
+                            "shipping_zip" => $order->zip,
+                            "shipping_state" => $order->state,
+                            "shipping_country" => $order->country,
+                        ],
+                        "shipping_method" => $shipping_method
+                    ];
+                }
+
+                $client = new Client();
+                $response = $client->post($this->baseUrlHubfulfill.'/orders', [
+                    'headers' => [
+                        'X-API-KEY' => $this->keyHubfulfill,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'json' => $orderData
+                ]);        
+                if ($response->getStatusCode() == 200){
+                    DB::table('orders')->where('id', $order->id)->update(['is_push' => 1, 'place_order' => 'hubfulfill']);
+                    $results[$order->order_number] = 'Success';
+                }else {
+                    $results[$order->order_number] = 'Lỗi khi tạo order';
+                }
+            } catch (\Throwable $th) {
+                $results[$order->order_number] = 'Lỗi khi tạo order';
             }
+            
         }
 
         return $results;
         
     }
 
-    function pushOrderToLenful($request)
+    function pushOrderToLenful($data)
     {
         $results = [];
-        $orders = $request->orders;
-        foreach ($orders as $data) {
-            $order = DB::table('orders')->where('id', $data['order_id'])->first();
-            $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
-            if ($sku == 0) {
-                throw new \Exception('Không tìm thấy biến thể ở order ' . $order->order_number); 
+        try {
+            $client = new Client();
+            $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
+                'form_params' => [
+                    'user_name' => 'lehanhhong2294@gmail.com',
+                    'password' => '928a58ecc3',
+                ],
+            ]);
+
+            $resLoginFormat = json_decode($resLogin->getBody()->getContents(), true);
+            $token = $resLoginFormat['access_token'] ?? '';
+            if (empty($token)) {
+                return ['401' => 'Đăng nhập Lenful không thành công'];
             }
-            
-            $orderData = [
-                "order_number" => "#1". $order->order_number,
-                "first_name" => $order->first_name,
-                "last_name" => $order->last_name,
-                "country_code" => "US",
-                "city" => $order->city,
-                "zip" => $order->zip,
-                "address_1" => $order->address,
-                "items" => [ 
-                    [
+        } catch (\Throwable $th) {
+            return ['401' => 'Đăng nhập Lenful không thành công'];
+        }
+        
+        foreach ($data as $key => $orders) {
+            try {
+                $check = true;
+                $lineItems = [];
+
+                foreach ($orders as $order) {
+                    $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
+                    if ($sku == 0) {
+                        $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Hết màu hoặc size!';
+                        $check = false;
+                    }else {
+                        $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Sucess';
+                    }
+
+                    $lineItems[] = [
                         "design_sku" => $sku."-DESIGN",
                         "product_sku" => $sku,
                         "quantity" => 1,
@@ -483,42 +532,43 @@ class OrderController extends BaseController
                         ],
 
                         "shippings" => [0]
-                    ]
-                ]
-                
-            ];
+                    ];
+                }
 
-            $client = new Client();
-            $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
-                'form_params' => [
-                    'user_name' => 'lehanhhong2294@gmail.com',
-                    'password' => '928a58ecc3',
-                ],
-            ]);
+                if (count($lineItems) > 0 && $check == true) {
+                    $orderData = [
+                        "order_number" => "#". $order->order_number,
+                        "first_name" => $order->first_name,
+                        "last_name" => $order->last_name,
+                        "country_code" => "US",
+                        "city" => $order->city,
+                        "zip" => $order->zip,
+                        "address_1" => $order->address,
+                        "items" => array_values($lineItems)
+                    ];
 
-            $resLoginFormat = json_decode($resLogin->getBody()->getContents(), true);
-            $token = $resLoginFormat['access_token'] ?? '';
-            if (empty($token)) {
-                return $this->sendError('Unauthorized');
-            }
-            $resOrder = $client->post($this->baseUrlLenful.'/order/66e024d4682685fd3b9f35d0/create', [
-                'headers' => [
-                        'Authorization' => 'Bearer ' . $token,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'json' => $orderData // Gửi dữ liệu đơn hàng
-            ]);
-            
-            if ($resOrder->getStatusCode() === 200) {
-                DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
-                $results[$order->order_number] = 'success';
+                    $resOrder = $client->post($this->baseUrlLenful.'/order/66e024d4682685fd3b9f35d0/create', [
+                        'headers' => [
+                                'Authorization' => 'Bearer ' . $token,
+                                'Content-Type'  => 'application/json',
+                            ],
+                            'json' => $orderData // Gửi dữ liệu đơn hàng
+                    ]);
 
-            } else {
-                $results[$order->order_number] = 'failed';
+                    if ($resOrder->getStatusCode() === 200) {
+                        DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
+                        $results[$key] = 'Success';
+    
+                    } else {
+                        $results[$key] = 'Lỗi khi tạo order';
+                    }
+                }
+            } catch (\Throwable $th) {
+                $results[$key] = 'Lỗi khi tạo order';
             }
         }
+
         return $results;
-        
     }
 
     public function getOrderDB(Request $req) 
@@ -636,6 +686,7 @@ class OrderController extends BaseController
             
             
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError($th->getMessage(), 500);
         }
         
@@ -789,7 +840,7 @@ class OrderController extends BaseController
 
         $resFormat = json_decode($response->getBody()->getContents(), true);
         if (empty($resFormat['data'][0]['variants'])) {
-            throw new \Exception('Không tìm thấy product'); 
+            return 0;
         }
 
         $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color) {
