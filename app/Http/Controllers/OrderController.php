@@ -43,88 +43,84 @@ class OrderController extends BaseController
         $this->orderRepository = $orderRepository;
     }
 
-    function pushOrderToPrintify($order, $data) {
-        $lineItems = [];
+    function pushOrderToPrintify($data) {
         $results = [];
-        $info = [];
-        $provider_id = $data['print_provider_id'];
-        $order_number = $order->order_number ?? 0;
-        $key_order_number = $order_number. time();
+    
+        foreach($data as $key => $orders) {
+            $key_order_number = $key. time();
+            $lineItems = [];
+            $info = [];
 
-        $listOrder = DB::table('orders')->where('order_number', $order_number)
-                                        ->where('is_push', false)
-                                        ->get();
-
-        foreach($listOrder as $key => $value) {
-            $blueprint_id = !empty($data['blueprint_id']) ? $data['blueprint_id'] : $value->blueprint_id;
-            $variant_id = $this->getVariantId($blueprint_id, $provider_id, $value->size, $value->color);
-            if ($variant_id == 0) {
-                $results[$order->order_number] = 'Hết màu hoặc size:' .$value->color.' '.$value->size;
-                continue;
-            }
-
-            $info[$value->id] = [
-                'variant_id' => $variant_id,
-                'blueprint_id' => $blueprint_id,
-                'print_provider_id' => $provider_id,
-                'is_push' => true
-            ];
-
-            $item = [
-                "print_provider_id" => $provider_id,
-                "blueprint_id" => !empty($data['blueprint_id']) ? $data['blueprint_id'] : $value->blueprint_id,
-                "variant_id" => $variant_id,
-                "print_areas" => [
-                    "front" => $value->img_1,
-                    // "back" => $order->img_2,
-                ],
-                "quantity" => $order->quantity
-            ];
-            $lineItems[] = $item;
-        }
-
-        if (count($lineItems) > 0) {
-            $orderData = [
-                "external_id" => "order_sku_" . $key_order_number,
-                "label" => "order_sku_" . $key_order_number,
-                "line_items" => array_values($lineItems),
-                "shipping_method" => 1,
-                "is_printify_express" => false,
-                "is_economy_shipping" => false,
-                "send_shipping_notification" => false,
-                "address_to" => [
-                "first_name" => $order->first_name,
-                "last_name" => $order->last_name,
-                "country" => "US",
-                "region" => $order->state,
-                "address1" => $order->address,
-                "city" => $order->city,
-                "zip" => $order->zip
-                ]
-            ];
-            
-            $client = new Client();
-            $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->keyPrintify,
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => $orderData // Gửi dữ liệu đơn hàng
-            ]);        
-            $res = json_decode($response->getBody()->getContents(), true);
-            if ($response->getStatusCode() === 200) {
-                if (count($info) > 0) {
-                    foreach($info as $key => $value) {
-                        $value['order_id'] = $res['id'];
-                        DB::table('orders')->where('id', $key)->update($value);
-                    }
+            foreach($orders as $order) {
+                $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
+                if ($variant_id == 0) {
+                    $results[$order->order_number.' '.$order->color.' '.$order->size] = 'Hết màu hoặc size:' .$order->color.' '.$order->size;
+                    continue;
                 }
-                $results[$order->order_number] = 'success';
-            } else {
-                $results[$order->order_number] = 'failed';
+
+                $info[$order->id] = [
+                    'variant_id' => $variant_id,
+                    'blueprint_id' => $order->blueprint_id,
+                    'print_provider_id' => $order->print_provider_id,
+                    'is_push' => true
+                ];
+
+                $item = [
+                    "print_provider_id" =>$order->print_provider_id,
+                    "blueprint_id" => $order->blueprint_id,
+                    "variant_id" => $variant_id,
+                    "print_areas" => [
+                        "front" => $order->img_1,
+                        // "back" => $order->img_2,
+                    ],
+                    "quantity" => $order->quantity
+                ];
+                $lineItems[] = $item;
             }
-        } else {
-            throw new \Exception('Không có order nào hợp lệ');
+
+            if (count($lineItems) > 0) {
+                $orderData = [
+                    "external_id" => "order_sku_" . $key_order_number,
+                    "label" => "order_sku_" . $key_order_number,
+                    "line_items" => array_values($lineItems),
+                    "shipping_method" => 1,
+                    "is_printify_express" => false,
+                    "is_economy_shipping" => false,
+                    "send_shipping_notification" => false,
+                    "address_to" => [
+                    "first_name" => $order->first_name,
+                    "last_name" => $order->last_name,
+                    "country" => "US",
+                    "region" => $order->state,
+                    "address1" => $order->address,
+                    "city" => $order->city,
+                    "zip" => $order->zip
+                    ]
+                ];
+                
+                $client = new Client();
+                $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->keyPrintify,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'json' => $orderData // Gửi dữ liệu đơn hàng
+                ]);        
+                $res = json_decode($response->getBody()->getContents(), true);
+                if ($response->getStatusCode() === 200) {
+                    if (count($info) > 0) {
+                        foreach($info as $id => $value) {
+                            $value['order_id'] = $res['id'];
+                            DB::table('orders')->where('id', $id)->update($value);
+                        }
+                    }
+                    $results[$key] = 'success';
+                } else {
+                    $results[$key] = 'failed';
+                }
+            }else{
+                $results[$key] = 'Không có order nào hợp lệ!';
+            }    
         }
 
         return $results;
@@ -574,29 +570,41 @@ class OrderController extends BaseController
         try {
             $placeOrder = $request->place_order ?? null;
             $orders = $request->orders;
+            $datas = [];
             $results = [];
             
             foreach($orders as $data) {
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
                 $platform = $placeOrder != null  ? $placeOrder : $order->place_order;
-                switch ($platform) {
+                if (!empty($data['blueprint_id'])) {
+                    $order->blueprint_id = $data['blueprint_id'];
+                }
+
+                if (!empty($data['print_provider_id'])) {
+                    $order->print_provider_id = $data['print_provider_id'];
+                }
+
+                $datas[$platform][$order->order_number][] = $order;
+            }
+            foreach ($datas as $key => $data)
+                switch ($key) {
                     case 'printify':
-                        $results = $this->pushOrderToPrintify($order, $data);
+                        $results = $this->pushOrderToPrintify($data);
                         break;
                     case 'merchize':
-                        $results = $this->pushOrderToMerchize($order);
+                        $results = $this->pushOrderToMerchize($data);
                         break;
                     case 'private':
-                        $results = $this->pushOrderToPrivate($order);
+                        $results = $this->pushOrderToPrivate($data);
                         break;
                     case 'otb':
-                        $results = $this->pushOrderToOtb($order);
+                        $results = $this->pushOrderToOtb($data);
                         break;
                     case 'hubfulfill':
-                        $results = $this->pushOrderToHubfulfill($order);
+                        $results = $this->pushOrderToHubfulfill($data);
                         break;
                     case 'lenful':
-                        $results = $this->pushOrderToLenful($order);
+                        $results = $this->pushOrderToLenful($data);
                         break;
                     default:
                         $results = 'không tìm thấy nơi order';
@@ -604,7 +612,7 @@ class OrderController extends BaseController
                 }
 
                 return $this->sendSuccess($results);
-            }
+            
             
         } catch (\Throwable $th) {
             return $this->sendError($th->getMessage(), 500);
