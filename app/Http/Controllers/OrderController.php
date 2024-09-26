@@ -954,22 +954,13 @@ class OrderController extends BaseController
     public function edit($id) 
     {
         try {
-            $blueprints = DB::table('key_blueprints')
-                        ->leftJoin('blueprints', 'key_blueprints.product_printify_name', '=', 'blueprints.name')
-                        ->select('blueprints.blueprint_id as value', 'key_blueprints.product_printify_name as label')->distinct()
-                        ->where('key_blueprints.product_printify_name', '!=', null)
-                        ->get();
-
             $order = DB::table('orders')->where('id', $id)->first();
             if (!$order) {
                 return $this->sendError('Không tìm thấy đơn hàng');
             }
-            $data = [
-                'blueprints' => $blueprints,
-                'order' => $order
-            ];
 
-            return $this->sendSuccess($data);
+
+            return $this->sendSuccess($order);
         } catch (\Throwable $th) {
             return $this->sendError('Hiển thị đơn hàng thất bại', 500);
         }
