@@ -19,7 +19,6 @@ class OrderRequest extends BaseFormRequest
         return [
             'color' => 'required',
             'size' => 'required',
-            'blueprint_id' => 'required',
             'country' => 'required',
             'city' => 'required',
             'address' => 'required',
@@ -48,7 +47,6 @@ class OrderRequest extends BaseFormRequest
         return [
             'color.required' => 'The color is required.',
             'size.required' => 'The size is required.',
-            'blueprint_id.required' => 'The blueprint is required.',
             'country.required' => 'The country is required.',
             'city.required' => 'The city is required.',
             'address.required' => 'The address is required.',

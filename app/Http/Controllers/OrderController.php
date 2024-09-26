@@ -935,7 +935,6 @@ class OrderController extends BaseController
             $data = [
                 'color' => $request->color,
                 'size' => $request->size,
-                'blueprint_id' => $request->blueprint_id,
                 'country' => $request->country,
                 'city' => $request->city,
                 'address' => $request->address,
