@@ -54,8 +54,8 @@ class OrderController extends BaseController
             foreach($orders as $order) {
                 $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
                 if ($variant_id == 0) {
-                    $results[$order->order_number.' '.$order->color.' '.$order->size] = 'Hết màu hoặc size:' .$order->color.' '.$order->size;
-                    continue;
+                    $lineItems = [];
+                    break;
                 }
 
                 $info[$order->id] = [
@@ -119,7 +119,7 @@ class OrderController extends BaseController
                     $results[$key] = 'failed';
                 }
             }else{
-                $results[$key] = 'Không có order nào hợp lệ!';
+                $results[$key] = 'Order không hợp lệ!';
             }    
         }
 
@@ -586,28 +586,29 @@ class OrderController extends BaseController
 
                 $datas[$platform][$order->order_number][] = $order;
             }
+
             foreach ($datas as $key => $data)
                 switch ($key) {
                     case 'printify':
-                        $results = $this->pushOrderToPrintify($data);
+                        $results[] = $this->pushOrderToPrintify($data);
                         break;
                     case 'merchize':
-                        $results = $this->pushOrderToMerchize($data);
+                        $results[] = $this->pushOrderToMerchize($data);
                         break;
                     case 'private':
-                        $results = $this->pushOrderToPrivate($data);
+                        $results[] = $this->pushOrderToPrivate($data);
                         break;
                     case 'otb':
-                        $results = $this->pushOrderToOtb($data);
+                        $results[] = $this->pushOrderToOtb($data);
                         break;
                     case 'hubfulfill':
-                        $results = $this->pushOrderToHubfulfill($data);
+                        $results[] = $this->pushOrderToHubfulfill($data);
                         break;
                     case 'lenful':
-                        $results = $this->pushOrderToLenful($data);
+                        $results[] = $this->pushOrderToLenful($data);
                         break;
                     default:
-                        $results = 'không tìm thấy nơi order';
+                        $results[] = 'Không tìm thấy nơi order';
                         break;   
                 }
 
