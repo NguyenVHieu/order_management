@@ -686,7 +686,6 @@ class OrderController extends BaseController
             
             
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError($th->getMessage(), 500);
         }
         
