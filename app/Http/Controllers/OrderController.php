@@ -15,6 +15,7 @@ use App\Repositories\OrderRepository;
 use Exception;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use App\Http\Requests\OrderRequest;
 
 class OrderController extends BaseController
 {
@@ -928,4 +929,50 @@ class OrderController extends BaseController
 
     }
 
+    public function update(OrderRequest $request, $id)
+    {
+        try {
+            $data = [
+                'color' => $request->color,
+                'size' => $request->size,
+                'blueprint_id' => $request->blueprint_id,
+                'country' => $request->country,
+                'city' => $request->city,
+                'address' => $request->address,
+                'zip' => $request->zip,
+                'state' => $request->state,
+                'updated_at' => now(),
+                'updated_by' => Auth::user()->id
+            ];
+
+            DB::table('orders')->where('id', $id)->update($data);
+            return $this->sendSuccess('Cập nhật order thành công!');
+        } catch (\Throwable $th) {
+            return $this->sendError('Cập nhật order thất bại');
+        }
+    }
+
+    public function edit($id) 
+    {
+        try {
+            $blueprints = DB::table('key_blueprints')
+                        ->leftJoin('blueprints', 'key_blueprints.product_printify_name', '=', 'blueprints.name')
+                        ->select('blueprints.blueprint_id as value', 'key_blueprints.product_printify_name as label')->distinct()
+                        ->where('key_blueprints.product_printify_name', '!=', null)
+                        ->get();
+
+            $order = DB::table('orders')->where('id', $id)->first();
+            if (!$order) {
+                return $this->sendError('Không tìm thấy đơn hàng');
+            }
+            $data = [
+                'blueprints' => $blueprints,
+                'order' => $order
+            ];
+
+            return $this->sendSuccess($data);
+        } catch (\Throwable $th) {
+            return $this->sendError('Hiển thị đơn hàng thất bại', 500);
+        }
+    }
 }

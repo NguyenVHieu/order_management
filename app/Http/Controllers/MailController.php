@@ -67,10 +67,13 @@ class MailController extends BaseController
                 'multi' => $param['multi'],            
             ];
 
-            // $order = DB::table('orders')->where('order_number', $data['order_number'])->first();
-            // if (empty($order)) {
-            DB::table('orders')->insert($data);
-            // }
+            $order = DB::table('orders')->where('order_number', $data['order_number'])
+                                        ->where('style', $data['style'])
+                                        ->where('color', $data['color'])
+                                        ->first();
+            if (empty($order)) {
+                DB::table('orders')->insert($data);
+            }
         }
     }
 
