@@ -45,85 +45,90 @@ class OrderController extends BaseController
 
     function pushOrderToPrintify($data) {
         $results = [];
-
         foreach($data as $key => $orders) {
-            $key_order_number = $key. time();
-            $lineItems = [];
-            $info = [];
-            $check = true;
+            try {
+                $key_order_number = $key. time();
+                $lineItems = [];
+                $info = [];
+                $check = true;
 
-            foreach($orders as $order) {
-                $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
-                if ($variant_id == 0) {
-                    $check = false;
-                    $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Hết màu hoặc size!';
-                }else {
-                    $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Còn màu còn size!';
-                }
-
-                $info[$order->id] = [
-                    'variant_id' => $variant_id,
-                    'blueprint_id' => $order->blueprint_id,
-                    'print_provider_id' => $order->print_provider_id,
-                    'is_push' => true
-                ];
-
-                $item = [
-                    "print_provider_id" =>$order->print_provider_id,
-                    "blueprint_id" => $order->blueprint_id,
-                    "variant_id" => $variant_id,
-                    "print_areas" => [
-                        "front" => $order->img_1,
-                        // "back" => $order->img_2,
-                    ],
-                    "quantity" => $order->quantity
-                ];
-
-                $lineItems[] = $item;
-            }
-
-            if (count($lineItems) > 0 && $check == true) {
-                $orderData = [
-                    "external_id" => "order_sku_" . $key_order_number,
-                    "label" => "order_sku_" . $key_order_number,
-                    "line_items" => array_values($lineItems),
-                    "shipping_method" => 1,
-                    "is_printify_express" => false,
-                    "is_economy_shipping" => false,
-                    "send_shipping_notification" => false,
-                    "address_to" => [
-                    "first_name" => $order->first_name,
-                    "last_name" => $order->last_name,
-                    "country" => "US",
-                    "region" => $order->state,
-                    "address1" => $order->address,
-                    "city" => $order->city,
-                    "zip" => $order->zip
-                    ]
-                ];
-                
-                $client = new Client();
-                $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->keyPrintify,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'json' => $orderData // Gửi dữ liệu đơn hàng
-                ]);        
-                $res = json_decode($response->getBody()->getContents(), true);
-                if ($response->getStatusCode() === 200) {
-                    if (count($info) > 0) {
-                        foreach($info as $id => $value) {
-                            $value['order_id'] = $res['id'];
-                            DB::table('orders')->where('id', $id)->update($value);
-                        }
+                foreach($orders as $order) {
+                    
+                    $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
+                    if ($variant_id == 0) {
+                        $check = false;
+                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Hết màu hoặc size!';
+                    }else {
+                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
-                    $results[$key] = 'success';
-                } else {
-                    $results[$key] = 'failed';
+
+                    $info[$order->id] = [
+                        'variant_id' => $variant_id,
+                        'blueprint_id' => $order->blueprint_id,
+                        'print_provider_id' => $order->print_provider_id,
+                        'is_push' => true
+                    ];
+
+                    $item = [
+                        "print_provider_id" =>$order->print_provider_id,
+                        "blueprint_id" => $order->blueprint_id,
+                        "variant_id" => $variant_id,
+                        "print_areas" => [
+                            "front" => $order->img_1,
+                            // "back" => $order->img_2,
+                        ],
+                        "quantity" => $order->quantity
+                    ];
+
+                    $lineItems[] = $item;
                 }
-            } 
+
+                if (count($lineItems) > 0 && $check == true) {
+                    $orderData = [
+                        "external_id" => "order_sku_" . $key_order_number,
+                        "label" => "order_sku_" . $key_order_number,
+                        "line_items" => array_values($lineItems),
+                        "shipping_method" => 1,
+                        "is_printify_express" => false,
+                        "is_economy_shipping" => false,
+                        "send_shipping_notification" => false,
+                        "address_to" => [
+                        "first_name" => $order->first_name,
+                        "last_name" => $order->last_name,
+                        "country" => "US",
+                        "region" => $order->state,
+                        "address1" => $order->address,
+                        "city" => $order->city,
+                        "zip" => $order->zip
+                        ]
+                    ];
+                    
+                    $client = new Client();
+                    $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $this->keyPrintify,
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => $orderData // Gửi dữ liệu đơn hàng
+                    ]);        
+                    $res = json_decode($response->getBody()->getContents(), true);
+                    if ($response->getStatusCode() === 200) {
+                        if (count($info) > 0) {
+                            foreach($info as $id => $value) {
+                                $value['order_id'] = $res['id'];
+                                DB::table('orders')->where('id', $id)->update($value);
+                            }
+                        }
+                    } else {
+                        $results = [];
+                        $results[$key] = 'Lỗi khi tạo order';
+                    }
+                }
+            } catch (\Throwable $th) {
+                $results[$key] = "Lỗi khi tạo order";
+            }
         }
+
         return $results;
     }
 
@@ -136,12 +141,25 @@ class OrderController extends BaseController
             foreach($orders as $order) {
                 $lineItems[] = [
                     "name" => "Product API". $order->order_number,
-                    "merchize_sku" => "CSWSVN000000EA12",
                     "quantity" => $order->quantity,
                     "price" => $order->price,
                     "currency" => "USD",
                     "image" => $order->img_6,
                     "design_front" => $order->img_1,
+                    "attributes" =>  [
+                        [
+                            "name" =>  "product",
+                            "option" =>  "T-shirt"
+                        ],
+                        [
+                            "name" =>  "Color",
+                            "option" =>  "Black"
+                        ],
+                        [
+                            "name" =>  "Size",
+                            "option" =>  "M"
+                        ]
+                    ]
                 ];
             }
             if (count($lineItems) > 0) {
@@ -203,7 +221,7 @@ class OrderController extends BaseController
 
         $token = $resLoginConvert['accessToken'];
         $lineItems = [];
-        foreach($data as $orders) 
+        foreach($data as $key => $orders) 
         {   
             $check = true;
             foreach($orders as $order) {
@@ -229,48 +247,44 @@ class OrderController extends BaseController
                 $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
 
                 if (empty($resSkuConvert['data'])) {
-                    $results[$order->order_number .' '. $order->color] = 'Hết màu hoặc hết size!';
+                    $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Hết màu hoặc hết size!';
                     $check = false;
+                }else {
+                    $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Hết màu hoặc hết size!';
                 }
     
-                $variantId = $resSkuConvert['data'][0]['variantId'];
+                $variantId = $resSkuConvert['data'][0]['variantId'] ?? 0;
                 $lineItems[] = [
-
+                    [
+                        "variantId" => $variantId,
+                        "quantity" => 1,
+                        "printAreaFront" => $order->img_1,
+                        "printAreaBack" => $order->img_2,
+                        "mockupFront" => $order->img_6,
+                        "mockupBack" => $order->img_7, 
+                        "printAreaLeft" => $order->img_3 ?? '',
+                        "printAreaRight" => $order->img_4 ?? '',
+                        "printAreaNeck" => $order->img_5 ?? '',
+                    ]
                 ];
 
             }
-
-            
-
-            
-           
-
-            $orderData = [
-                "order" => [
-                    "orderId" => $order->order_number. time(),
-                    "shippingMethod" => "STANDARD",
-                    "firstName" => $order->first_name,
-                    "lastName" => $order->last_name,
-                    "countryCode" => "US",
-                    "provinceCode" => $order->state,
-                    "addressLine1" => $order->address,
-                    "city" => $order->city,
-                    "zipcode" => $order->zip,
-                ],
-                "product" => [
-                    [
-                    "variantId" => $variantId,
-                    "quantity" => 1,
-                    "printAreaFront" => $order->img_1,
-                    "printAreaBack" => $order->img_2,
-                    "mockupFront" => $order->img_6,
-                    "mockupBack" => $order->img_7, 
-                    "printAreaLeft" => $order->img_3 ?? '',
-                    "printAreaRight" => $order->img_4 ?? '',
-                    "printAreaNeck" => $order->img_5 ?? '',
-                    ]
-                ]
-            ];
+            if (count($lineItems) > 0 && $check == true) {
+                $orderData = [
+                    "order" => [
+                        "orderId" => $order->order_number. time(),
+                        "shippingMethod" => "STANDARD",
+                        "firstName" => $order->first_name,
+                        "lastName" => $order->last_name,
+                        "countryCode" => "US",
+                        "provinceCode" => $order->state,
+                        "addressLine1" => $order->address,
+                        "city" => $order->city,
+                        "zipcode" => $order->zip,
+                    ],
+                    "product" => array_values($lineItems)
+                ];
+            }
 
             $resOrder = $client->post($this->baseUrlPrivate. '/order', [
                 'headers' => [
@@ -282,9 +296,9 @@ class OrderController extends BaseController
 
             if ($resOrder->getStatusCode() === 201) {
                 DB::table('orders')->where('id', $order->id)->update(['is_push' => 1]);
-                $results[$order->order_number] = 'success';
+                $results[$key] = 'success';
             } else {
-                $results[$order->order_number] = 'failed';
+                $results[$key] = 'failed';
             }
         }
         
