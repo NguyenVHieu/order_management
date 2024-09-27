@@ -49,12 +49,9 @@ Route::middleware('auth:sanctum')->group(function () {
         });
         
     });
-
-    
 });
 
 Route::controller(WebhookController::class)->group(function(){
-    Route::post('/update-status-order', 'updateStatusOrder');
-    Route::get('/create_order', 'createOrder');
-    
+    Route::post('/update-status-order', 'updateStatusOrderPrintify');
+    Route::post('/update-tracking-number-printify', 'updateTrackingNumberPrintify');    
 });

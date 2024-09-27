@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class WebhookController extends BaseController
 {
-    public function updateStatusOrder(Request $request)
+    public function updateStatusOrderPrintify(Request $request)
     {
         try {
             Helper::trackingInfo('Body Webhook:' . json_encode($request->all()));
@@ -19,6 +19,21 @@ class WebhookController extends BaseController
             $status = $resource['data']['status'];
             DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $status]);
             Helper::trackingInfo('Webhook cập nhật status thành công');
+
+        } catch (\Throwable $th) {
+            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+        }
+    }
+
+    public function updateTrackingNumberPrintify(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Body Webhook:' . json_encode($request->all()));
+            $resource = $request['resource'];
+            $order_id = $resource['id'];
+            $tracking_number = $resource['data']['carrier']['tracking_number'];
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_number' => $tracking_number]);
+            Helper::trackingInfo('Webhook cập nhật tracking number thành công');
 
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
