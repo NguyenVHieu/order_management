@@ -92,4 +92,14 @@ class WebhookController extends BaseController
         }
     }
 
+    public function createOrderMerchize(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Body Webhook Created Order Merchize:' . json_encode($request->all()));
+
+        } catch (\Throwable $th) {
+            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+        }
+    }
+
 }
