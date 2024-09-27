@@ -13,6 +13,7 @@ class WebhookController extends BaseController
     public function updateStatusOrder(Request $request)
     {
         try {
+            Helper::trackingInfo('Body Webhook:' . json_encode($request->all()));
             $resource = $request['resource'];
             $order_id = $resource['id'];
             $status = $resource['data']['status'];

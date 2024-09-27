@@ -679,7 +679,7 @@ class OrderController extends BaseController
                         $results[] = $this->pushOrderToLenful($data);
                         break;
                     default:
-                        $results[] = 'Không tìm thấy nơi order';
+                        return $this->sendError('Không tìm thấy nơi đặt hàng', 404);
                         break;   
                 }
 
