@@ -170,7 +170,7 @@ class OrderController extends BaseController
                     $client = new Client();
                     $orderData = [
                         "order_id" =>  $key_order_number,
-                        "identifier" =>  $key_order_number,
+                        "identifier" =>  $key,
                         "shipping_info" => [
                             "full_name" => $order->first_name . "" . $order->last_name,
                             "address_1" => $order->address,
