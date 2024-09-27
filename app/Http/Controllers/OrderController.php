@@ -946,10 +946,10 @@ class OrderController extends BaseController
 
             if ($order->multi == true) {
                 DB::table('orders')->where('order_number', $order->order_number)->update($data);
-            } else {
-                $data['color'] = $request->color;
-                $data['size'] = $request->size;
             }
+
+            $data['color'] = $request->color;
+            $data['size'] = $request->size;
 
             DB::table('orders')->where('id', $id)->update($data);
             DB::commit();
