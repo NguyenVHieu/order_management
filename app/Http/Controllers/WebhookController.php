@@ -119,7 +119,7 @@ class WebhookController extends BaseController
             $doneEvents = [];
             foreach ($data as $event) {
                 if ($event['status'] === 'done') {
-                    $doneEvents[] = $event;
+                    $doneEvents[] = $event['event'];
                 }
             }
 
