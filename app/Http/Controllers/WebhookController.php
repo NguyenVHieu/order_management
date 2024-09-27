@@ -78,5 +78,18 @@ class WebhookController extends BaseController
         }
     }
 
+    public function updateTrackingNumberMerchize(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Body Webhook Merchize:' . json_encode($request->all()));
+            // $order_id = $request->merchize_order_id;
+            // $tracking_number = $request->tracking_number;
+            // DB::table('orders')->where('order_id', $order_id)->update(['tracking_number' => $tracking_number]);
+            Helper::trackingInfo('Webhook cập nhật tracking number merchize này');
+
+        } catch (\Throwable $th) {
+            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+        }
+    }
 
 }

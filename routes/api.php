@@ -46,7 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/update-order-otb', 'updateOrderOtb');
         });
         Route::controller(MailController::class)->group(function(){
-            Route::get('/fetch-mail-order', 'fetchMailOrder');
+            Route::get('/mail/fetch-mail-order', 'fetchMailOrder');
         });
         
     });
@@ -56,4 +56,5 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-status-order', 'updateStatusOrderPrintify');
     Route::post('/update-tracking-number-printify', 'updateTrackingNumberPrintify');    
     Route::post('/update-tracking-number-lenful', 'updateTrackingNumberLenful');
+    Route::post('/update-tracking-number-merchize', 'updateTrackingNumberMerchize');
 });
