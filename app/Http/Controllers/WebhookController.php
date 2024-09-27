@@ -115,9 +115,8 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
             $orderProgress = $request['resource']['order_progress'];
             $order_number = $request['resource']['identifier'];
-            $data = json_decode($orderProgress, true);
             $doneEvents = [];
-            foreach ($data as $event) {
+            foreach ($orderProgress as $event) {
                 if ($event['status'] === 'done') {
                     $doneEvents[] = $event['event'];
                 }
@@ -127,9 +126,10 @@ class WebhookController extends BaseController
                 $lastDoneEvent = end($doneEvents);
             }
             
-            DB::table('orders')->where('order_number', $order_number)->update(['order_status' => $lastDoneEvent]);
+            DB::table('orders')->where('order_number', $order_number)->update(['status_order' => $lastDoneEvent]);
             Helper::trackingInfo('Cập nhật order_status Order Merchize thành công');
         } catch (\Throwable $th) {
+            dd($th);
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
         }
     }
