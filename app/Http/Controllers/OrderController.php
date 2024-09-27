@@ -932,9 +932,9 @@ class OrderController extends BaseController
     public function update(OrderRequest $request, $id)
     {
         try {
+            DB::beginTransaction();
+            $order = DB::table('orders')->where('id', $id)->first();
             $data = [
-                'color' => $request->color,
-                'size' => $request->size,
                 'country' => $request->country,
                 'city' => $request->city,
                 'address' => $request->address,
@@ -944,9 +944,18 @@ class OrderController extends BaseController
                 'updated_by' => Auth::user()->id
             ];
 
+            if ($order->multi == true) {
+                DB::table('orders')->where('order_number', $order->order_number)->update($data);
+            } else {
+                $data['color'] = $request->color;
+                $data['size'] = $request->size;
+            }
+
             DB::table('orders')->where('id', $id)->update($data);
+            DB::commit();
             return $this->sendSuccess('Cập nhật order thành công!');
         } catch (\Throwable $th) {
+            DB::rollBack(); 
             return $this->sendError('Cập nhật order thất bại');
         }
     }
