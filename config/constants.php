@@ -40,7 +40,18 @@
             'New Zealand' => 'NZYTECO',
             'Australia' => 'AUYTECO',
             'Canada' => 'CAYTECO',
-        ]   
+        ] ,
         
+        'felix_size_otb' => [
+            'ADULT_SWEATSHIRT_2D' => 'SS-',
+            'ADULT_UNISEX_HOODIE' => 'H-',
+            'BELLA_CANVAS_TSHIRT' => 'BC-',
+            'COMFORT_COLORS_LONG_SLEEVE' => 'CFLS-',
+            'COMFORT_COLORS_SHIRT' => 'CF-',
+            'STANDARD_LONG_SLEEVE' => 'LS-',
+            'WOMEN_TSHIRT' => 'W-',
+            'Y_PULLOVER_HOODIE' => 'YH-',
+            'Y_TSHIRT' => 'Y-',
+        ]
     ];
 ?>

@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/save-image', 'saveImgOrder');
             Route::post('/update/{id}', 'update');
             Route::get('/{id}', 'edit');
+            Route::post('/update-order-otb', 'updateOrderOtb');
         });
         Route::controller(MailController::class)->group(function(){
             Route::get('/fetch-mail-order', 'fetchMailOrder');

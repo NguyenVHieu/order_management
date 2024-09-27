@@ -56,7 +56,7 @@ class WebhookController extends BaseController
             $resource = $request['resource'];
             $order_id = $resource['id'];
             $tracking_number = $resource['data']['carrier']['tracking_number'];
-            DB::table('orders')->where('order_id', $order_id)->update(['tracking_number' => $tracking_number]);
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking_number]);
             Helper::trackingInfo('Webhook cập nhật tracking number thành công');
 
         } catch (\Throwable $th) {
@@ -68,11 +68,10 @@ class WebhookController extends BaseController
     {
         try {
             Helper::trackingInfo('Body Webhook Lenful:' . json_encode($request->all()));
-            // $resource = $request['resource'];
-            // $order_id = $resource['id'];
-            // $tracking_number = $resource['data']['tracking_number'];
-            // DB::table('orders')->where('order_id', $order_id)->update(['tracking_number' => $tracking_number]);
-            // Helper::trackingInfo('Webhook cập nhật tracking number thành công');
+            $order_id = $request->lenful_order_short_id;
+            $tracking_number = $request->tracking_numbers;
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_number' => $tracking_number]);
+            Helper::trackingInfo('Webhook cập nhật tracking number lenful thành công');
 
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
