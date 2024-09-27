@@ -481,21 +481,32 @@ class OrderController extends BaseController
                 ]);        
                 $resOrder = json_decode($response->getBody()->getContents(), true);
                 if ($response->getStatusCode() == 200){
+                    $orderId = $resOrder['order_id'];
                     $data = [
                         'place_order' => 'hubfulfill',
                         'is_push' => 1,
-                        'order_id' => $resOrder['order_id'],
+                        'order_id' => $orderId,
                         'cost' => $resOrder['total'],
                         'tracking_order' => $resOrder['tracking_number']
                     ];
 
+                    $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
+                        'headers' => [
+                            'X-API-KEY' => $this->keyHubfulfill,
+                            'Content-Type'  => 'application/json',
+                        ],
+                    ]);    
+                    $resStatusFormat = json_decode($resStatus->getBody()->getContents(), true);
+                    $data['status_order'] = $resStatusFormat['status'];
+                    $data['tracking_order'] = $resStatusFormat['tracking_number'];
+
                     DB::table('orders')->where('order_number', $order->order_number)->update($data);
+                    
                     $results[$order->order_number] = 'Success';
                 }else {
                     $results[$order->order_number] = 'Lỗi khi tạo order';
                 }
             } catch (\Throwable $th) {
-                dd($th);
                 $results[$order->order_number] = 'Lỗi khi tạo order';
             }
             
