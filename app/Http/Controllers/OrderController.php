@@ -489,6 +489,7 @@ class OrderController extends BaseController
                     $results[$order->order_number] = 'Lỗi khi tạo order';
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 $results[$order->order_number] = 'Lỗi khi tạo order';
             }
             
