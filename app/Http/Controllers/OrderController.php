@@ -344,11 +344,17 @@ class OrderController extends BaseController
                     $ids[] = $order->id;
 
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+
                     if (array_key_exists($product->otb, $arr_type)) {
                         $felix_size = $arr_type[$product->otb];
                     }else {
                         $felix_size = null;
                     }
+                    $sizeFormat = $felix_size ? $felix_size : $order->size;
+                    if ($product->otb == 'TODDLER_TSHIRT' && $order->size == '5T-6T') {
+                        $sizeFormat = '5|6';
+                    }
+                    
 
                     $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
                     $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
@@ -362,7 +368,7 @@ class OrderController extends BaseController
                     $sheet->setCellValue('L' . $row, $product->otb);
                     $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
                     $sheet->setCellValue('N' . $row, $order->color);
-                    $sheet->setCellValue('O' . $row, $felix_size.$order->size);
+                    $sheet->setCellValue('O' . $row, $sizeFormat);
                     $sheet->setCellValue('S' . $row, $order->img_1);
                     $row++;
                 }
