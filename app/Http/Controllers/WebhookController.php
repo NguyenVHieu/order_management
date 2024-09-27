@@ -36,7 +36,7 @@ class WebhookController extends BaseController
                     ],
                 ]);
                 $data = json_decode($response->getBody()->getContents(), true);
-                $cost = $data['total_price'] + $data['total_shipping'];
+                $cost = $data['total_price'] + $data['total_shipping'] + $data['total_tax'];
                 DB::table('orders')->where('order_id', $order_id)->update(['cost' => $cost/100]);
                 Helper::trackingInfo('Webhook cập nhật cost thành công');
             } 
