@@ -58,7 +58,7 @@ class OrderController extends BaseController
                     $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
                     if ($variant_id == 0) {
                         $check = false;
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Hết màu hoặc size!';
+                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
                         $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
@@ -260,7 +260,7 @@ class OrderController extends BaseController
                     $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
     
                     if (empty($resSkuConvert['data'])) {
-                        $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Hết màu hoặc hết size!';
+                        $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
                         $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Success!';
@@ -512,7 +512,7 @@ class OrderController extends BaseController
                 foreach ($orders as $order) {
                     $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
                     if ($sku == 0) {
-                        $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Hết màu hoặc size!';
+                        $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
                         $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Sucess';
