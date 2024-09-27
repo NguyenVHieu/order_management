@@ -129,7 +129,6 @@ class WebhookController extends BaseController
             DB::table('orders')->where('order_number', $order_number)->update(['status_order' => $lastDoneEvent]);
             Helper::trackingInfo('Cập nhật order_status Order Merchize thành công');
         } catch (\Throwable $th) {
-            dd($th);
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
         }
     }
