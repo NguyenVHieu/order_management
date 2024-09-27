@@ -480,10 +480,10 @@ class OrderController extends BaseController
                         'is_push' => 1,
                         'order_id' => $resOrder['order_id'],
                         'cost' => $resOrder['total'],
-                        'tracking_number' => $resOrder['tracking_number']
+                        'tracking_order' => $resOrder['tracking_number']
                     ];
 
-                    DB::table('orders')->where('id', $order->id)->update($data);
+                    DB::table('orders')->where('order_number', $order->order_number)->update($data);
                     $results[$order->order_number] = 'Success';
                 }else {
                     $results[$order->order_number] = 'Lỗi khi tạo order';
