@@ -59,4 +59,5 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-tracking-number-merchize', 'updateTrackingNumberMerchize');
     Route::post('/create-order-merchize', 'createOrderMerchize');
     Route::post('/progress-order-merchize', 'progressOrderMerchize');
+    Route::post('/order-payment-merchize', 'orderPaymentMerchize');
 });

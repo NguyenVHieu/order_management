@@ -103,6 +103,7 @@ class WebhookController extends BaseController
                 'status_order' => $status,
             ];
             DB::table('orders')->where('order_number', $order_number)->update($data);
+            Helper::trackingInfo('Webhook Created Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
         }
@@ -112,6 +113,34 @@ class WebhookController extends BaseController
     {
         try {
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
+            $orderProgress = $request['resource']['order_progress'];
+            $order_number = $request['resource']['identifier'];
+            $data = json_decode($orderProgress, true);
+            $doneEvents = [];
+            foreach ($data as $event) {
+                if ($event['status'] === 'done') {
+                    $doneEvents[] = $event;
+                }
+            }
+
+            if (!empty($doneEvents)) {
+                $lastDoneEvent = end($doneEvents);
+            }
+            
+            DB::table('orders')->where('order_number', $order_number)->update(['order_status' => $lastDoneEvent]);
+            Helper::trackingInfo('Cập nhật order_status Order Merchize thành công');
+        } catch (\Throwable $th) {
+            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+        }
+    }
+
+    public function orderPaymentMerchize(Request $request){
+        try {
+            Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
+            $cost = $request['resource']['fulfillment_cost'];
+            $order_number = $request['resource']['identifier'];
+            DB::table('orders')->where('order_number', $order_number)->update(['cost' => $cost]);
+            Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
         }
