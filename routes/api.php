@@ -54,4 +54,5 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-status-order', 'updateStatusOrderPrintify');
     Route::post('/update-tracking-number-printify', 'updateTrackingNumberPrintify');    
+    Route::post('/update-tracking-number-lenful', 'updateTrackingNumberLenful');
 });

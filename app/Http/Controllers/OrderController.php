@@ -402,9 +402,8 @@ class OrderController extends BaseController
                     ],
                 ],
             ]);
-
+            // dd($response->getBody()->getContents());
             $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
-            $body = $response->getBody(); // Lấy nội dung phản hồi
 
             if ($statusCode == 200) {
                 DB::table('orders')->whereIn('id', $ids)->update(['is_push' => 1, 'place_order' => 'otb']);
@@ -467,8 +466,17 @@ class OrderController extends BaseController
                     ],
                     'json' => $orderData
                 ]);        
+                $resOrder = json_decode($response->getBody()->getContents(), true);
                 if ($response->getStatusCode() == 200){
-                    DB::table('orders')->where('id', $order->id)->update(['is_push' => 1, 'place_order' => 'hubfulfill']);
+                    $data = [
+                        'place_order' => 'hubfulfill',
+                        'is_push' => 1,
+                        'order_id' => $resOrder['order_id'],
+                        'cost' => $resOrder['total'],
+                        'tracking_number' => $resOrder['tracking_number']
+                    ];
+
+                    DB::table('orders')->where('id', $order->id)->update($data);
                     $results[$order->order_number] = 'Success';
                 }else {
                     $results[$order->order_number] = 'Lỗi khi tạo order';
