@@ -26,6 +26,7 @@ class WebhookController extends BaseController
             $status = $resource['data']['status'];
             $shop_id = $resource['data']['shop_id'];
             $keyPrintify = DB::table('shops')->where('shop_printify_id', $shop_id)->first()->token_printify;
+            Helper::trackingInfo('keyPrintify:', $keyPrintify, 'shop_id:', $shop_id);
             if ($status == 'on-hold') {
                 $client = new \GuzzleHttp\Client();
                 $response = $client->get($this->baseUrlPrintify. "shops/{$shop_id}/orders/{$order_id}.json", [
