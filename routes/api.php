@@ -45,10 +45,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{id}', 'edit');
             Route::post('/update-order-otb', 'updateOrderOtb');
         });
-        Route::controller(MailController::class)->group(function(){
-            Route::get('/mail/fetch-mail-order', 'fetchMailOrder');
-        });
-        
     });
 });
 
@@ -60,4 +56,8 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/create-order-merchize', 'createOrderMerchize');
     Route::post('/progress-order-merchize', 'progressOrderMerchize');
     Route::post('/order-payment-merchize', 'orderPaymentMerchize');
+});
+
+Route::controller(MailController::class)->group(function(){
+    Route::get('/fetch-mail-order', 'fetchMailOrder');
 });

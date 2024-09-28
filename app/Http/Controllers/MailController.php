@@ -85,10 +85,8 @@ class MailController extends BaseController
             $client->connect();
 
             $inbox = $client->getFolder('INBOX');
-            // $today = Carbon::now()->startOfMonth(); 
-            // dd($today);
 
-            $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
+            $messages = $inbox->query()->subject('You made a sale on Etsy')->unseen()->get();
             
             $list_data = [];
             if (count($messages) > 0) {
@@ -130,7 +128,6 @@ class MailController extends BaseController
                         }
                         $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
                     }
-                    // dd($data);
 
                     $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
                     
@@ -168,26 +165,19 @@ class MailController extends BaseController
                         $list_data[] = $data;
                     }
 
-                    // $data['thumb'] = is_array($thumb) ? json_encode(array_values($thumb)) : $thumb;
-                    
-                    
-                    // $size = $this->getSize($data['style']);
-                    // $blueprint_id = $this->getBlueprintId($data['style']);
-                    // $data['style'] = is_array($data['style']) ? json_encode(array_values($data['style'])) : $data['style'];
-                    // $data['size'] = is_array($size) ? json_encode(array_values($size)) : $size;
-                    // $data['blueprint_id'] = is_array($blueprint_id) ? json_encode(array_values($blueprint_id)) : $blueprint_id;
-
-                    // $list_data[] = $data;
-
+                    $message->setFlag('SEEN');
+                    $client->expunge();
                 }
 
                 $this->getInformationProduct($list_data);
-                Helper::trackingInfo('fetchMailOrder end at ' . now());
-                return $this->sendSuccess('clone order ok');
+                
             } 
+            Helper::trackingInfo('fetchMailOrder end at ' . now());
+            return $this->sendSuccess('clone order ok');
         } catch (\Throwable $th) {
-            dd($th);
-            return $this->sendError($th->getMessage());}
+            Helper::trackingInfo('fetchMailOrder error' . $th->getMessage());
+            return $this->sendError($th->getMessage(), 500);
+        }
     }
 
     private function extractInfo($pattern, $body, $singleLine = false)

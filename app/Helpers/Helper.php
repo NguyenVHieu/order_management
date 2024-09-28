@@ -17,6 +17,12 @@ class Helper {
         Log::channel($channel)->info($action . "::::" . request()->log_id . '::::' . (new self)->infoClientLogin() . '::::' . $msg_log);
     }
 
+
+    public static function trackingInfoCommand($msg_log = null, $channel = 'track_info')
+    {
+        Log::channel($channel)->info($msg_log);
+    }
+
     public static function trackingError($msg_log, $channel = 'track_error')
     {
         $action = request()->route()->getActionName() ?? "undefined";
