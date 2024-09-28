@@ -43,10 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/save-image', 'saveImgOrder');
             Route::post('/update/{id}', 'update');
             Route::get('/{id}', 'edit');
-            Route::post('/update-order-otb', 'updateOrderOtb');
+            
         });
     });
 });
+
+Route::post('/update-order-otb', [OrderController::class, 'updateOrderOtb']);
 
 Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-status-order', 'updateStatusOrderPrintify');
