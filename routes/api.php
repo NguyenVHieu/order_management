@@ -48,7 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-Route::post('/update-order-otb', [OrderController::class, 'updateOrderOtb']);
+Route::post('/update-order-otb', [WebhookController::class, 'updateOrderOtb']);
 
 Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-status-order', 'updateStatusOrderPrintify');

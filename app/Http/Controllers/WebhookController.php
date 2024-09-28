@@ -7,6 +7,8 @@ use App\Models\Log;
 use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController;
 use Illuminate\Support\Facades\DB;
+use GuzzleHttp\Client;
+
 
 class WebhookController extends BaseController
 {
@@ -142,6 +144,81 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+        }
+    }
+
+    public function updateOrderOtb()
+    {
+        try {
+            Helper::trackingInfo('Bắt đầu cập nhật order OTB');
+            $client = new Client();
+
+            $resLogin = $client->request('POST', 'https://otbzone.com/bot/api/v1/auth/authenticate', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'password' => 'TABlAGgAYQBuAGgAJgAyADIAOQA0AA==',
+                    'rememberMe' => false,
+                    'username' => 'lehanhhong2294@gmail.com',
+                ],
+            ]);
+
+            $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+            $token = trim($resLoginConvert['data']['accessToken']['token']) ?? null;
+            
+            if (!$token) {
+                return ['401' => 'Đăng nhập OTB không thành công'];
+            }
+
+            $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/data-lists', [
+                'headers' => [
+                    'Authorization' => 'Bearer '.$token,
+                ],
+                
+                'json' => [
+                    'model' => 'orderdraft',
+                    // 'filters' => [
+                    //     [
+                    //         'field' => 'createdAt',
+                    //         'operation' => 'between',
+                    //         'value' => ['1725123600000', '1730393999999'],
+                    //         'dayAgo' => 7,
+                    //     ],
+                    // ],
+                    'filterType' => 'AND',
+                    'sorting' => [
+                        'field' => 'createdAt',
+                        'direction' => 'desc',
+                    ],
+                    // 'pagination' => [
+                    //     'page' => 1,
+                    //     'pageSize' => 20,
+                    // ],
+                    'filtersRef' => [],
+                ],
+            ]);
+
+            $res = json_decode($response->getBody()->getContents(), true);
+
+            $data = $res['data']['data'];
+            foreach($data as $order) {
+                $data = [
+                    'order_id' => $order['id'],
+                    'status_order' => $order['orderStatus'] != '' ? $order['orderStatus'] : null,
+                    'tracking_order' => $order['addedTrackingCode'] != 0 ? $order['addedTrackingCode'] : null,
+                    'cost' => $order['totalAmount']/100,
+                ];
+                $order_number = $order['refId'];
+                
+                $order = DB::table('orders')->where('order_number', $order_number)->first();
+                if ($order) {
+                    DB::table('orders')->where('order_number', $order_number)->update($data);
+                }
+            }
+            Helper::trackingInfo('Cập nhật order OTB thành công');
+        } catch (\Throwable $th) {
+            Helper::trackingInfo('Cập nhật order OTB thất bại');
         }
     }
 
