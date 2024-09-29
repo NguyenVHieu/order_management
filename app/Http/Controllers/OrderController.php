@@ -29,6 +29,7 @@ class OrderController extends BaseController
     protected $keyHubfulfill;
     protected $baseUrlHubfulfill;
     protected $baseUrlLenful;
+    protected $info;
 
     public function __construct(OrderRepository $orderRepository)
     {   
@@ -38,9 +39,11 @@ class OrderController extends BaseController
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
-        $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
-        $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
-        $this->keyHubfulfill = 'fa5677f70014b9d618d6aaa9567bab3fca9083b37b165a03cf93b2bca12737f1';
+        // $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
+        // $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
+        // $this->keyHubfulfill = 'fa5677f70014b9d618d6aaa9567bab3fca9083b37b165a03cf93b2bca12737f1';
+        $this->info = $this->checkInfo();
+
         $this->orderRepository = $orderRepository;
     }
 
@@ -107,9 +110,9 @@ class OrderController extends BaseController
                     
                     
                     $client = new Client();
-                    $response = $client->post($this->baseUrlPrintify.'shops/18002634/orders.json', [
+                    $response = $client->post($this->baseUrlPrintify.'shops/'.$this->info->shop_printify_id.'/orders.json', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $this->keyPrintify,
+                            'Authorization' => 'Bearer ' . $this->info->token_printify,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -185,7 +188,7 @@ class OrderController extends BaseController
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $this->keyMechize,
+                            'Authorization' => 'Bearer ' . $this->info->token_merchize,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -217,8 +220,8 @@ class OrderController extends BaseController
                     'Content-Type'  => 'application/json',
                 ],
                 'json' => [
-                    'email' => 'lehanhhong2294@gmail.com',
-                    'password' => 'cacc6dd0'
+                    'email' => $this->info->email_private,
+                    'password' => $this->info->password_private
                 ] // Gửi dữ liệu đơn hàng
             ]);
 
@@ -350,10 +353,11 @@ class OrderController extends BaseController
                     }else {
                         $felix_size = null;
                     }
-                    $sizeFormat = $felix_size ? $felix_size : $order->size;
+                    $sizeFormat = $felix_size ? $felix_size.$order->size : $order->size;
                     if ($product->otb == 'TODDLER_TSHIRT' && $order->size == '5T-6T') {
                         $sizeFormat = '5|6';
                     }
+                
                     
 
                     $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
@@ -385,9 +389,9 @@ class OrderController extends BaseController
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'password' => 'TABlAGgAYQBuAGgAJgAyADIAOQA0AA==',
+                    'password' => $this->info->password_otb,
                     'rememberMe' => false,
-                    'username' => 'lehanhhong2294@gmail.com',
+                    'username' => $this->info->email_otb,
                 ],
             ]);
 
@@ -474,7 +478,7 @@ class OrderController extends BaseController
                 $client = new Client();
                 $response = $client->post($this->baseUrlHubfulfill.'/orders', [
                     'headers' => [
-                        'X-API-KEY' => $this->keyHubfulfill,
+                        'X-API-KEY' => $this->info->token_hubfulfill,
                         'Content-Type'  => 'application/json',
                     ],
                     'json' => $orderData
@@ -492,7 +496,7 @@ class OrderController extends BaseController
 
                     $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
                         'headers' => [
-                            'X-API-KEY' => $this->keyHubfulfill,
+                            'X-API-KEY' => $this->info->token_hubfulfill,
                             'Content-Type'  => 'application/json',
                         ],
                     ]);    
@@ -507,6 +511,7 @@ class OrderController extends BaseController
                     $results[$order->order_number] = 'Lỗi khi tạo order';
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 $results[$order->order_number] = 'Lỗi khi tạo order';
             }
             
@@ -523,8 +528,8 @@ class OrderController extends BaseController
             $client = new Client();
             $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
                 'form_params' => [
-                    'user_name' => 'lehanhhong2294@gmail.com',
-                    'password' => '928a58ecc3',
+                    'user_name' => $this->info->email_lenful,
+                    'password' => $this->info->password_lenful,
                 ],
             ]);
 
@@ -581,7 +586,7 @@ class OrderController extends BaseController
                         "items" => array_values($lineItems)
                     ];
 
-                    $resOrder = $client->post($this->baseUrlLenful.'/order/66e024d4682685fd3b9f35d0/create', [
+                    $resOrder = $client->post($this->baseUrlLenful.'/order/'.$this->info->shop_lenful_id.'/create', [
                         'headers' => [
                                 'Authorization' => 'Bearer ' . $token,
                                 'Content-Type'  => 'application/json',
@@ -589,15 +594,16 @@ class OrderController extends BaseController
                             'json' => $orderData // Gửi dữ liệu đơn hàng
                     ]);
                     $res = json_decode($resOrder->getBody()->getContents(), true);
-
+                    
                     if ($resOrder->getStatusCode() === 200) {
                         $data = [
                             'place_order' => 'lenful',
                             'is_push' => 1,
                             'cost' => $res['data']['total_price'],
+                            'status_order' => $res['data']['status'],
+                            'order_id' => $res['data']['id']
                         ];
                         DB::table('orders')->where('id', $order->id)->update($data);
-                        $results[$key] = 'Success';
     
                     } else {
                         $results[$key] = 'Lỗi khi tạo order';
@@ -654,7 +660,7 @@ class OrderController extends BaseController
 
                 $response = $client->get($this->baseUrlPrintify. "catalog/blueprints/{$blueprint_id}/print_providers.json", [
                     'headers' => [
-                        'Authorization' => 'Bearer ' . $this->keyPrintify,
+                        'Authorization' => 'Bearer ' . $this->info->token_printify,
                         'Content-Type'  => 'application/json',
                     ],
                 ]);
@@ -759,7 +765,7 @@ class OrderController extends BaseController
         $client = new Client();
         $response = $client->get($this->baseUrlPrintify. "/catalog/blueprints.json", [
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->keyPrintify,
+                'Authorization' => 'Bearer ' . $this->info->token_printify,
                 'Content-Type'  => 'application/json',
             ],
         ]);
@@ -822,7 +828,7 @@ class OrderController extends BaseController
         $client = new Client();
         $resVariant = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->keyPrintify,
+                'Authorization' => 'Bearer ' . $this->info->token_printify,
                 'Content-Type'  => 'application/json',
             ],
         ]);
@@ -1014,13 +1020,17 @@ class OrderController extends BaseController
         }
     }
 
-    // public function checkInfo()
-    // {
-    //     try {
-    //         $shop_id = Auth::user()->shop_id;
-    //         $shop = Shop::where('id', $shop_id)->first();
-    //     } catch {
-    //         return $this->sendError('Lỗi xác thực người dùng!');
-    //     }
-    // }
+    public function checkInfo()
+    {
+        try {
+            $shop_id = Auth::user()->shop_id;
+            $shop = Shop::where('id', $shop_id)->first();
+            if (!$shop && Auth::user()->type != null) {
+                return $this->sendError('Lỗi xác thực người dùng!');
+            }
+            return $shop;
+        } catch (\Throwable $th) {
+            return $this->sendError('Lỗi xác thực người dùng!');
+        }
+    }
 }
