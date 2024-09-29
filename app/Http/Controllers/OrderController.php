@@ -643,7 +643,8 @@ class OrderController extends BaseController
                 'shopId' => $shopId,
                 'userId' => Auth::user()->id,
                 'dateOrderFrom' => $req->date_order_from,
-                'dateOrderTo' => $req->date_order_to
+                'dateOrderTo' => $req->date_order_to,
+                'push' => (int)$req->push == 0 ? 'not_push' : 'push'
             ];
             $columns = [
                 'orders.*',

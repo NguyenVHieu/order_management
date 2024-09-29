@@ -36,12 +36,19 @@ class OrderRepository implements OrderRepositoryInterface
             $query->where('users.id',  $params['userId']);
         }
 
-        if (!empty($params['dateOrderFrom'])) {
-            $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
-        }
+        if (!empty($params['push'])) {
+            $push = $params['push'] === 'not_push' ? 0 : 1; 
+            $query->where('orders.is_push', $push);
 
-        if (!empty($params['dateOrderTo'])) {
-            $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
+            if ($params['push'] == 'push') {
+                if (!empty($params['dateOrderFrom'])) {
+                    $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
+                }
+        
+                if (!empty($params['dateOrderTo'])) {
+                    $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
+                }
+            }
         }
 
         $data = $query->orderBy('orders.id', 'desc')->get();
