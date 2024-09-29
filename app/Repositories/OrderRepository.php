@@ -36,22 +36,47 @@ class OrderRepository implements OrderRepositoryInterface
             $query->where('users.id',  $params['userId']);
         }
 
-        if (!empty($params['push'])) {
-            $push = $params['push'] === 'not_push' ? 0 : 1; 
-            $query->where('orders.is_push', $push);
-
-            if ($params['push'] == 'push') {
-                if (!empty($params['dateOrderFrom'])) {
-                    $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
-                }
-        
-                if (!empty($params['dateOrderTo'])) {
-                    $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
-                }
+        if (!empty($params['dateOrderFrom'] || $params['dateOrderTo'])) {
+            if (!empty($params['dateOrderFrom'])) {
+                $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
             }
+    
+            if (!empty($params['dateOrderTo'])) {
+                $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
+            }
+
+            $query->where('orders.is_push', true);
         }
 
-        $data = $query->orderBy('orders.id', 'desc')->get();
+        $query2 = Order::query()->select($columns)->distinct()
+                        ->where('orders.is_push', false);
+
+        $query2->leftJoin('users', function($join) {  
+            $join->on('users.shop_id', '=', 'orders.shop_id');
+            $join->whereNull('users.deleted_at');
+        });
+
+        $query2->leftJoin('shops', function($join) {  
+            $join->on('shops.id', '=', 'orders.shop_id');
+            $join->whereNull('shops.deleted_at');
+        });
+
+        if ($params['userType'] != -1) {
+            if ($params['userType'] == 2) {
+                $query2->where('orders.is_approval', true);
+            }
+
+            if (!empty($params['shopId'])) {
+                $query2->where('orders.shop_id', $params['shopId']);
+            }
+
+            $query2->where('users.id',  $params['userId']);
+        }
+        
+        $data = $query->union($query2)
+                   ->orderBy('id', 'desc')
+                   ->get();
+        
         return $data;
     }
 

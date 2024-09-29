@@ -638,13 +638,13 @@ class OrderController extends BaseController
         try {
             $userType = Auth::user()->is_admin ? -1 : Auth::user()->user_type_id;
             $shopId = Auth::user()->shop_id;
+
             $params = [
                 'userType' => $userType,
                 'shopId' => $shopId,
                 'userId' => Auth::user()->id,
                 'dateOrderFrom' => $req->date_order_from,
                 'dateOrderTo' => $req->date_order_to,
-                'push' => (int)$req->push == 0 ? 'not_push' : 'push'
             ];
             $columns = [
                 'orders.*',
