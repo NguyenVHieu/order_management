@@ -71,6 +71,7 @@ class OrderController extends BaseController
                         'blueprint_id' => $order->blueprint_id,
                         'print_provider_id' => $order->print_provider_id,
                         'place_order' => 'printify',
+                        'date_push' => date('Y-m-d'),
                         'is_push' => true
                     ];
 
@@ -196,7 +197,14 @@ class OrderController extends BaseController
                     $res = json_decode($response->getBody()->getContents(), true);
                 
                     if ($response->getStatusCode() === 200) {
-                        DB::table('orders')->where('id', $order->id)->update(['is_push' => 1, 'order_id' => $res['data']['_id'], 'place_order' => 'merchize', 'status_order' => $res['data']['status']]); 
+                        $data = [
+                            'is_push' => 1,
+                            'date_push' => date('Y-m-d'),
+                            'order_id' => $res['data']['_id'],
+                            'place_order' => 'merchize', 
+                            'status_order' => $res['data']['status']
+                        ];
+                        DB::table('orders')->where('id', $order->id)->update($data); 
                         $results[$key] = 'Success';
                     } else {
                         $results[$key] = 'Failed';
@@ -308,18 +316,19 @@ class OrderController extends BaseController
                     ],
                     'json' => $orderData // Gửi dữ liệu đơn hàng
                 ]);
-
-                dd($resOrder->getBody()->getContents());
-
     
                 if ($resOrder->getStatusCode() === 201) {
-                    DB::table('orders')->where('id', $order->id)->update(['is_push' => 1, 'place_order' => 'private']);
+                    $data = [
+                        'is_push' => 1, 
+                        'place_order' => 'private',
+                        'date_push' => date('Y-m-d')
+                    ];
+
+                    DB::table('orders')->where('id', $order->id)->update($data);
                 } else {
                     $results[$key] = 'Failed';
                 }
             } catch (\Throwable $th) {
-                dd($th);
-                $results = [];
                 $results[$key] = 'Lỗi khi tạo order';
             }    
         }
@@ -423,7 +432,12 @@ class OrderController extends BaseController
             $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
 
             if ($statusCode == 200) {
-                DB::table('orders')->whereIn('id', $ids)->update(['is_push' => 1, 'place_order' => 'otb']);
+                $data = [
+                    'is_push' => 1, 
+                    'place_order' => 'otb',
+                    'date_push' => date('Y-m-d')
+                ];
+                DB::table('orders')->whereIn('id', $ids)->update($data);
                 return [1 => "Order OTB Success"];
                 
             } else {
@@ -491,7 +505,8 @@ class OrderController extends BaseController
                         'is_push' => 1,
                         'order_id' => $orderId,
                         'cost' => $resOrder['total'],
-                        'tracking_order' => $resOrder['tracking_number']
+                        'tracking_order' => $resOrder['tracking_number'],
+                        'date_push' => date('Y-m-d')
                     ];
 
                     $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
@@ -511,7 +526,6 @@ class OrderController extends BaseController
                     $results[$order->order_number] = 'Lỗi khi tạo order';
                 }
             } catch (\Throwable $th) {
-                dd($th);
                 $results[$order->order_number] = 'Lỗi khi tạo order';
             }
             
@@ -575,11 +589,12 @@ class OrderController extends BaseController
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    $country = DB::table('countries')->where('name', $order->country)->first();
                     $orderData = [
                         "order_number" => "#". $order->order_number,
                         "first_name" => $order->first_name,
                         "last_name" => $order->last_name,
-                        "country_code" => "US",
+                        "country_code" => $country->iso_alpha_2,
                         "city" => $order->city,
                         "zip" => $order->zip,
                         "address_1" => $order->address,
@@ -594,14 +609,15 @@ class OrderController extends BaseController
                             'json' => $orderData // Gửi dữ liệu đơn hàng
                     ]);
                     $res = json_decode($resOrder->getBody()->getContents(), true);
-                    
+
                     if ($resOrder->getStatusCode() === 200) {
                         $data = [
                             'place_order' => 'lenful',
                             'is_push' => 1,
                             'cost' => $res['data']['total_price'],
                             'status_order' => $res['data']['status'],
-                            'order_id' => $res['data']['id']
+                            'order_id' => $res['data']['id'],
+                            'date_push' => date('Y-m-d')
                         ];
                         DB::table('orders')->where('id', $order->id)->update($data);
     
@@ -625,7 +641,9 @@ class OrderController extends BaseController
             $params = [
                 'userType' => $userType,
                 'shopId' => $shopId,
-                'userId' => Auth::user()->id
+                'userId' => Auth::user()->id,
+                'dateOrderFrom' => $req->date_order_from,
+                'dateOrderTo' => $req->date_order_to
             ];
             $columns = [
                 'orders.*',
@@ -648,6 +666,7 @@ class OrderController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('error', 500);
         }
     }

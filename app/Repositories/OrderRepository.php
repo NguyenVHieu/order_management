@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
+
 class OrderRepository implements OrderRepositoryInterface
 {
 
@@ -31,8 +32,18 @@ class OrderRepository implements OrderRepositoryInterface
             if (!empty($params['shopId'])) {
                 $query->where('orders.shop_id', $params['shopId']);
             }
+
             $query->where('users.id',  $params['userId']);
         }
+
+        if (!empty($params['dateOrderFrom'])) {
+            $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
+        }
+
+        if (!empty($params['dateOrderTo'])) {
+            $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
+        }
+
         $data = $query->orderBy('orders.id', 'desc')->get();
         return $data;
     }

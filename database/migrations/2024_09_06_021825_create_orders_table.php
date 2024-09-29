@@ -56,6 +56,7 @@ return new class extends Migration
             $table->boolean('is_push')->default(false);
             $table->boolean('is_approval')->default(false);
             $table->boolean('multi')->default(false);
+            $table->date('date_push')->nullable();
             $table->unsignedBigInteger('approval_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
