@@ -73,23 +73,23 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        DB::table('shops')->insert([
-            'name' => 'Shop Hieu',
-            'token' => 'hieu123',
-            'created_at' => now(),
-            'updated_at' => now(),
-            'created_by' => 1,
-            'updated_by' => 1,
-        ]);
+        // DB::table('shops')->insert([
+        //     'name' => 'Shop Hieu',
+        //     'token' => 'hieu123',
+        //     'created_at' => now(),
+        //     'updated_at' => now(),
+        //     'created_by' => 1,
+        //     'updated_by' => 1,
+        // ]);
 
-        DB::table('shops')->insert([
-            'name' => 'Shop Dat',
-            'token' => 'dat123',
-            'created_at' => now(),
-            'updated_at' => now(),
-            'created_by' => 1,
-            'updated_by' => 1,
-        ]);
+        // DB::table('shops')->insert([
+        //     'name' => 'Shop Dat',
+        //     'token' => 'dat123',
+        //     'created_at' => now(),
+        //     'updated_at' => now(),
+        //     'created_by' => 1,
+        //     'updated_by' => 1,
+        // ]);
 
 
     }

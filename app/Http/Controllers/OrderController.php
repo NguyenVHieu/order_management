@@ -50,7 +50,6 @@ class OrderController extends BaseController
     function pushOrderToPrintify($data) {
         $results = [];
         foreach($data as $key => $orders) {
-            // dd($orders);
             try {
                 $key_order_number = $key. time();
                 $lineItems = [];
@@ -72,7 +71,8 @@ class OrderController extends BaseController
                         'print_provider_id' => $order->print_provider_id,
                         'place_order' => 'printify',
                         'date_push' => date('Y-m-d'),
-                        'is_push' => true
+                        'is_push' => true,
+                        'push_by' => Auth::user()->id
                     ];
 
                     $item = [
@@ -132,6 +132,7 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
                 $results[$key] = "Lỗi khi tạo order";
             }
         }
@@ -202,7 +203,8 @@ class OrderController extends BaseController
                             'date_push' => date('Y-m-d'),
                             'order_id' => $res['data']['_id'],
                             'place_order' => 'merchize', 
-                            'status_order' => $res['data']['status']
+                            'status_order' => $res['data']['status'],
+                            'push_by' => Auth::user()->id
                         ];
                         DB::table('orders')->where('id', $order->id)->update($data); 
                         $results[$key] = 'Success';
@@ -211,6 +213,7 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
                 $results[$key] = 'Lỗi khi tạo order';
             }
             
@@ -321,7 +324,8 @@ class OrderController extends BaseController
                     $data = [
                         'is_push' => 1, 
                         'place_order' => 'private',
-                        'date_push' => date('Y-m-d')
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id 
                     ];
 
                     DB::table('orders')->where('id', $order->id)->update($data);
@@ -329,6 +333,7 @@ class OrderController extends BaseController
                     $results[$key] = 'Failed';
                 }
             } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
                 $results[$key] = 'Lỗi khi tạo order';
             }    
         }
@@ -444,6 +449,7 @@ class OrderController extends BaseController
                 return [1 => "Order OTB Failed"];
             }
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
         }      
     }
@@ -506,7 +512,8 @@ class OrderController extends BaseController
                         'order_id' => $orderId,
                         'cost' => $resOrder['total'],
                         'tracking_order' => $resOrder['tracking_number'],
-                        'date_push' => date('Y-m-d')
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id
                     ];
 
                     $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
@@ -526,6 +533,7 @@ class OrderController extends BaseController
                     $results[$order->order_number] = 'Lỗi khi tạo order';
                 }
             } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
                 $results[$order->order_number] = 'Lỗi khi tạo order';
             }
             
@@ -617,7 +625,8 @@ class OrderController extends BaseController
                             'cost' => $res['data']['total_price'],
                             'status_order' => $res['data']['status'],
                             'order_id' => $res['data']['id'],
-                            'date_push' => date('Y-m-d')
+                            'date_push' => date('Y-m-d'),
+                            'push_by' => Auth::user()->id
                         ];
                         DB::table('orders')->where('id', $order->id)->update($data);
     
@@ -626,6 +635,7 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
                 $results[$key] = 'Lỗi khi tạo order';
             }
         }
@@ -667,7 +677,7 @@ class OrderController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
-            dd($th);
+            Helper::trackingError($th->getMessage());
             return $this->sendError('error', 500);
         }
     }
@@ -696,6 +706,7 @@ class OrderController extends BaseController
             }
             
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             return $this->sendError('error', $th->getMessage());
         }
         
@@ -752,6 +763,7 @@ class OrderController extends BaseController
             
             
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             return $this->sendError($th->getMessage(), 500);
         }
         
@@ -775,6 +787,7 @@ class OrderController extends BaseController
 
             return $url;
         } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
             return $this->sendError('error'. $ex->getMessage(), 500);
         }
         
@@ -831,6 +844,7 @@ class OrderController extends BaseController
                     
                 } else {
                     DB::rollBack();
+                    
                     return $this->sendError('Không tìm thấy order', 404);
                 }
             }
@@ -839,6 +853,7 @@ class OrderController extends BaseController
             return $this->sendSuccess('Success');
         } catch (\Throwable $th) {
             DB::rollBack();
+            Helper::trackingError($th->getMessage());
             return $this->sendError($th->getMessage());
         }
     }
@@ -988,6 +1003,7 @@ class OrderController extends BaseController
             
             return $this->sendSuccess('ok');
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             return $this->sendError('error'. $th->getMessage(), 500);
         }
         
@@ -1021,6 +1037,7 @@ class OrderController extends BaseController
             return $this->sendSuccess('Cập nhật order thành công!');
         } catch (\Throwable $th) {
             DB::rollBack(); 
+            Helper::trackingError($th->getMessage());
             return $this->sendError('Cập nhật order thất bại');
         }
     }
@@ -1036,6 +1053,7 @@ class OrderController extends BaseController
 
             return $this->sendSuccess($order);
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             return $this->sendError('Hiển thị đơn hàng thất bại', 500);
         }
     }
@@ -1050,6 +1068,7 @@ class OrderController extends BaseController
             }
             return $shop;
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi xác thực người dùng!');
         }
     }

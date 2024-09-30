@@ -61,7 +61,6 @@ class MailController extends BaseController
                 'recieved_mail_at' => $param['recieved_mail_at'],
                 'zip' => $zip,
                 'city' => $city,
-                'user_id' => Auth::user()->id,
                 'is_push' => false,
                 'is_approval' => false,
                 'multi' => $param['multi'],            
