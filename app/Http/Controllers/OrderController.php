@@ -187,7 +187,6 @@ class OrderController extends BaseController
                         ],
                         "items" => array_values($lineItems),
                     ];
-                    dd($orderData);
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
@@ -435,7 +434,6 @@ class OrderController extends BaseController
                     ],
                 ],
             ]);
-            // dd($response->getBody()->getContents());
             $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
 
             if ($statusCode == 200) {
