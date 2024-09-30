@@ -142,9 +142,9 @@ class OrderController extends BaseController
 
     function pushOrderToMerchize($data) 
     {
-        $lineItems = [];
         $results = [];
         foreach($data as $key => $orders) {
+            $lineItems = [];
             try {
                 $key_order_number = $key. time();
                 foreach($orders as $order) {
@@ -187,6 +187,7 @@ class OrderController extends BaseController
                         ],
                         "items" => array_values($lineItems),
                     ];
+                    dd($orderData);
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
@@ -246,9 +247,10 @@ class OrderController extends BaseController
             return ['401' => 'Đăng nhập Private fullfillment không thành công'];
         }
         
-        $lineItems = [];
+        
         $results = [];
-        foreach($data as $key => $orders) {   
+        foreach($data as $key => $orders) {
+            $lineItems = [];   
             try {
                 $check = true;
                 foreach($orders as $order) {
