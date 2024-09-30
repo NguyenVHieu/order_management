@@ -206,7 +206,7 @@ class OrderController extends BaseController
                             'status_order' => $res['data']['status'],
                             'push_by' => Auth::user()->id
                         ];
-                        DB::table('orders')->where('id', $order->id)->update($data); 
+                        DB::table('orders')->where('order_number', $order->order_number)->update($data); 
                         $results[$key] = 'Success';
                     } else {
                         $results[$key] = 'Failed';
