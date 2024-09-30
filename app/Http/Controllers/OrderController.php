@@ -1068,7 +1068,7 @@ class OrderController extends BaseController
             }
             return $shop;
         } catch (\Throwable $th) {
-            Helper::trackingError($th->getMessage());
+            // Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi xác thực người dùng!');
         }
     }

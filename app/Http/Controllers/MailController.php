@@ -85,7 +85,7 @@ class MailController extends BaseController
 
             $inbox = $client->getFolder('INBOX');
 
-            $messages = $inbox->query()->subject('You made a sale on Etsy')->unseen()->get();
+            $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
             
             $list_data = [];
             if (count($messages) > 0) {
