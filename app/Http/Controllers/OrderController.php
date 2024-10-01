@@ -154,7 +154,7 @@ class OrderController extends BaseController
                 $check = true;
                 foreach($orders as $order) {
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
-                    if (!$product) {
+                    if ($product->merchize == null) {
                         $check = false;
                         $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
