@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('password');
             $table->unsignedBigInteger('user_type_id')->nullable();
             $table->boolean('is_admin')->default(false);
-            $table->unsignedBigInteger('shop_id')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->rememberToken();

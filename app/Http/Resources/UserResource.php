@@ -21,7 +21,7 @@ class UserResource extends JsonResource
             'password' => $this->password, 
             'user_type_id' => $this->user_type_id ?? null,
             'user_type_name' => $this->user_type_name ?? null,
-            'shop_id' => $this->shop_id ?? null,
+            'shop_ids' => $this->shop_ids ?? null,
             'shop_name' => $this->shop_name ?? null,
         ];
     }

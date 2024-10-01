@@ -24,8 +24,11 @@ class UserController extends BaseController
                         $join->on('user_types.id', '=', 'users.user_type_id');
                         $join->whereNull('user_types.deleted_at');
                     })
+                    ->leftJoin('user_shops', function($join) {
+                        $join->on('user_shops.user_id', '=', 'users.id');
+                    })
                     ->leftJoin('shops', function($join) {
-                        $join->on('shops.id', '=', 'users.shop_id');
+                        $join->on('shops.id', '=', 'user_shops.shop_id');
                         $join->whereNull('shops.deleted_at');
                     })
                     ->where('users.is_admin', 0)
@@ -59,13 +62,14 @@ class UserController extends BaseController
     public function store(UserRequest $request)
     {
         try {
+            DB::beginTransaction();
             $id = $request->id ?? 0;
+            $shop_ids = $request->shop_ids ?? [];
             $columns = [
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => bcrypt($request->password),
                 'user_type_id' => $request->user_type_id,
-                'shop_id' => $request->shop_id,
                 'created_by' => Auth::user()->id,
                 'created_at' => date('Y-m-d H:i:s')
             ];
@@ -83,12 +87,28 @@ class UserController extends BaseController
                     return $this->sendError('User Not Found');
                 }
                 $data->update($columns);
+                DB::table('user_shops')->where('user_id', $id)->delete();
+                foreach ($shop_ids as $shop_id) {
+                    DB::table('user_shops')->insert([
+                        'user_id' => $id,
+                        'shop_id' => $shop_id
+                    ]);
+                }
             } else {
                 $data = User::create($columns);
+                $user_id = $data->id;
+                foreach ($shop_ids as $shop_id) {
+                    DB::table('user_shops')->insert([
+                        'user_id' => $user_id,
+                        'shop_id' => $shop_id
+                    ]);
+                }
             }
-            
+            DB::commit();
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
+            dd($th);
+            DB::rollBack();
             return $this->sendError($th->getMessage());
         }
     }
@@ -100,9 +120,12 @@ class UserController extends BaseController
             if (!$query) {
                 return $this->sendError('User Not Found');
             }
+            $arr_shop = DB::table('user_shops')->where('user_id', $id)->pluck('shop_id')->toArray();
+            $query->shop_ids = $arr_shop;
+            // dd($query);
             $user = new UserResource($query);  
-            $shops = Shop::select(['id as value', 'name as label'])->get();;
-            $userTypes = UserType::select(['id as value', 'name as label'])->get();;
+            $shops = Shop::select(['id as value', 'name as label'])->get();
+            $userTypes = UserType::select(['id as value', 'name as label'])->get();
             $data = [
                 'shops' => $shops,
                 'userTypes' => $userTypes,
