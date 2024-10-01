@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('order_id')->nullable();
             $table->string('order_number');
             $table->string('price');
+            $table->string('place_order')->nullable();
             $table->unsignedBigInteger('shop_id')->nullable();;
             $table->string('size')->nullable();
             $table->string('color')->nullable();
@@ -55,6 +56,9 @@ return new class extends Migration
             $table->boolean('is_push')->default(false);
             $table->boolean('is_approval')->default(false);
             $table->boolean('multi')->default(false);
+            $table->string('status_order')->nullable();
+            $table->string('tracking_order')->nullable();
+            $table->decimal('cost', 10, 2)->default(0.00)->nullable();
             $table->date('date_push')->nullable();
             $table->unsignedBigInteger('push_by')->nullable();
             $table->unsignedBigInteger('approval_by')->nullable();

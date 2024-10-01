@@ -81,10 +81,13 @@ class OrderController extends BaseController
                         "variant_id" => $variant_id,
                         "print_areas" => [
                             "front" => $order->img_1,
-                            "back" => $order->img_2,
                         ],
                         "quantity" => $order->quantity
                     ];
+
+                    if (!empty($order->img_2)) {
+                        $item["print_areas"]["back"] = $order->img_2; // Thêm back nếu có img_2
+                    }
 
                     $lineItems[] = $item;
                 }
@@ -102,7 +105,7 @@ class OrderController extends BaseController
                         "address_to" => [
                             "first_name" => $order->first_name,
                             "last_name" => $order->last_name,
-                            "country" => $country->iso_alpla_2,
+                            "country" => $country->iso_alpha_2,
                             "region" => $order->state,
                             "address1" => $order->address,
                             "city" => $order->city,
