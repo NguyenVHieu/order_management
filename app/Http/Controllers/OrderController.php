@@ -81,7 +81,7 @@ class OrderController extends BaseController
                         "variant_id" => $variant_id,
                         "print_areas" => [
                             "front" => $order->img_1,
-                            // "back" => $order->img_2,
+                            "back" => $order->img_2,
                         ],
                         "quantity" => $order->quantity
                     ];
@@ -90,6 +90,7 @@ class OrderController extends BaseController
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    $country = DB::table('countries')->where('name', $order->country)->first();
                     $orderData = [
                         "external_id" => "order_sku_" . $key_order_number,
                         "label" => "order_sku_" . $key_order_number,
@@ -99,13 +100,13 @@ class OrderController extends BaseController
                         "is_economy_shipping" => false,
                         "send_shipping_notification" => false,
                         "address_to" => [
-                        "first_name" => $order->first_name,
-                        "last_name" => $order->last_name,
-                        "country" => "US",
-                        "region" => $order->state,
-                        "address1" => $order->address,
-                        "city" => $order->city,
-                        "zip" => $order->zip
+                            "first_name" => $order->first_name,
+                            "last_name" => $order->last_name,
+                            "country" => $country->iso_alpla_2,
+                            "region" => $order->state,
+                            "address1" => $order->address,
+                            "city" => $order->city,
+                            "zip" => $order->zip
                         ]
                     ];
                     
@@ -147,8 +148,16 @@ class OrderController extends BaseController
             $lineItems = [];
             try {
                 $key_order_number = $key. time();
+                $check = true;
                 foreach($orders as $order) {
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    if (!$product) {
+                        $check = false;
+                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                    }else {
+                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
+                    }
+
                     $lineItems[] = [
                         "name" => "Product API". $order->order_number,
                         "quantity" => $order->quantity,
@@ -171,7 +180,7 @@ class OrderController extends BaseController
                     ];
                 }
 
-                if (count($lineItems) > 0) {
+                if (count($lineItems) > 0 && $check == true) {
                     $client = new Client();
                     $orderData = [
                         "order_id" =>  $key_order_number,
@@ -216,7 +225,6 @@ class OrderController extends BaseController
                 Helper::trackingError($th->getMessage());
                 $results[$key] = 'Lỗi khi tạo order';
             }
-            
         } 
 
         return $results;

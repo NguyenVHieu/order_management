@@ -15,12 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('style')->nullable();
             $table->string('product_printify_id')->nullable();
-            $table->string('product_prinify_name')->nullable();
+            $table->string('product_printify_name')->nullable();
             $table->string('merchize')->nullable();
             $table->string('private')->nullable();
             $table->string('hubfulfill')->nullable();
             $table->string('otb')->nullable();
             $table->string('lenfull')->nullable();
+            
             $table->timestamps();
         });
     }
