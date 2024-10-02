@@ -36,7 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::controller(OrderController::class)->group(function(){
             Route::post('/create', 'pushOrder');
             Route::get('/', 'getOrderDB');
-            Route::get('/get-providers/{blueprint_id}', 'getProviders');
+            Route::get('/get-providers/{blueprint_id}/{order_id}', 'getProviders');
             Route::post('/create-order-sku', 'createOrderSku');
             Route::post('/store-blueprint', 'storeBlueprint');
             Route::post('/approval-order', 'approvalOrder');

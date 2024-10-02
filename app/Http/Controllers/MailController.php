@@ -162,6 +162,7 @@ class MailController extends BaseController
                         $data['thumb'] = $thumb;
                         $data['size'] = $this->getSize($data['style']);
                         $data['blueprint_id'] = $this->getBlueprintId($data['style']);
+                        $data['orderNumberGroup'] = $data['orderNumber'];
                         $data['multi'] = false;
                         $list_data[] = $data;
                     }

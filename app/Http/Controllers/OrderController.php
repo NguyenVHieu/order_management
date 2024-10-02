@@ -738,15 +738,17 @@ class OrderController extends BaseController
         }
     }
 
-    public function getProviders($blueprint_id)
+    public function getProviders($blueprint_id, $order_id)
     {
         try {
             if ($blueprint_id != -1) {
+                $shop = DB::table('orders')->join('shops', 'shops.id', '=', 'orders.shop_id')
+                ->where('orders.id', $order_id)->select('shops.token_printify')->first();
                 $client = new Client();
 
                 $response = $client->get($this->baseUrlPrintify. "catalog/blueprints/{$blueprint_id}/print_providers.json", [
                     'headers' => [
-                        'Authorization' => 'Bearer ' . $this->info->token_printify,
+                        'Authorization' => 'Bearer ' . $shop->token_printify,
                         'Content-Type'  => 'application/json',
                     ],
                 ]);
