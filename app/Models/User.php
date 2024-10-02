@@ -24,7 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'user_type_id',
-        'shop_id',
+        'team_id',
         'created_by',
         'updated_by'
     ];

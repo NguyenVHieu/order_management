@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Shop;
+use App\Models\Team;
 use App\Models\UserType;
 
 class UserController extends BaseController
@@ -19,22 +20,23 @@ class UserController extends BaseController
     public function index()
     {
         try {
-            $query = User::select('users.*', 'shops.name as shop_name', 'user_types.name as user_type_name')
+            $query = User::select('users.*', 'user_types.name as user_type_name', 'teams.name as team_name')
                     ->leftJoin('user_types', function($join) {
                         $join->on('user_types.id', '=', 'users.user_type_id');
                         $join->whereNull('user_types.deleted_at');
                     })
-                    ->leftJoin('user_shops', function($join) {
-                        $join->on('user_shops.user_id', '=', 'users.id');
+                    ->leftJoin('teams', function($join) {
+                        $join->on('teams.id', '=', 'users.team_id');
                     })
-                    ->leftJoin('shops', function($join) {
-                        $join->on('shops.id', '=', 'user_shops.shop_id');
-                        $join->whereNull('shops.deleted_at');
-                    })
+
                     ->where('users.is_admin', 0)
                     ->orderBy('users.id', 'desc')
                     ->get();
-            
+            foreach($query as $user) {
+                $shop_name = DB::table('user_shops')->leftJoin('shops', 'shops.id', '=', 'user_shops.shop_id')
+                                                    ->where('user_shops.user_id', $user->id)->pluck('shops.name')->toArray();
+                $user->shop_name = $shop_name;
+            }
             $collection = UserResource::collection($query);
             $data = $collection->resource->toArray();
 
@@ -49,9 +51,11 @@ class UserController extends BaseController
         try {
             $shops = Shop::select(['id as value', 'name as label'])->get();
             $userTypes = UserType::select(['id as value', 'name as label'])->get();
+            $teams = Team::select(['id as value', 'name as label'])->get();
             $data = [
                 'shops' => $shops,
-                'userTypes' => $userTypes
+                'userTypes' => $userTypes,
+                'teams' => $teams
             ];
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
@@ -70,6 +74,7 @@ class UserController extends BaseController
                 'email' => $request->email,
                 'password' => bcrypt($request->password),
                 'user_type_id' => $request->user_type_id,
+                'team_id' => $request->team_id,
                 'created_by' => Auth::user()->id,
                 'created_at' => date('Y-m-d H:i:s')
             ];
@@ -107,7 +112,6 @@ class UserController extends BaseController
             DB::commit();
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
-            dd($th);
             DB::rollBack();
             return $this->sendError($th->getMessage());
         }
@@ -122,14 +126,15 @@ class UserController extends BaseController
             }
             $arr_shop = DB::table('user_shops')->where('user_id', $id)->pluck('shop_id')->toArray();
             $query->shop_ids = $arr_shop;
-            // dd($query);
             $user = new UserResource($query);  
             $shops = Shop::select(['id as value', 'name as label'])->get();
             $userTypes = UserType::select(['id as value', 'name as label'])->get();
+            $teams = Team::select(['id as value', 'name as label'])->get();
             $data = [
                 'shops' => $shops,
                 'userTypes' => $userTypes,
-                'user' => $user
+                'user' => $user,
+                'teams' => $teams
             ];
 
             return $this->sendSuccess($data);
@@ -166,14 +171,17 @@ class UserController extends BaseController
     public function destroy($id)
     {
         try {
+            DB::beginTransaction();
             $data = User::find($id);
             if (!$data) {
                 return $this->sendError('User Not Found');
             }
             $data->delete();
+            DB::table('user_shops')->where('user_id', $id)->delete();
+            DB::commit();
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
-            dd($th);
+            DB::rollBack();
             return $this->sendError($th->getMessage());
         }
     }
