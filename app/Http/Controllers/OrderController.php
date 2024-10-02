@@ -42,7 +42,7 @@ class OrderController extends BaseController
         // $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
         // $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
         // $this->keyHubfulfill = 'fa5677f70014b9d618d6aaa9567bab3fca9083b37b165a03cf93b2bca12737f1';
-        $this->info = $this->checkInfo();
+        // $this->info = null;
 
         $this->orderRepository = $orderRepository;
     }
@@ -57,7 +57,16 @@ class OrderController extends BaseController
                 $check = true;
 
                 foreach($orders as $order) {
-                    $variant_id = $this->getVariantId($order->blueprint_id, $order->print_provider_id, $order->size, $order->color);
+                    $shop = $this->checkInfo($order->shop_id);
+                    $params = [
+                        'token_printify' => $shop->token_printify,
+                        'blueprint_id' => $order->blueprint_id,
+                        'print_provider_id' => $order->print_provider_id,
+                        'size' => $order->size, 
+                        'color' => $order->color
+
+                    ];
+                    $variant_id = $this->getVariantId($params);
                     if ($variant_id == 0) {
                         $check = false;
                         $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
@@ -115,9 +124,9 @@ class OrderController extends BaseController
                     
                     
                     $client = new Client();
-                    $response = $client->post($this->baseUrlPrintify.'shops/'.$this->info->shop_printify_id.'/orders.json', [
+                    $response = $client->post($this->baseUrlPrintify.'shops/'.$shop->shop_printify_id.'/orders.json', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $this->info->token_printify,
+                            'Authorization' => 'Bearer ' . $shop->token_printify,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -136,6 +145,7 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 Helper::trackingError($th->getMessage());
                 $results[$key] = "Lỗi khi tạo order";
             }
@@ -149,10 +159,13 @@ class OrderController extends BaseController
         $results = [];
         foreach($data as $key => $orders) {
             $lineItems = [];
+            $items = [];
             try {
                 $key_order_number = $key. time();
                 $check = true;
+                $condition = [];
                 foreach($orders as $order) {
+                    $shop = $this->checkInfo($order->shop_id);
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->merchize == null) {
                         $check = false;
@@ -160,6 +173,13 @@ class OrderController extends BaseController
                     }else {
                         $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
+
+                    $condition[$order->id] = [
+                        'is_push' => 1,
+                        'date_push' => date('Y-m-d'),
+                        'place_order' => 'merchize', 
+                        'push_by' => Auth::user()->id
+                    ];
 
                     $lineItems[] = [
                         "name" => "Product API". $order->order_number,
@@ -181,13 +201,24 @@ class OrderController extends BaseController
                             ]
                         ]
                     ];
+                    $items[] = $order->order_number;
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    $identifier = $key;
+                    if (count($items) > 1) {
+                        $base = strstr($items[0], '#', true); // Lấy phần trước dấu #
+                        $numbers = [];
+                        foreach ($items as $item) {
+                            $numbers[] = substr($item, strpos($item, '#') + 1); // Lấy phần sau dấu #
+                        }
+                        $identifier = $base . "#" . implode('_', $numbers);
+                    }
+
                     $client = new Client();
                     $orderData = [
                         "order_id" =>  $key_order_number,
-                        "identifier" =>  $key,
+                        "identifier" =>  $identifier,
                         "shipping_info" => [
                             "full_name" => $order->first_name . "" . $order->last_name,
                             "address_1" => $order->address,
@@ -202,7 +233,7 @@ class OrderController extends BaseController
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $this->info->token_merchize,
+                            'Authorization' => 'Bearer ' . $shop->token_merchize,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -210,16 +241,11 @@ class OrderController extends BaseController
                     $res = json_decode($response->getBody()->getContents(), true);
                 
                     if ($response->getStatusCode() === 200) {
-                        $data = [
-                            'is_push' => 1,
-                            'date_push' => date('Y-m-d'),
-                            'order_id' => $res['data']['_id'],
-                            'place_order' => 'merchize', 
-                            'status_order' => $res['data']['status'],
-                            'push_by' => Auth::user()->id
-                        ];
-                        DB::table('orders')->where('order_number', $order->order_number)->update($data); 
-                        $results[$key] = 'Success';
+                        foreach ($condition as $key_user => $data) {
+                            $data['order_id'] = $res['data']['_id'];
+                            $data['status_order'] = $res['data']['status'];
+                            DB::table('orders')->where('id', $key_user)->update($data); 
+                        }
                     } else {
                         $results[$key] = 'Failed';
                     }
@@ -368,10 +394,24 @@ class OrderController extends BaseController
             $row = 2; 
 
 
-            foreach ($data as $orders) {
+            foreach ($data as $key_order => $orders) {
+                if (count($orders) > 0) {
+                    $base = strstr($orders[0]['a'], '#', true); // Lấy "123"
+                    $numbers = [];
+
+                    foreach ($orders as $item) {
+                        $numbers[] = substr($item['a'], strpos($item['a'], '#') + 1); // Lấy phần sau dấu #
+                    }
+
+                    // Ghép lại theo định dạng yêu cầu
+                    $key_order_otb = $base . "#" . implode('_', $numbers);
+                }else {
+                    $key_order_otb = $key_order;
+                }
+
                 foreach ($orders as $index => $order) {
                     $ids[] = $order->id;
-
+                    $shop = $this->checkInfo($order->shop_id);
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
 
                     if (array_key_exists($product->otb, $arr_type)) {
@@ -383,10 +423,8 @@ class OrderController extends BaseController
                     if ($product->otb == 'TODDLER_TSHIRT' && $order->size == '5T-6T') {
                         $sizeFormat = '5|6';
                     }
-                
-                    
 
-                    $sheet->setCellValue('A' . $row, $order->order_number); // Cột A
+                    $sheet->setCellValue('A' . $row, $key_order_otb); // Cột A
                     $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
                     $sheet->setCellValue('C' . $row, $order->address); // Cột C
                     $sheet->setCellValue('D' . $row, $order->apartment); // Cột D
@@ -415,9 +453,9 @@ class OrderController extends BaseController
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'password' => $this->info->password_otb,
+                    'password' => $shop->password_otb,
                     'rememberMe' => false,
-                    'username' => $this->info->email_otb,
+                    'username' => $shop->email_otb,
                 ],
             ]);
 
@@ -740,6 +778,10 @@ class OrderController extends BaseController
             
             foreach($orders as $data) {
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                $order_number_format = $order->order_number;
+                if (strpos($order_number_format, '#') !== false) {
+                    $order_number_format = strstr($order_number_format, '#', true); 
+                }
                 $platform = $placeOrder != null  ? $placeOrder : $order->place_order;
                 if (!empty($data['blueprint_id'])) {
                     $order->blueprint_id = $data['blueprint_id'];
@@ -749,7 +791,7 @@ class OrderController extends BaseController
                     $order->print_provider_id = $data['print_provider_id'];
                 }
 
-                $datas[$platform][$order->order_number][] = $order;
+                $datas[$platform][$order_number_format][] = $order;
             }
 
             foreach ($datas as $key => $data)
@@ -876,12 +918,18 @@ class OrderController extends BaseController
         }
     }
 
-    public function getVariantId($blueprint_id, $provider_id, $size, $color)
-    {
+    public function getVariantId($params)
+    {   
+        $blueprint_id = $params['blueprint_id'];
+        $provider_id = $params['print_provider_id'];
+        $token_printify = $params['token_printify'];
+        $size = $params['size'];
+        $color = $params['color'];
+
         $client = new Client();
         $resVariant = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->info->token_printify,
+                'Authorization' => 'Bearer ' . $token_printify,
                 'Content-Type'  => 'application/json',
             ],
         ]);
@@ -1076,18 +1124,17 @@ class OrderController extends BaseController
         }
     }
 
-    public function checkInfo()
+    public function checkInfo($shop_id)
     {
         try {
-            $shop_id = Auth::user()->shop_id;
             $shop = Shop::where('id', $shop_id)->first();
             if (!$shop && Auth::user()->type != null) {
-                return $this->sendError('Lỗi xác thực người dùng!');
+                return $this->sendError('Shop không tồn tại');
             }
             return $shop;
         } catch (\Throwable $th) {
             // Helper::trackingError($th->getMessage());
-            return $this->sendError('Lỗi xác thực người dùng!');
+            return $this->sendError('Lỗi!');
         }
     }
 }

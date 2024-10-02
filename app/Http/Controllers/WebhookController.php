@@ -85,8 +85,8 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Tracking Merchize:' . json_encode($request->all()));
             $tracking_order = $request['resource']['tracking_number'];
-            $order_number = $order_number = $request['resource']['identifier'];
-            DB::table('orders')->where('order_number', $order_number)->update(['tracking_order' => $tracking_order]);
+            $order_id = $request['resource']['order_code'];
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking_order]);
             Helper::trackingInfo('Webhook cập nhật tracking number merchize này');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
@@ -100,11 +100,22 @@ class WebhookController extends BaseController
             $order_id = $request['resource']['code'];
             $status = 'created';
             $order_number = $request['resource']['identifier'];
+            $result = [];
+            if (strpos($order_number, '_') !== false) {
+                $base = strstr($order_number, '#', true);
+                $numbers = explode('_', substr($order_number, strpos($order_number, '#') + 1));
+                
+                foreach ($numbers as $number) {
+                    $result[] = $base . "#" . $number;
+                }
+            }else {
+                $result[] = $order_number;
+            }
             $data = [
                 'order_id' => $order_id,
                 'status_order' => $status,
             ];
-            DB::table('orders')->where('order_number', $order_number)->update($data);
+            DB::table('orders')->whereIn('order_number', $result)->update($data);
             Helper::trackingInfo('Webhook Created Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
@@ -116,7 +127,7 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
             $orderProgress = $request['resource']['order_progress'];
-            $order_number = $request['resource']['identifier'];
+            $order_id = $request['resource']['code'];
             $doneEvents = [];
             foreach ($orderProgress as $event) {
                 if ($event['status'] === 'done') {
@@ -128,7 +139,7 @@ class WebhookController extends BaseController
                 $lastDoneEvent = end($doneEvents);
             }
             
-            DB::table('orders')->where('order_number', $order_number)->update(['status_order' => $lastDoneEvent]);
+            DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $lastDoneEvent]);
             Helper::trackingInfo('Cập nhật order_status Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
@@ -139,8 +150,8 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
             $cost = $request['resource']['fulfillment_cost'];
-            $order_number = $request['resource']['identifier'];
-            DB::table('orders')->where('order_number', $order_number)->update(['cost' => $cost]);
+            $order_id = $request['resource']['code'];
+            DB::table('orders')->where('order_id', $order_id)->update(['cost' => $cost]);
             Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
@@ -210,10 +221,21 @@ class WebhookController extends BaseController
                     'cost' => $order['totalAmount']/100,
                 ];
                 $order_number = $order['refId'];
+                $arr_order_number = [];
+                if (strpos($order_number, '_') !== false) {
+                    $base = strstr($order_number, '#', true);
+                    $numbers = explode('_', substr($order_number, strpos($order_number, '#') + 1));
+                    
+                    foreach ($numbers as $number) {
+                        $arr_order_number[] = $base . "#" . $number;
+                    }
+                }else {
+                    $arr_order_number[] = $order_number;
+                }
                 
-                $order = DB::table('orders')->where('order_number', $order_number)->first();
+                $order = DB::table('orders')->where('order_number', $arr_order_number)->first();
                 if ($order) {
-                    DB::table('orders')->where('order_number', $order_number)->update($data);
+                    DB::table('orders')->where('order_number', $arr_order_number)->update($data);
                 }
             }
             Helper::trackingInfo('Cập nhật order OTB thành công');

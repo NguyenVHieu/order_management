@@ -85,7 +85,7 @@ class MailController extends BaseController
 
             $inbox = $client->getFolder('INBOX');
 
-            $messages = $inbox->query()->subject('You made a sale on Etsy')->unseen()->get();
+            $messages = $inbox->query()->subject('You made a sale on Etsy')->get();
             
             $list_data = [];
             if (count($messages) > 0) {
@@ -152,6 +152,7 @@ class MailController extends BaseController
                             $item['size'] = $this->getSize($item['style']);
                             $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                             $item['multi'] = true;
+                            $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
                             $mergedArray = array_merge($data, $item);
                             $list_data[] = $mergedArray;   
                         }

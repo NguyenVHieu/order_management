@@ -19,9 +19,8 @@ class OrderRepository implements OrderRepositoryInterface
             $join->whereNull('users.deleted_at');
         });
 
-        $query->leftJoin('shops', function($join) {  
-            $join->on('shops.id', '=', 'orders.shop_id');
-            $join->whereNull('shops.deleted_at');
+        $query->leftJoin('user_shops', function($join) {  
+            $join->on('users.id', '=', 'user_shops.user_id');
         });
 
         if ($params['userType'] != -1) {
