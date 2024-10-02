@@ -715,7 +715,7 @@ class OrderController extends BaseController
             $columns = [
                 'orders.*',
                 'shops.name as shop_name',
-                'orders.id as order_id',
+                'orders.id as order_id', 
             ];
             $blueprints = DB::table('key_blueprints')
                         ->leftJoin('blueprints', 'key_blueprints.product_printify_name', '=', 'blueprints.name')

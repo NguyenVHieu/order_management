@@ -14,22 +14,17 @@ class OrderRepository implements OrderRepositoryInterface
     {
         $query = Order::query()->select($columns)->distinct();
 
-        $query->leftJoin('users', function($join) {  
-            $join->on('users.shop_id', '=', 'orders.shop_id');
-            $join->whereNull('users.deleted_at');
+        $query->join('user_shops', function($join) {  
+            $join->on('orders.shop_id', '=', 'user_shops.shop_id');
         });
 
-        $query->leftJoin('user_shops', function($join) {  
-            $join->on('users.id', '=', 'user_shops.user_id');
+        $query->join('shops', function($join) {
+            $join->on('shops.id', '=', 'user_shops.shop_id');
         });
 
         if ($params['userType'] != -1) {
             if ($params['userType'] == 2) {
                 $query->where('orders.is_approval', true);
-            }
-
-            if (!empty($params['shopId'])) {
-                $query->where('orders.shop_id', $params['shopId']);
             }
 
             $query->where('users.id',  $params['userId']);
@@ -47,26 +42,19 @@ class OrderRepository implements OrderRepositoryInterface
             $query->where('orders.is_push', true);
         }
 
-        $query2 = Order::query()->select($columns)->distinct()
-                        ->where('orders.is_push', false);
+        $query2 = Order::query()->select($columns)->distinct()->where('is_push', false);
 
-        $query2->leftJoin('users', function($join) {  
-            $join->on('users.shop_id', '=', 'orders.shop_id');
-            $join->whereNull('users.deleted_at');
+        $query2->join('user_shops', function($join) {  
+            $join->on('orders.shop_id', '=', 'user_shops.shop_id');
         });
 
-        $query2->leftJoin('shops', function($join) {  
-            $join->on('shops.id', '=', 'orders.shop_id');
-            $join->whereNull('shops.deleted_at');
+        $query2->join('shops', function($join) {
+            $join->on('shops.id', '=', 'user_shops.shop_id');
         });
 
         if ($params['userType'] != -1) {
             if ($params['userType'] == 2) {
                 $query2->where('orders.is_approval', true);
-            }
-
-            if (!empty($params['shopId'])) {
-                $query2->where('orders.shop_id', $params['shopId']);
             }
 
             $query2->where('users.id',  $params['userId']);
@@ -75,7 +63,7 @@ class OrderRepository implements OrderRepositoryInterface
         $data = $query->union($query2)
                    ->orderBy('id', 'desc')
                    ->get();
-        
+
         return $data;
     }
 
