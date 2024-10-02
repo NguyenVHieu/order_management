@@ -27,7 +27,7 @@ class OrderRepository implements OrderRepositoryInterface
                 $query->where('orders.is_approval', true);
             }
 
-            $query->where('users.id',  $params['userId']);
+            $query->where('user_shops.user_id',  $params['userId']);
         }
 
         if (!empty($params['dateOrderFrom'] || $params['dateOrderTo'])) {
@@ -57,7 +57,7 @@ class OrderRepository implements OrderRepositoryInterface
                 $query2->where('orders.is_approval', true);
             }
 
-            $query2->where('users.id',  $params['userId']);
+            $query2->where('user_shops.user_id',  $params['userId']);
         }
         
         $data = $query->union($query2)
