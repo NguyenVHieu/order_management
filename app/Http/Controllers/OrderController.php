@@ -39,11 +39,6 @@ class OrderController extends BaseController
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
-        // $this->keyPrintify = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6IjA1YmU0ZTVmZTNjNzAzYWMxYjI2ZTUwM2ZkYmVlNzg3YmU3NGM0ODIyNzA4ZjQyMTAxODMwMzVmN2MzMTE3MjZhMDEzODg4YzQ1NzhjYzY5IiwiaWF0IjoxNzI1OTcwNzQwLjE0MzcyMiwibmJmIjoxNzI1OTcwNzQwLjE0MzcyNCwiZXhwIjoxNzU3NTA2NzQwLjEzNjE1LCJzdWIiOiIxOTc2NzMzNiIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiLCJ1c2VyLmluZm8iXX0.AUE02qL1aknUudYJNSN_hxF_Gg2Q3vkd9KdLM-uKxf6-yA8kTIvhOH8WuwtyYWNg7QmU5MYuP597SCVXSdg';
-        // $this->keyMechize ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmQ5MzBhNDM2OWRhODJkYmUzN2I2NzQiLCJlbWFpbCI6ImhpZXVpY2FuaWNrMTBAZ21haWwuY29tIiwiaWF0IjoxNzI1ODkyODkzLCJleHAiOjE3Mjg0ODQ4OTN9.UCBHnw0jH0EIVzubiWlXlPbuBs3Er3PMxpPi6QywT0o';
-        // $this->keyHubfulfill = 'fa5677f70014b9d618d6aaa9567bab3fca9083b37b165a03cf93b2bca12737f1';
-        // $this->info = null;
-
         $this->orderRepository = $orderRepository;
     }
 
@@ -64,7 +59,6 @@ class OrderController extends BaseController
                         'print_provider_id' => $order->print_provider_id,
                         'size' => $order->size, 
                         'color' => $order->color
-
                     ];
                     $variant_id = $this->getVariantId($params);
                     if ($variant_id == 0) {
@@ -145,7 +139,6 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
-                dd($th);
                 Helper::trackingError($th->getMessage());
                 $results[$key] = "Lỗi khi tạo order";
             }
@@ -393,54 +386,58 @@ class OrderController extends BaseController
             $arr_type = config('constants.felix_size_otb');
             $row = 2; 
 
-
             foreach ($data as $key_order => $orders) {
+                $arr_order_number = array_map(function($order) {
+                    return $order->order_number;
+                }, $orders);
+
                 if (count($orders) > 0) {
-                    $base = strstr($orders[0]['a'], '#', true); // Lấy "123"
-                    $numbers = [];
-
-                    foreach ($orders as $item) {
-                        $numbers[] = substr($item['a'], strpos($item['a'], '#') + 1); // Lấy phần sau dấu #
+                    if (count($arr_order_number) > 1) {
+                        $base = strstr($arr_order_number[0], '#', true); 
+                        $numbers = [];
+    
+                        foreach ($arr_order_number as $item) {
+                            $numbers[] = substr($item, strpos($item, '#') + 1);
+                        }
+    
+                        // Ghép lại theo định dạng yêu cầu
+                        $key_order_otb = $base . "#" . implode('_', $numbers);
+                    } else {
+                        $key_order_otb = $key_order;
                     }
 
-                    // Ghép lại theo định dạng yêu cầu
-                    $key_order_otb = $base . "#" . implode('_', $numbers);
-                }else {
-                    $key_order_otb = $key_order;
+                    foreach ($orders as $index => $order) {
+                        $ids[] = $order->id;
+                        $shop = $this->checkInfo($order->shop_id);
+                        $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+    
+                        if (array_key_exists($product->otb, $arr_type)) {
+                            $felix_size = $arr_type[$product->otb];
+                        }else {
+                            $felix_size = null;
+                        }
+                        $sizeFormat = $felix_size ? $felix_size.$order->size : $order->size;
+                        if ($product->otb == 'TODDLER_TSHIRT' && $order->size == '5T-6T') {
+                            $sizeFormat = '5|6';
+                        }
+    
+                        $sheet->setCellValue('A' . $row, $key_order_otb); // Cột A
+                        $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
+                        $sheet->setCellValue('C' . $row, $order->address); // Cột C
+                        $sheet->setCellValue('D' . $row, $order->apartment); // Cột D
+                        $sheet->setCellValue('E' . $row, $order->city);
+                        $sheet->setCellValue('F' . $row, $order->state);
+                        $sheet->setCellValue('G' . $row, $order->zip);
+                        $sheet->setCellValue('H' . $row, $order->country);
+                        $sheet->setCellValue('K' . $row, $order->quantity);
+                        $sheet->setCellValue('L' . $row, $product->otb);
+                        $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
+                        $sheet->setCellValue('N' . $row, $order->color);
+                        $sheet->setCellValue('O' . $row, $sizeFormat);
+                        $sheet->setCellValue('S' . $row, $order->img_1);
+                        $row++;
+                    }
                 }
-
-                foreach ($orders as $index => $order) {
-                    $ids[] = $order->id;
-                    $shop = $this->checkInfo($order->shop_id);
-                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
-
-                    if (array_key_exists($product->otb, $arr_type)) {
-                        $felix_size = $arr_type[$product->otb];
-                    }else {
-                        $felix_size = null;
-                    }
-                    $sizeFormat = $felix_size ? $felix_size.$order->size : $order->size;
-                    if ($product->otb == 'TODDLER_TSHIRT' && $order->size == '5T-6T') {
-                        $sizeFormat = '5|6';
-                    }
-
-                    $sheet->setCellValue('A' . $row, $key_order_otb); // Cột A
-                    $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
-                    $sheet->setCellValue('C' . $row, $order->address); // Cột C
-                    $sheet->setCellValue('D' . $row, $order->apartment); // Cột D
-                    $sheet->setCellValue('E' . $row, $order->city);
-                    $sheet->setCellValue('F' . $row, $order->state);
-                    $sheet->setCellValue('G' . $row, $order->zip);
-                    $sheet->setCellValue('H' . $row, $order->country);
-                    $sheet->setCellValue('K' . $row, $order->quantity);
-                    $sheet->setCellValue('L' . $row, $product->otb);
-                    $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
-                    $sheet->setCellValue('N' . $row, $order->color);
-                    $sheet->setCellValue('O' . $row, $sizeFormat);
-                    $sheet->setCellValue('S' . $row, $order->img_1);
-                    $row++;
-                }
-                
             }
 
             $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
@@ -498,6 +495,7 @@ class OrderController extends BaseController
                 return [1 => "Order OTB Failed"];
             }
         } catch (\Throwable $th) {
+            dd($th);
             Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
         }      
@@ -602,30 +600,15 @@ class OrderController extends BaseController
     function pushOrderToLenful($data)
     {
         $results = [];
-        try {
-            $client = new Client();
-            $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
-                'form_params' => [
-                    'user_name' => $this->info->email_lenful,
-                    'password' => $this->info->password_lenful,
-                ],
-            ]);
-
-            $resLoginFormat = json_decode($resLogin->getBody()->getContents(), true);
-            $token = $resLoginFormat['access_token'] ?? '';
-            if (empty($token)) {
-                return ['401' => 'Đăng nhập Lenful không thành công'];
-            }
-        } catch (\Throwable $th) {
-            return ['401' => 'Đăng nhập Lenful không thành công'];
-        }
-        
+    
         foreach ($data as $key => $orders) {
             try {
                 $check = true;
                 $lineItems = [];
-
+                $items = [];
+                $info = [];
                 foreach ($orders as $order) {
+                    $shop = $this->checkInfo($order->shop_id);
                     $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
                     if ($sku == 0) {
                         $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
@@ -633,6 +616,13 @@ class OrderController extends BaseController
                     }else {
                         $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Sucess';
                     }
+
+                    $info[$order->id] = [
+                        'place_order' => 'lenful',
+                        'is_push' => 1,
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id
+                    ];
 
                     $lineItems[] = [
                         "design_sku" => $sku."-DESIGN",
@@ -650,12 +640,40 @@ class OrderController extends BaseController
 
                         "shippings" => [0]
                     ];
+                    $items[] = $order->order_number;
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    try {
+                        $client = new Client();
+                        $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
+                            'form_params' => [
+                                'user_name' => $shop->email_lenful,
+                                'password' => $shop->password_lenful,
+                            ],
+                        ]);
+            
+                        $resLoginFormat = json_decode($resLogin->getBody()->getContents(), true);
+                        $token = $resLoginFormat['access_token'] ?? '';
+                        if (empty($token)) {
+                            return ['401' => 'Đăng nhập Lenful không thành công'];
+                        }
+                    } catch (\Throwable $th) {
+                        return ['401' => 'Đăng nhập Lenful không thành công'];
+                    }
+
+                    $identifier = $key;
+                    if (count($items) > 1) {
+                        $base = strstr($items[0], '#', true); // Lấy phần trước dấu #
+                        $numbers = [];
+                        foreach ($items as $item) {
+                            $numbers[] = substr($item, strpos($item, '#') + 1); // Lấy phần sau dấu #
+                        }
+                        $identifier = $base . "#" . implode('_', $numbers);
+                    }
                     $country = DB::table('countries')->where('name', $order->country)->first();
                     $orderData = [
-                        "order_number" => "#". $order->order_number,
+                        "order_number" => $identifier,
                         "first_name" => $order->first_name,
                         "last_name" => $order->last_name,
                         "country_code" => $country->iso_alpha_2,
@@ -665,7 +683,7 @@ class OrderController extends BaseController
                         "items" => array_values($lineItems)
                     ];
 
-                    $resOrder = $client->post($this->baseUrlLenful.'/order/'.$this->info->shop_lenful_id.'/create', [
+                    $resOrder = $client->post($this->baseUrlLenful.'/order/'.$shop->shop_lenful_id.'/create', [
                         'headers' => [
                                 'Authorization' => 'Bearer ' . $token,
                                 'Content-Type'  => 'application/json',
@@ -673,24 +691,20 @@ class OrderController extends BaseController
                             'json' => $orderData // Gửi dữ liệu đơn hàng
                     ]);
                     $res = json_decode($resOrder->getBody()->getContents(), true);
-
                     if ($resOrder->getStatusCode() === 200) {
-                        $data = [
-                            'place_order' => 'lenful',
-                            'is_push' => 1,
-                            'cost' => $res['data']['total_price'],
-                            'status_order' => $res['data']['status'],
-                            'order_id' => $res['data']['id'],
-                            'date_push' => date('Y-m-d'),
-                            'push_by' => Auth::user()->id
-                        ];
-                        DB::table('orders')->where('id', $order->id)->update($data);
+                        foreach($info as $key_order_id => $data) {
+                            $data['cost'] = $res['data']['total_price'];
+                            $data['status_order'] = $res['data']['status'];
+                            $data['order_id'] = $res['data']['id'];
+                            DB::table('orders')->where('id', $key_order_id)->update($data);
+                        }
     
                     } else {
                         $results[$key] = 'Lỗi khi tạo order';
                     }
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 Helper::trackingError($th->getMessage());
                 $results[$key] = 'Lỗi khi tạo order';
             }
@@ -927,7 +941,6 @@ class OrderController extends BaseController
         $token_printify = $params['token_printify'];
         $size = $params['size'];
         $color = $params['color'];
-
         $client = new Client();
         $resVariant = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
             'headers' => [
@@ -1128,15 +1141,11 @@ class OrderController extends BaseController
 
     public function checkInfo($shop_id)
     {
-        try {
-            $shop = Shop::where('id', $shop_id)->first();
-            if (!$shop && Auth::user()->type != null) {
-                return $this->sendError('Shop không tồn tại');
-            }
-            return $shop;
-        } catch (\Throwable $th) {
-            // Helper::trackingError($th->getMessage());
-            return $this->sendError('Lỗi!');
+        $shop = Shop::where('id', $shop_id)->first();
+        if (!$shop && Auth::user()->type != null) {
+            return $this->sendError('Shop không tồn tại');
         }
+        return $shop;
+        
     }
 }

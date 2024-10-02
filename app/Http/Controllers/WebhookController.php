@@ -216,7 +216,7 @@ class WebhookController extends BaseController
             foreach($data as $order) {
                 $data = [
                     'order_id' => $order['id'],
-                    'status_order' => $order['orderStatus'] != '' ? $order['orderStatus'] : null,
+                    'status_order' => $order['orderSellerStatus'] != '' ? $order['orderSellerStatus'] : null,
                     'tracking_order' => $order['addedTrackingCode'] != 0 ? $order['addedTrackingCode'] : null,
                     'cost' => $order['totalAmount']/100,
                 ];
@@ -233,9 +233,9 @@ class WebhookController extends BaseController
                     $arr_order_number[] = $order_number;
                 }
                 
-                $order = DB::table('orders')->where('order_number', $arr_order_number)->first();
+                $order = DB::table('orders')->whereIn('order_number', $arr_order_number)->first();
                 if ($order) {
-                    DB::table('orders')->where('order_number', $arr_order_number)->update($data);
+                    DB::table('orders')->whereIn('order_number', $arr_order_number)->update($data);
                 }
             }
             Helper::trackingInfo('Cập nhật order OTB thành công');
