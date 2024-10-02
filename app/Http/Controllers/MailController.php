@@ -63,7 +63,8 @@ class MailController extends BaseController
                 'city' => $city,
                 'is_push' => false,
                 'is_approval' => false,
-                'multi' => $param['multi'],            
+                'multi' => $param['multi'], 
+                'order_number_group' => $param['orderNumberGroup'] ?? null           
             ];
 
             $order = DB::table('orders')->where('order_number', $data['order_number'])
@@ -138,7 +139,6 @@ class MailController extends BaseController
                     $data['shop'] = is_array($data['shop']) ? $data['shop'][0] : $data['shop'];
                     $data['product'] = str_replace(['<', "\n"], '', $data['product']);
                     
-
                     if (is_array($data['style'])){
                         $countStyle = count($data['style']);
                         for ($i=0; $i < $countStyle; $i++) {
@@ -153,6 +153,7 @@ class MailController extends BaseController
                             $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                             $item['multi'] = true;
                             $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
+                            $item['orderNumberGroup'] = $data['orderNumber'];
                             $mergedArray = array_merge($data, $item);
                             $list_data[] = $mergedArray;   
                         }
