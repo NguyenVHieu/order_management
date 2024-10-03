@@ -50,7 +50,7 @@ class OrderController extends BaseController
                 $lineItems = [];
                 $info = [];
                 $check = true;
-
+                $result = [];
                 foreach($orders as $order) {
                     $shop = $this->checkInfo($order->shop_id);
                     $params = [
@@ -63,9 +63,9 @@ class OrderController extends BaseController
                     $variant_id = $this->getVariantId($params);
                     if ($variant_id == 0) {
                         $check = false;
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
+                        $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
                     $info[$order->id] = [
@@ -134,17 +134,21 @@ class OrderController extends BaseController
                             }
                         }
                     } else {
-                        $results = [];
-                        $results[$key] = 'Lỗi khi tạo order';
+                        $result = [];
+                        $result[$key.' '] = 'Lỗi khi tạo order';
                     }
                 }
+                
             } catch (\Throwable $th) {
                 Helper::trackingError($th->getMessage());
-                $results[$key] = "Lỗi khi tạo order";
+                $result = [];
+                $result[$key.' '] = "Lỗi khi tạo order";
             }
+            
+            $results[] = $result;
         }
 
-        return $results;
+        return array_merge(...$results);
     }
 
     function pushOrderToMerchize($data) 
@@ -153,6 +157,7 @@ class OrderController extends BaseController
         foreach($data as $key => $orders) {
             $lineItems = [];
             $items = [];
+            $result = [];
             try {
                 $key_order_number = $key. time();
                 $check = true;
@@ -162,9 +167,9 @@ class OrderController extends BaseController
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->merchize == null) {
                         $check = false;
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
+                        $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
                     $condition[$order->id] = [
@@ -240,16 +245,20 @@ class OrderController extends BaseController
                             DB::table('orders')->where('id', $key_user)->update($data); 
                         }
                     } else {
-                        $results[$key] = 'Failed';
+                        $result = [];
+                        $result[$key.' '] = 'Lỗi khi tạo order';
                     }
                 }
             } catch (\Throwable $th) {
                 Helper::trackingError($th->getMessage());
-                $results[$key] = 'Lỗi khi tạo order';
+                $result = [];
+                $result[$key.' '] = 'Lỗi khi tạo order';
             }
+
+            $results[] = $result;
         } 
 
-        return $results;
+        return array_merge(...$results);
     }
 
     function pushOrderToPrivate($data) 
@@ -495,7 +504,6 @@ class OrderController extends BaseController
                 return [1 => "Order OTB Failed"];
             }
         } catch (\Throwable $th) {
-            dd($th);
             Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
         }      
@@ -506,16 +514,17 @@ class OrderController extends BaseController
         $results = [];
         foreach($data as $key => $orders) {
             try {
-                $lineItems = [];
+                $lineItems = $result = $info = $arr_order_number = [];
                 $arr_shippng = config('constants.shipping_hubfulfill');
                 $check = true;
                 foreach ($orders as $order) {
+                    $shop = $this->checkInfo($order->shop_id);
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->hubfulfill == null) {
                         $check = false;
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
-                        $results[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
+                        $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
                     $lineItems[] = [
@@ -525,17 +534,35 @@ class OrderController extends BaseController
                             "mockup_url" => $order->img_6 ?? ''
                         ]
                     ];
+
+                    $info[$order->id] = [
+                        'place_order' => 'hubfulfill',
+                        'is_push' => 1,
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id
+                    ];
+
+                    $arr_order_number[] = $order->order_number;
                 }
 
                 $shipping_method = $arr_shippng[$order->country] ?? '';
                 if ($shipping_method == '') {
-                    $results[$order->order_number] = 'Không tìm thấy phương thức vận chuyển';
+                    $results[$key. ''] = 'Không tìm thấy phương thức vận chuyển';
                     continue;
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    $identifier = $key;
+                    if (count($arr_order_number) > 1) {
+                        $base = strstr($arr_order_number[0], '#', true); // Lấy phần trước dấu #
+                        $numbers = [];
+                        foreach ($arr_order_number as $item) {
+                            $numbers[] = substr($item, strpos($item, '#') + 1); // Lấy phần sau dấu #
+                        }
+                        $identifier = $base . "#" . implode('_', $numbers);
+                    }
                     $orderData = [
-                        "order_id" => $key. time(),
+                        "order_id" => $identifier,
                         "items" => $lineItems,
                         "shipping" => [
                             "shipping_name" => $order->first_name .' '. $order->last_name,
@@ -547,53 +574,53 @@ class OrderController extends BaseController
                         ],
                         "shipping_method" => $shipping_method
                     ];
-                }
 
-                $client = new Client();
-                $response = $client->post($this->baseUrlHubfulfill.'/orders', [
-                    'headers' => [
-                        'X-API-KEY' => $this->info->token_hubfulfill,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'json' => $orderData
-                ]);        
-                $resOrder = json_decode($response->getBody()->getContents(), true);
-                if ($response->getStatusCode() == 200){
-                    $orderId = $resOrder['order_id'];
-                    $data = [
-                        'place_order' => 'hubfulfill',
-                        'is_push' => 1,
-                        'order_id' => $orderId,
-                        'cost' => $resOrder['total'],
-                        'tracking_order' => $resOrder['tracking_number'],
-                        'date_push' => date('Y-m-d'),
-                        'push_by' => Auth::user()->id
-                    ];
-
-                    $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
+                    $client = new Client();
+                    $response = $client->post($this->baseUrlHubfulfill.'/orders', [
                         'headers' => [
-                            'X-API-KEY' => $this->info->token_hubfulfill,
+                            'X-API-KEY' => $shop->token_hubfulfill,
                             'Content-Type'  => 'application/json',
                         ],
-                    ]);    
-                    $resStatusFormat = json_decode($resStatus->getBody()->getContents(), true);
-                    $data['status_order'] = $resStatusFormat['status'];
-                    $data['tracking_order'] = $resStatusFormat['tracking_number'];
-
-                    DB::table('orders')->where('order_number', $order->order_number)->update($data);
-                    
-                    $results[$order->order_number] = 'Success';
-                }else {
-                    $results[$order->order_number] = 'Lỗi khi tạo order';
+                        'json' => $orderData
+                    ]);        
+                    $resOrder = json_decode($response->getBody()->getContents(), true);
+                    if ($response->getStatusCode() == 200){
+                        foreach ($info as $key =>  $data) {
+                            $orderId = $resOrder['order_id'];
+     
+                            $data['order_id'] = $orderId;
+                            $data['cost'] = $resOrder['total'];
+                            $data['tracking_order'] = $resOrder['tracking_number'];
+    
+                            // $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
+                            //     'headers' => [
+                            //         'X-API-KEY' => $shop->token_hubfulfill,
+                            //         'Content-Type'  => 'application/json',
+                            //     ],
+                            // ]);    
+                            // $resStatusFormat = json_decode($resStatus->getBody()->getContents(), true);
+                            // $data['status_order'] = $resStatusFormat['status'];
+                            // $data['tracking_order'] = $resStatusFormat['tracking_number'];
+    
+                            DB::table('orders')->where('id', $key)->update($data);
+                        }
+                        
+                    }else {
+                        $result = [];
+                        $result[$key. ' '] = 'Lỗi khi tạo order';
+                    }
                 }
+                
             } catch (\Throwable $th) {
                 Helper::trackingError($th->getMessage());
-                $results[$order->order_number] = 'Lỗi khi tạo order';
+                $result = [];
+                $result[$key. ' '] = 'Lỗi khi tạo order';
             }
-            
+
+            $results[] = $result;
         }
 
-        return $results;
+        return array_merge(...$results);
         
     }
 
@@ -607,14 +634,15 @@ class OrderController extends BaseController
                 $lineItems = [];
                 $items = [];
                 $info = [];
+                $result = [];
                 foreach ($orders as $order) {
                     $shop = $this->checkInfo($order->shop_id);
                     $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
                     if ($sku == 0) {
-                        $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
-                        $results[$order->order_number.' '. $order->size. ' '. $order->color] = 'Sucess';
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Sucess';
                     }
 
                     $info[$order->id] = [
@@ -700,17 +728,20 @@ class OrderController extends BaseController
                         }
     
                     } else {
-                        $results[$key] = 'Lỗi khi tạo order';
+                        $result = [];
+                        $result[$key.' '] = 'Lỗi khi tạo order';
                     }
                 }
             } catch (\Throwable $th) {
-                dd($th);
                 Helper::trackingError($th->getMessage());
-                $results[$key] = 'Lỗi khi tạo order';
+                $result = [];
+                $result[$key.' '] = 'Lỗi khi tạo order';
             }
         }
 
-        return $results;
+        $results[] = $result;
+
+        return array_merge(...$results);
     }
 
     public function getOrderDB(Request $req) 
