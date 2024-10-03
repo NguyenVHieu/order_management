@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Order;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
+use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\DB;
 
 
@@ -73,5 +74,46 @@ class OrderRepository implements OrderRepositoryInterface
         return DB::table('orders')->where('order_number', $order_number)
                     ->where('is_push', false)
                     ->get();
+    }
+
+    public function filterOrderByTime($params) 
+    {
+        $start_date = $params['start_date'];
+        $end_date = $params['end_date'];
+        $type = $params['type'];
+
+        if ($type === 'date') {
+            $format = "%Y-%m-%d";
+        } else if ($type === 'month') {
+            $format = "%Y-%m";
+        } else if ($type === 'year') {
+            $format = "%Y";
+        }
+
+        $columns = [
+            DB::raw("DATE_FORMAT(recieved_mail_at, '$format') AS time"),
+            DB::raw('COUNT(DISTINCT order_number_group) AS amount_order'),
+            DB::raw('COUNT(DISTINCT CASE WHEN is_push = true THEN order_number_group END) AS amount_order_push'),
+            DB::raw('COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push'),
+            DB::raw('SUM(CASE WHEN is_push = true THEN cost ELSE 0 END) AS total_cost')
+        ];
+    
+        $query = DB::table('orders')
+            ->select($columns)
+            ->whereBetween('recieved_mail_at', [$start_date, $end_date])
+            ->groupBy(DB::raw("time")) 
+            ->orderBy(DB::raw("time"))
+            ->get()
+            ->keyBy('time') // Chuyển đổi kết quả thành mảng với ngày là key
+            ->map(function ($row) {
+                return [
+                    'amount_order' => $row->amount_order,
+                    'amount_order_push' => $row->amount_order_push,
+                    'amount_order_not_push' => $row->amount_order_not_push,
+                    'total_cost' => $row->total_cost,
+                ];
+            });
+    
+        return $query;
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChartController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TeamController;
@@ -73,4 +74,10 @@ Route::controller(WebhookController::class)->group(function(){
 
 Route::controller(MailController::class)->group(function(){
     Route::get('/fetch-mail-order', 'fetchMailOrder');
+});
+
+Route::prefix('charts')->group(function () {
+    Route::controller(ChartController::class)->group(function(){
+        Route::post('/order-by-date', 'filterOrderByTime');
+    });
 });
