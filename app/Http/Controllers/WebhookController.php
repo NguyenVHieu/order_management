@@ -6,6 +6,7 @@ use App\Helpers\Helper;
 use App\Models\Log;
 use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController;
+use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
 
@@ -38,9 +39,11 @@ class WebhookController extends BaseController
                     ],
                 ]);
                 $data = json_decode($response->getBody()->getContents(), true);
+                // dd($data);
                 $cost = $data['total_price'] + $data['total_shipping'] + $data['total_tax'];
-                $data = DB::table('orders')->where('order_id', $order_id)->first();
-                $data->update(['cost' => $cost/100]);
+                $order =  Order::where('order_id', $order_id)->first();
+                $order->cost = $cost / 100;
+                $order->save();
                 Helper::trackingInfo('Webhook cập nhật cost thành công');
             } 
             

@@ -75,7 +75,8 @@ class OrderController extends BaseController
                         'place_order' => 'printify',
                         'date_push' => date('Y-m-d'),
                         'is_push' => true,
-                        'push_by' => Auth::user()->id
+                        'push_by' => Auth::user()->id,
+                        'cost' => 0.00
                     ];
 
                     $item = [

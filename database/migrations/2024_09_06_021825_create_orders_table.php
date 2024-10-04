@@ -60,6 +60,7 @@ return new class extends Migration
             $table->string('tracking_order')->nullable();
             $table->decimal('cost', 10, 2)->default(0.00)->nullable();
             $table->date('date_push')->nullable();
+            $table->string('order_number_group')->nullable();
             $table->unsignedBigInteger('push_by')->nullable();
             $table->unsignedBigInteger('approval_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
