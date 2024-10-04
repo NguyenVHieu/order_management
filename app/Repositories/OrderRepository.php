@@ -92,19 +92,19 @@ class OrderRepository implements OrderRepositoryInterface
 
         $columns = [
             DB::raw("DATE_FORMAT(recieved_mail_at, '$format') AS time"),
-            DB::raw('COUNT(DISTINCT order_number_group) AS amount_order'),
-            DB::raw('COUNT(DISTINCT CASE WHEN is_push = true THEN order_number_group END) AS amount_order_push'),
-            DB::raw('COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push'),
-            DB::raw('SUM(CASE WHEN is_push = true THEN cost ELSE 0 END) AS total_cost')
+            DB::raw("COUNT(DISTINCT CONCAT(order_number_group, '-', is_push, IF(is_push = 1, place_order, ''))) AS amount_order"),
+            DB::raw("COUNT(DISTINCT CASE WHEN is_push = true THEN CONCAT(order_number_group, '-', place_order) END) AS amount_order_push"),
+            DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"),
+            DB::raw("SUM(CASE WHEN is_push = true THEN cost ELSE 0 END) AS total_cost")
         ];
-    
+        
         $query = DB::table('orders')
             ->select($columns)
             ->whereBetween('recieved_mail_at', [$start_date, $end_date])
-            ->groupBy(DB::raw("time")) 
-            ->orderBy(DB::raw("time"))
+            ->groupBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')")) 
+            ->orderBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')"))
             ->get()
-            ->keyBy('time') // Chuyển đổi kết quả thành mảng với ngày là key
+            ->keyBy('time')
             ->map(function ($row) {
                 return [
                     'amount_order' => $row->amount_order,

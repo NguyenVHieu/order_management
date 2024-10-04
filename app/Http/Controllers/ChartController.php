@@ -36,26 +36,25 @@ class ChartController extends BaseController
         
             switch ($request->type) {
                 case 'date':
-                    // Liệt kê từng ngày trong khoảng thời gian
+                    
                     while ($start <= $end) {
-                        $dates[] = $start->format('Y-m-d'); // Thêm ngày vào mảng
-                        $start->addDay(); // Tăng lên 1 ngày
+                        $dates[] = $start->format('Y-m-d'); 
+                        $start->addDay();
                     }
                     break;
         
                 case 'month':
-                    // Liệt kê từng tháng trong khoảng thời gian
+                    
                     while ($start <= $end) {
-                        $dates[] = $start->format('Y-m'); // Thêm tháng vào mảng
-                        $start->addMonth(); // Tăng lên 1 tháng
+                        $dates[] = $start->format('Y-m');
+                        $start->addMonth(); 
                     }
                     break;
         
                 case 'year':
-                    // Liệt kê từng năm trong khoảng thời gian
                     while ($start <= $end) {
-                        $dates[] = $start->format('Y'); // Thêm năm vào mảng
-                        $start->addYear(); // Tăng lên 1 năm
+                        $dates[] = $start->format('Y'); 
+                        $start->addYear();
                     }
                     break;
         
@@ -64,17 +63,31 @@ class ChartController extends BaseController
             }
         
             $results = [];
+            $total_order = 0;
+            $total_cost = 0.00;
+            $total_order_push = 0;
+            $total_order_not_push = 0;
+
             $data = $this->orderRepository->filterOrderByTime($request->all());
             foreach ($dates as $date) {
-                if (!isset($data[$date])) {
-                    $results[$date] = $data[$date];
-                } else {
-                    $results[$date] = [];
-                }
+                $results['orders'][] = $data[$date]['amount_order'] ?? 0;
+                $results['cost'][] = isset($data[$date]['total_cost']) ? (float) $data[$date]['total_cost'] : 0.00;
             }
-            return $results;
+
+            foreach($data as $value) {
+                $total_order += $value["amount_order"];
+                $total_cost += $value["total_cost"];
+                $total_order_push += $value["amount_order_push"];
+                $total_order_not_push += $value["amount_order_not_push"];
+            }
+
+            $results['total_order'] = $total_order;
+            $results['total_cost'] = $total_cost;
+            $results['total_order_push'] = $total_order_push;
+            $results['total_order_not_push'] = $total_order_not_push;
+
+            return $this->sendSuccess($results);
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }
