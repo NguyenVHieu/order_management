@@ -414,7 +414,7 @@ class OrderController extends BaseController
                         // Ghép lại theo định dạng yêu cầu
                         $key_order_otb = $base . "#" . implode('_', $numbers);
                     } else {
-                        $key_order_otb = $key_order;
+                        $key_order_otb = $orders[0]->order_number;
                     }
 
                     foreach ($orders as $index => $order) {

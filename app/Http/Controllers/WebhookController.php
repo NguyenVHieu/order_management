@@ -249,13 +249,13 @@ class WebhookController extends BaseController
                     $arr_order_number[] = $order_number;
                 }
                 
-                $order = DB::table('orders')->whereIn('order_number', $arr_order_number)->first();
-                if ($order) {
+                $value = DB::table('orders')->whereIn('order_number', $arr_order_number)->first();
+                if ($value) {
                     DB::table('orders')->whereIn('order_number', $arr_order_number)->update($data);
-                    $order =  Order::where('order_number', $arr_order_number[0])->first();
-                    if ($order) {
-                        $order->cost = $order['totalAmount']/100;
-                        $order->save();
+                    $value_order =  Order::where('order_number', $arr_order_number[0])->first();
+                    if ($value_order) {
+                        $value_order->cost = $order['totalAmount']/100;
+                        $value_order->save();
                     }else {
                         Helper::trackingInfo('Không timg thấy order');
                     }
