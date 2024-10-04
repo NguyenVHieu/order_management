@@ -80,7 +80,7 @@ class ChartController extends BaseController
                 $total_order_push += $value["amount_order_push"];
                 $total_order_not_push += $value["amount_order_not_push"];
             }
-
+            $results['labels'] = $dates;
             $results['total_order'] = $total_order;
             $results['total_cost'] = $total_cost;
             $results['total_order_push'] = $total_order_push;

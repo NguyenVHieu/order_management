@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Order;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
+use Carbon\Carbon;
 use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -78,8 +79,8 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function filterOrderByTime($params) 
     {
-        $start_date = $params['start_date'];
-        $end_date = $params['end_date'];
+        $start_date = Carbon::parse($params['start_date'])->startOfDay();
+        $end_date = Carbon::parse($params['end_date'])->endOfDay(); 
         $type = $params['type'];
 
         if ($type === 'date') {
