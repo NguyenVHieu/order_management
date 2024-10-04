@@ -651,7 +651,8 @@ class OrderController extends BaseController
                         'place_order' => 'lenful',
                         'is_push' => 1,
                         'date_push' => date('Y-m-d'),
-                        'push_by' => Auth::user()->id
+                        'push_by' => Auth::user()->id,
+                        'cost' => 0.00
                     ];
 
                     $lineItems[] = [
@@ -722,10 +723,14 @@ class OrderController extends BaseController
                     ]);
                     $res = json_decode($resOrder->getBody()->getContents(), true);
                     if ($resOrder->getStatusCode() === 200) {
+                        $first = true;
                         foreach($info as $key_order_id => $data) {
-                            $data['cost'] = $res['data']['total_price'];
                             $data['status_order'] = $res['data']['status'];
                             $data['order_id'] = $res['data']['id'];
+                            if ($first) {
+                                $data['cost'] = $res['data']['total_price'];
+                                $first = false;
+                            }
                             DB::table('orders')->where('id', $key_order_id)->update($data);
                         }
     
