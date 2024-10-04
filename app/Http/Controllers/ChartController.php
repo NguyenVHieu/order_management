@@ -109,7 +109,7 @@ class ChartController extends BaseController
                     $res = [
                         'user_name' => $name,
                         'total_cost' => $total_cost,
-                        'data' => $data
+                        'value' => $data
                     ];
                     return $this->sendSuccess($res);
                 }
