@@ -73,13 +73,15 @@ class ChartController extends BaseController
                 $results['orders'][] = $data[$date]['amount_order'] ?? 0;
                 $results['cost'][] = isset($data[$date]['total_cost']) ? (float) $data[$date]['total_cost'] : 0.00;
             }
-
-            foreach($data as $value) {
-                $total_order += $value["amount_order"];
-                $total_cost += $value["total_cost"];
-                $total_order_push += $value["amount_order_push"];
-                $total_order_not_push += $value["amount_order_not_push"];
+            if ($data) {
+                foreach($data as $value) {
+                    $total_order += $value["amount_order"];
+                    $total_cost += $value["total_cost"];
+                    $total_order_push += $value["amount_order_push"];
+                    $total_order_not_push += $value["amount_order_not_push"];
+                }
             }
+            
             $results['labels'] = $dates;
             $results['total_order'] = $total_order;
             $results['total_cost'] = $total_cost;
@@ -88,6 +90,35 @@ class ChartController extends BaseController
 
             return $this->sendSuccess($results);
         } catch (\Throwable $th) {
+            return $this->sendError('Lỗi Server');
+        }
+    }
+
+    public function calCostOrder(Request $request)
+    {
+        try {
+            $data = $this->orderRepository->calCostOrder($request->all());
+            if (!empty($request->user_id)) {
+                $total_cost = 0;
+                if ($data) {
+                    foreach ($data as $order) {
+                        $total_cost += $order->total_cost;
+                        $name = $order->user_name;
+                    }
+
+                    $res = [
+                        'user_name' => $name,
+                        'total_cost' => $total_cost,
+                        'data' => $data
+                    ];
+                    return $this->sendSuccess($res);
+                }
+                
+            }
+            return $this->sendSuccess($data);
+
+        } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }

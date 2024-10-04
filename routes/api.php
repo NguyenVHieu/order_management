@@ -79,5 +79,6 @@ Route::controller(MailController::class)->group(function(){
 Route::prefix('charts')->group(function () {
     Route::controller(ChartController::class)->group(function(){
         Route::post('/order-by-date', 'filterOrderByTime');
+        Route::post('/cal-cost-order', 'calCostOrder');
     });
 });

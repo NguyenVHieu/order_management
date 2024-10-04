@@ -117,4 +117,40 @@ class OrderRepository implements OrderRepositoryInterface
     
         return $query;
     }
+
+    public function calCostOrder($params)
+    {   
+        $start_date = Carbon::parse($params['start_date'])->startOfDay();
+        $end_date = Carbon::parse($params['end_date'])->endOfDay(); 
+
+        $query = DB::table('orders')->selectRaw('SUM(orders.cost) AS total_cost')
+                    ->join('users', 'users.id', '=', 'orders.approval_by')
+                    ->join('shops', 'shops.id', '=', 'orders.shop_id')
+                    ->join('teams', 'teams.id', '=', 'users.team_id');
+
+        $query->where('is_push', true);
+        $query->whereBetween('date_push', [$start_date, $end_date]);
+
+        if (!empty($params['user_id'])) 
+        {
+            $query->where('orders.approval_by', $params['user_id']);
+            $query->addSelect('users.name AS user_name', 'shops.name AS shop_name');
+            $query->groupBy('users.name', 'shops.name');
+        } 
+        else if (!empty($params['shop_id'])) 
+        {
+            $query->where('orders.shop_id', $params['shop_id']);
+            $query->addSelect('shops.name AS shop_name');
+            $query->groupBy('shops.name');
+        } 
+        else if (!empty($params['team_id'])) 
+        {
+            $query->where('users.team_id', $params['team_id']);
+            $query->addSelect('teams.name AS team_name')
+            ->groupBy('teams.name');
+        }
+
+        return $query->get();
+        
+    }
 }
