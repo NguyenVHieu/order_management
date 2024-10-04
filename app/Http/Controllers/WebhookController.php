@@ -42,9 +42,15 @@ class WebhookController extends BaseController
                 // dd($data);
                 $cost = $data['total_price'] + $data['total_shipping'] + $data['total_tax'];
                 $order =  Order::where('order_id', $order_id)->first();
-                $order->cost = $cost / 100;
-                $order->save();
-                Helper::trackingInfo('Webhook cập nhật cost thành công');
+                if ($order) {
+                    $order->cost = $cost / 100;
+                    $order->save();
+                    Helper::trackingInfo('Webhook cập nhật cost thành công');
+                }else {
+                    Helper::trackingInfo('Không timg thấy order');
+                }
+                
+                
             } 
             
             DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $status]);
@@ -155,8 +161,15 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
             $cost = $request['resource']['fulfillment_cost'];
             $order_id = $request['resource']['code'];
+            $order =  Order::where('order_id', $order_id)->first();
+                if ($order) {
+                    $order->cost = $cost;
+                    $order->save();
+                    Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
+                }else {
+                    Helper::trackingInfo('Không timg thấy order');
+                }
             DB::table('orders')->where('order_id', $order_id)->update(['cost' => $cost]);
-            Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
         }
@@ -222,7 +235,6 @@ class WebhookController extends BaseController
                     'order_id' => $order['id'],
                     'status_order' => $order['orderSellerStatus'] != '' ? $order['orderSellerStatus'] : null,
                     'tracking_order' => $order['addedTrackingCode'] != 0 ? $order['addedTrackingCode'] : null,
-                    'cost' => $order['totalAmount']/100,
                 ];
                 $order_number = $order['refId'];
                 $arr_order_number = [];
@@ -240,6 +252,13 @@ class WebhookController extends BaseController
                 $order = DB::table('orders')->whereIn('order_number', $arr_order_number)->first();
                 if ($order) {
                     DB::table('orders')->whereIn('order_number', $arr_order_number)->update($data);
+                    $order =  Order::where('order_number', $arr_order_number[0])->first();
+                    if ($order) {
+                        $order->cost = $order['totalAmount']/100;
+                        $order->save();
+                    }else {
+                        Helper::trackingInfo('Không timg thấy order');
+                    }
                 }
             }
             Helper::trackingInfo('Cập nhật order OTB thành công');

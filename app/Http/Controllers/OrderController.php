@@ -177,7 +177,8 @@ class OrderController extends BaseController
                         'is_push' => 1,
                         'date_push' => date('Y-m-d'),
                         'place_order' => 'merchize', 
-                        'push_by' => Auth::user()->id
+                        'push_by' => Auth::user()->id,
+                        'cost' => 0.00
                     ];
 
                     $lineItems[] = [
