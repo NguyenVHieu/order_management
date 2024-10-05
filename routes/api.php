@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/save-image', 'saveImgOrder');
             Route::post('/update/{id}', 'update');
             Route::get('/{id}', 'edit');
+            Route::get('/server/get-list-images', 'getListImage');
             
         });
     });
@@ -80,5 +81,6 @@ Route::prefix('charts')->group(function () {
     Route::controller(ChartController::class)->group(function(){
         Route::post('/order-by-date', 'filterOrderByTime');
         Route::post('/cal-cost-order', 'calCostOrder');
+        Route::get('/init-data', 'initData');
     });
 });
