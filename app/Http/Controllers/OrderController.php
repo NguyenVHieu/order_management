@@ -587,12 +587,17 @@ class OrderController extends BaseController
                     ]);        
                     $resOrder = json_decode($response->getBody()->getContents(), true);
                     if ($response->getStatusCode() == 200){
-                        foreach ($info as $key =>  $data) {
+                        $first = true;
+                        foreach ($info as $key_order =>  $data) {
                             $orderId = $resOrder['order_id'];
-     
+    
                             $data['order_id'] = $orderId;
-                            $data['cost'] = $resOrder['total'];
                             $data['tracking_order'] = $resOrder['tracking_number'];
+
+                            if ($first) {
+                                $data['cost'] = $resOrder['total'];
+                                $first = false;
+                            }
     
                             // $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
                             //     'headers' => [
@@ -604,7 +609,7 @@ class OrderController extends BaseController
                             // $data['status_order'] = $resStatusFormat['status'];
                             // $data['tracking_order'] = $resStatusFormat['tracking_number'];
     
-                            DB::table('orders')->where('id', $key)->update($data);
+                            DB::table('orders')->where('id', $key_order)->update($data);
                         }
                         
                     }else {

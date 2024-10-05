@@ -121,4 +121,21 @@ class ChartController extends BaseController
             return $this->sendError('Lỗi Server');
         }
     }
+
+    public function initData() 
+    {
+        try {
+            $teams = DB::table('teams')->select(['id as value', 'name as label'])->get();
+            $shops = DB::table('shops')->select(['id as value', 'name as label'])->get();
+            $users = DB::table('users')->where('is_admin', false)->select(['id as value', 'name as label'])->get();
+            $data = [
+                'users' => $users,
+                'shops' => $shops,
+                'teams' => $teams
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Throwable $th) {
+            return $this->sendError('Lỗi Server');
+        }
+    }
 }
