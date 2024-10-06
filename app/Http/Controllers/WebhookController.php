@@ -261,6 +261,13 @@ class WebhookController extends BaseController
                     }
                 }
             }
+
+            $orderFails = Order::where('is_push', true)->where('place_order', 'otb')->where('status_order', 'pending')->get();
+            foreach($orderFails as $order) {
+                $order->is_push = false;
+                $order->save();
+            }
+
             Helper::trackingInfo('Cập nhật order OTB thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Cập nhật order OTB thất bại');

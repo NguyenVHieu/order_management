@@ -102,6 +102,7 @@ class MailController extends BaseController
                     $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
                     $patterns = [
+                        'size_blanket' => '/(\d+x\d+)/',
                         'orderNumber' => '/Your order number is:\s*(.*)/',
                         'shippingAddress' => '/Shipping address\s*(.*?)\s*(?=USPS®|Shipping internationally|\z)/s',
                         'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nStyle:|\nPrimary color (Matching with color chart):|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
@@ -138,7 +139,9 @@ class MailController extends BaseController
                     $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                     $data['shop'] = is_array($data['shop']) ? $data['shop'][0] : $data['shop'];
                     $data['product'] = str_replace(['<', "\n"], '', $data['product']);
-                    
+                    if (stripos($data['product'], 'Sleeve') !== false) {
+                        continue;
+                    }
                     if (is_array($data['style'])){
                         $countStyle = count($data['style']);
                         for ($i=0; $i < $countStyle; $i++) {
@@ -149,7 +152,11 @@ class MailController extends BaseController
                             $item['price'] = $data['price'][$i];
                             $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                             $item['thumb'] = $thumb[$i];
-                            $item['size'] = $this->getSize($item['style']);
+                            if (stripos($data['product'], 'Blanket') !== false) {
+                                $item['size'] = $data['size_blanket'];
+                            }else {
+                                $item['size'] = $this->getSize($item['style']);
+                            }
                             $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                             $item['multi'] = true;
                             $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
@@ -160,7 +167,11 @@ class MailController extends BaseController
                         
                     }else {
                         $data['thumb'] = $thumb;
-                        $data['size'] = $this->getSize($data['style']);
+                        if (stripos($data['product'], 'Blanket') !== false) {
+                            $data['size'] = $data['size_blanket'];
+                        }else {
+                            $data['size'] = $this->getSize($data['style']);
+                        }
                         $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                         $data['orderNumberGroup'] = $data['orderNumber'];
                         $data['multi'] = false;
@@ -170,13 +181,13 @@ class MailController extends BaseController
                     $message->setFlag('SEEN');
                     $client->expunge();
                 }
-
                 $this->getInformationProduct($list_data);
                 
             } 
             Helper::trackingInfo('fetchMailOrder end at ' . now());
             return $this->sendSuccess('clone order ok');
         } catch (\Throwable $th) {
+            dd($th);
             Helper::trackingInfo('fetchMailOrder error' . $th->getMessage());
             return $this->sendError($th->getMessage(), 500);
         }
@@ -186,11 +197,11 @@ class MailController extends BaseController
     {
         $options = $singleLine ? 's' : '';
         preg_match_all($pattern, $body, $matches);
-        if (count($matches[1]) > 1) {
+        if (isset($matches[1]) && count($matches[1]) > 1) {
             return $matches[1] ?? 'N/A';
         } else {
             return $matches[1][0] ?? 'N/A';
-        }
+        } 
     }
 
     private function removeLinks($body)

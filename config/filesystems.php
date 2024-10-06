@@ -56,6 +56,20 @@ return [
             'throw' => false,
         ],
 
+        'ftp' => [
+            'driver'   => 'ftp',
+            'host'     => '14.225.253.89', // Địa chỉ FTP server
+            'username' => 'administrator', // Tên đăng nhập FTP
+            'password' => 'Tandat1010@', // Mật khẩu FTP
+
+            // Các tùy chọn bổ sung
+            'port'     => 21, // Cổng FTP, mặc định là 21
+            'root'     => '', // Thư mục gốc trên server FTP
+            'passive'  => true, // Sử dụng chế độ passive (thường cần thiết)
+            'ssl'      => false, // Sử dụng SSL nếu server hỗ trợ (FTPS)
+            'timeout'  => 30,
+        ],
+
     ],
 
     /*

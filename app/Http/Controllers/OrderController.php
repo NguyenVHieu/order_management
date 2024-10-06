@@ -16,29 +16,49 @@ use Exception;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use App\Http\Requests\OrderRequest;
+use Illuminate\Support\Facades\Storage;
+use phpseclib3\Net\SFTP;
+use finfo;
 
 class OrderController extends BaseController
 {
-    protected $baseUrlMerchize;
-    protected $baseUrlPrintify;
-    protected $keyPrintify;
-    protected $shop_id;
-    protected $keyMechize;
-    protected $orderRepository;
-    protected $baseUrlPrivate;
-    protected $keyHubfulfill;
+    protected $shopIdPrintify;
+    protected $tokenPrintify;
+    protected $tokenMerchize;
+    protected $uOtb;
+    protected $pOtb;
+    protected $uLenful;
+    protected $pLenful;
+    protected $shopIdLenful;
+    protected $tokenHubfulfill;
+    protected $uPrivate;
+    protected $pPrivate;
+
     protected $baseUrlHubfulfill;
     protected $baseUrlLenful;
-    protected $info;
+    protected $baseUrlPrivate;
+    protected $baseUrlMerchize;
+    protected $baseUrlPrintify;
+    protected $orderRepository;
 
     public function __construct(OrderRepository $orderRepository)
     {   
-
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
         $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api/';
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
+        $this->shopIdPrintify = env('SHOP_ID_PRINTIFY');
+        $this->tokenPrintify = env('TOKEN_PRINTIFY');
+        $this->tokenMerchize = env('TOKEN_MERCHIZE');
+        $this->uOtb = env('U_OTB');
+        $this->pOtb = env('P_OTB');
+        $this->uLenful = env('U_LENFUL');
+        $this->pLenful = env('P_LENFUL');
+        $this->uPrivate = env('U_PRIVATE');
+        $this->pPrivate = env('P_PRIVATE');
+        $this->shopIdLenful = env('SHOP_ID_LENFUL');
+        $this->tokenHubfulfill = env('TOKEN_HUBFULFILL');
         $this->orderRepository = $orderRepository;
     }
 
@@ -52,9 +72,7 @@ class OrderController extends BaseController
                 $check = true;
                 $result = [];
                 foreach($orders as $order) {
-                    $shop = $this->checkInfo($order->shop_id);
                     $params = [
-                        'token_printify' => $shop->token_printify,
                         'blueprint_id' => $order->blueprint_id,
                         'print_provider_id' => $order->print_provider_id,
                         'size' => $order->size, 
@@ -119,9 +137,9 @@ class OrderController extends BaseController
                     
                     
                     $client = new Client();
-                    $response = $client->post($this->baseUrlPrintify.'shops/'.$shop->shop_printify_id.'/orders.json', [
+                    $response = $client->post($this->baseUrlPrintify.'shops/'.$this->shopIdPrintify.'/orders.json', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $shop->token_printify,
+                            'Authorization' => 'Bearer ' . $this->tokenPrintify,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -164,7 +182,6 @@ class OrderController extends BaseController
                 $check = true;
                 $condition = [];
                 foreach($orders as $order) {
-                    $shop = $this->checkInfo($order->shop_id);
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->merchize == null) {
                         $check = false;
@@ -233,7 +250,7 @@ class OrderController extends BaseController
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $shop->token_merchize,
+                            'Authorization' => 'Bearer ' . $this->tokenMerchize,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData // Gửi dữ liệu đơn hàng
@@ -272,8 +289,8 @@ class OrderController extends BaseController
                     'Content-Type'  => 'application/json',
                 ],
                 'json' => [
-                    'email' => $this->info->email_private,
-                    'password' => $this->info->password_private
+                    'email' => $this->uPrivate,
+                    'password' => $this->pPrivate
                 ] // Gửi dữ liệu đơn hàng
             ]);
 
@@ -419,7 +436,6 @@ class OrderController extends BaseController
 
                     foreach ($orders as $index => $order) {
                         $ids[] = $order->id;
-                        $shop = $this->checkInfo($order->shop_id);
                         $product = DB::table('key_blueprints')->where('style', $order->style)->first();
     
                         if (array_key_exists($product->otb, $arr_type)) {
@@ -461,9 +477,9 @@ class OrderController extends BaseController
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'password' => $shop->password_otb,
+                    'password' => $this->pOtb,
                     'rememberMe' => false,
-                    'username' => $shop->email_otb,
+                    'username' => $this->uOtb,
                 ],
             ]);
 
@@ -520,7 +536,6 @@ class OrderController extends BaseController
                 $arr_shippng = config('constants.shipping_hubfulfill');
                 $check = true;
                 foreach ($orders as $order) {
-                    $shop = $this->checkInfo($order->shop_id);
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->hubfulfill == null) {
                         $check = false;
@@ -580,7 +595,7 @@ class OrderController extends BaseController
                     $client = new Client();
                     $response = $client->post($this->baseUrlHubfulfill.'/orders', [
                         'headers' => [
-                            'X-API-KEY' => $shop->token_hubfulfill,
+                            'X-API-KEY' => $this->tokenHubfulfill,
                             'Content-Type'  => 'application/json',
                         ],
                         'json' => $orderData
@@ -643,7 +658,6 @@ class OrderController extends BaseController
                 $info = [];
                 $result = [];
                 foreach ($orders as $order) {
-                    $shop = $this->checkInfo($order->shop_id);
                     $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
                     if ($sku == 0) {
                         $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
@@ -684,8 +698,8 @@ class OrderController extends BaseController
                         $client = new Client();
                         $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
                             'form_params' => [
-                                'user_name' => $shop->email_lenful,
-                                'password' => $shop->password_lenful,
+                                'user_name' => $this->uLenful,
+                                'password' => $this->pLenful,
                             ],
                         ]);
             
@@ -719,7 +733,7 @@ class OrderController extends BaseController
                         "items" => array_values($lineItems)
                     ];
 
-                    $resOrder = $client->post($this->baseUrlLenful.'/order/'.$shop->shop_lenful_id.'/create', [
+                    $resOrder = $client->post($this->baseUrlLenful.'/order/'.$this->shopIdLenful.'/create', [
                         'headers' => [
                                 'Authorization' => 'Bearer ' . $token,
                                 'Content-Type'  => 'application/json',
@@ -799,13 +813,11 @@ class OrderController extends BaseController
     {
         try {
             if ($blueprint_id != -1) {
-                $shop = DB::table('orders')->join('shops', 'shops.id', '=', 'orders.shop_id')
-                ->where('orders.id', $order_id)->select('shops.token_printify')->first();
                 $client = new Client();
 
                 $response = $client->get($this->baseUrlPrintify. "catalog/blueprints/{$blueprint_id}/print_providers.json", [
                     'headers' => [
-                        'Authorization' => 'Bearer ' . $shop->token_printify,
+                        'Authorization' => 'Bearer ' . $this->tokenPrintify,
                         'Content-Type'  => 'application/json',
                     ],
                 ]);
@@ -917,7 +929,7 @@ class OrderController extends BaseController
         $client = new Client();
         $response = $client->get($this->baseUrlPrintify. "/catalog/blueprints.json", [
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->info->token_printify,
+                'Authorization' => 'Bearer ' . $this->tokenPrintify,
                 'Content-Type'  => 'application/json',
             ],
         ]);
@@ -981,13 +993,12 @@ class OrderController extends BaseController
     {   
         $blueprint_id = $params['blueprint_id'];
         $provider_id = $params['print_provider_id'];
-        $token_printify = $params['token_printify'];
         $size = $params['size'];
         $color = $params['color'];
         $client = new Client();
         $resVariant = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
             'headers' => [
-                'Authorization' => 'Bearer ' . $token_printify,
+                'Authorization' => 'Bearer ' . $this->tokenPrintify,
                 'Content-Type'  => 'application/json',
             ],
         ]);
@@ -1182,13 +1193,55 @@ class OrderController extends BaseController
         }
     }
 
-    public function checkInfo($shop_id)
+    public function getListImage(Request $req)
     {
-        $shop = Shop::where('id', $shop_id)->first();
-        if (!$shop && Auth::user()->type != null) {
-            return $this->sendError('Shop không tồn tại');
+        try {
+            $files = Storage::disk('ftp')->files('/DemoFTP');
+            $protocol = $req->secure() ? 'https://' : 'http://';
+            $host = $req->getHost();
+            $imageUrls = [];
+            
+            foreach ($files as $file) {
+                $fileName = basename($file);
+                if (preg_match('/\.(jpg|jpeg|png|gif|bmp|webp)$/i', $fileName)) { // Kiểm tra định dạng file
+                    $imageUrls[] = $protocol.$host.'/api/get-file?fileName='.$fileName;
+                }
+            }
+            return $this->sendSuccess($imageUrls);
+
+        } catch (\Throwable $th) {
+            return $this->sendError('Lỗi Server'); 
         }
-        return $shop;
-        
+    }
+
+    public function getImageTemp(Request $request) 
+    {
+        try {
+            $fileName = $request->fileName;
+            $files = Storage::disk('ftp')->files('/DemoFTP');
+
+            $matchedFiles = array_filter($files, function($file) use ($fileName) {
+                return basename($file) === $fileName; // So sánh chính xác tên file
+            });
+
+            if (empty($matchedFiles)){
+                return $this->sendError('Không có hình ảnh');
+            }
+
+            $filePath = reset($matchedFiles);
+            $fileContent = Storage::disk('ftp')->get($filePath);
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($fileContent);
+
+            return response($fileContent, 200)
+                    ->header('Content-Type', $mimeType)
+                    ->header('Content-Length', strlen($fileContent));
+
+            return $this->sendSuccess($imageUrls);
+
+        } catch (\Throwable $th) {
+            return $this->sendError('Lỗi Server'); 
+        }
+
     }
 }
