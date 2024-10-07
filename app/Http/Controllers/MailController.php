@@ -106,6 +106,7 @@ class MailController extends BaseController
                         'orderNumber' => '/Your order number is:\s*(.*)/',
                         'shippingAddress' => '/Shipping address\s*(.*?)\s*(?=USPS®|Shipping internationally|\z)/s',
                         'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nStyle:|\nPrimary color (Matching with color chart):|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
+                        'product_multi' => '/([^\n<]+(?:\n[^\n<]+)*)/',
                         'style' => '/Style:\s*(.*)/',
                         'color' => '/Primary color \(Matching with color chart\):\s*(.*)/i',
                         'personalization' => '/Personalization:\s*(.*)/',
@@ -119,7 +120,6 @@ class MailController extends BaseController
                         'salesTax' => '/Sales tax:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
                         'orderTotal' => '/Order total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/'
                     ];
-            
                     $data = [];
                     foreach ($patterns as $key => $pattern) {
                         if ($key === 'shippingAddress' || $key === 'product') {
@@ -138,12 +138,9 @@ class MailController extends BaseController
                     $data['shippingAddress'] = array_values($filteredArray);
                     $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                     $data['shop'] = is_array($data['shop']) ? $data['shop'][0] : $data['shop'];
-                    $data['product'] = str_replace(['<', "\n"], '', $data['product']);
-                    if (stripos($data['product'], 'Sleeve') !== false) {
-                        continue;
-                    }
                     if (is_array($data['style'])){
                         $countStyle = count($data['style']);
+                        $data['product_multi']  = $this->getProductMulti($data['product_multi'], $countStyle);
                         for ($i=0; $i < $countStyle; $i++) {
                             $item = [];
                             $item['style'] = $data['style'][$i];
@@ -152,7 +149,8 @@ class MailController extends BaseController
                             $item['price'] = $data['price'][$i];
                             $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                             $item['thumb'] = $thumb[$i];
-                            if (stripos($data['product'], 'Blanket') !== false) {
+                            $item['product'] = $data['product_multi'][$i];
+                            if (stripos($data['product_multi'][$i], 'Blanket') !== false) {
                                 $item['size'] = $data['size_blanket'];
                             }else {
                                 $item['size'] = $this->getSize($item['style']);
@@ -166,6 +164,10 @@ class MailController extends BaseController
                         }
                         
                     }else {
+                        $data['product'] = str_replace(['<', "\n"], '', $data['product']);
+                        if (stripos($data['product'], 'Flag') !== false) {
+                            continue;
+                        }
                         $data['thumb'] = $thumb;
                         if (stripos($data['product'], 'Blanket') !== false) {
                             $data['size'] = $data['size_blanket'];
@@ -187,7 +189,6 @@ class MailController extends BaseController
             Helper::trackingInfo('fetchMailOrder end at ' . now());
             return $this->sendSuccess('clone order ok');
         } catch (\Throwable $th) {
-            dd($th);
             Helper::trackingInfo('fetchMailOrder error' . $th->getMessage());
             return $this->sendError($th->getMessage(), 500);
         }
@@ -219,6 +220,33 @@ class MailController extends BaseController
     {
         $blueprint = DB::table('key_blueprints')->where('style', $style)->first();
         return $blueprint->product_printify_id ?? null;
+    }
+
+    public function getProductMulti($data, $count) {
+        $check = 'Sell with confidence Learn about Etsy Seller Protection';
+    
+        $value = [];
+
+        for($i=0 ; $i< count($data); $i++) {
+            $data_val = trim(str_replace("\n", " ", $data[$i]));
+            if ($data_val === $check)
+            {
+                $key = $i;
+                break;
+            }
+        }
+
+        if ($key !== null) {
+            for ($i = $key + 2; count($value) < $count; $i += 2) {
+                if (isset($data[$i]) && count($value) <= $count) {
+                    $value[] = str_replace("\n", "", $data[$i]);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return $value;
     }
 
     
