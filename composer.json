@@ -9,7 +9,12 @@
         "laravel/framework": "^11.9",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
-        "webklex/laravel-imap": "^4.1"
+        "league/flysystem-ftp": "^3.29",
+        "league/iso3166": "^4.3",
+        "phpoffice/phpspreadsheet": "^2.2",
+        "phpseclib/phpseclib": "^3.0",
+        "webklex/laravel-imap": "^4.1",
+        "webpatser/laravel-countries": "^1.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
