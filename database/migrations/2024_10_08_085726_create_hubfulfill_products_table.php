@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('hubfulfill_products', function (Blueprint $table) {
             $table->id();
-            $table->string('style');
-            $table->string('color');
-            $table->string('sku');
+            $table->string('style')->nullable();
+            $table->string('color')->nullable();
+            $table->string('sku')->nullable();
             $table->timestamps();
         });
     }
