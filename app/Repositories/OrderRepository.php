@@ -16,11 +16,11 @@ class OrderRepository implements OrderRepositoryInterface
     {
         $query = Order::query()->select($columns)->distinct();
 
-        $query->join('user_shops', function($join) {  
+        $query->leftJoin('user_shops', function($join) {  
             $join->on('orders.shop_id', '=', 'user_shops.shop_id');
         });
 
-        $query->join('shops', function($join) {
+        $query->leftJoin('shops', function($join) {
             $join->on('shops.id', '=', 'user_shops.shop_id');
         });
 
