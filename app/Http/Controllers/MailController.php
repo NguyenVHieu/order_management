@@ -34,7 +34,7 @@ class MailController extends BaseController
             }
             $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
             if (empty($shop)) {
-                $shop = Shop::create(['name' => $param['shop']])->fresh();
+                $shop = Shop::create(['name' => $param['shop']])->fresh();  
             }
             
             $data = [
