@@ -536,8 +536,13 @@ class OrderController extends BaseController
                 $arr_shippng = config('constants.shipping_hubfulfill');
                 $check = true;
                 foreach ($orders as $order) {
-                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
-                    if ($product->hubfulfill == null) {
+                    if ($order->color != null) {
+                        $product = DB::table('hubfulfill_products')->where('style', $order->style)->where('color', $order->color)->first();
+                    } else {
+                        $product = DB::table('hubfulfill_products')->where('style', $order->style)->first();
+                    }
+                    
+                    if ($product->sku == null) {
                         $check = false;
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
@@ -545,7 +550,7 @@ class OrderController extends BaseController
                     }
 
                     $lineItems[] = [
-                        "sku" => 'TS002',
+                        "sku" => $product->sku,
                         "quantity" => (int)$order->quantity,
                         "design" => [
                             "mockup_url" => $order->img_6 ?? ''

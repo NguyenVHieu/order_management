@@ -32,7 +32,6 @@ class DatabaseSeeder extends Seeder
             'email' => 'hieu@gmail.com',
             'user_type_id' => 1,
             'password' => 'hieu123',
-            'shop_id' => 1,
             'created_at' => now(),
             'updated_at' => now(),
             'created_by' => 1,
@@ -44,7 +43,6 @@ class DatabaseSeeder extends Seeder
             'email' => 'dat@gmail.com',
             'user_type_id' => 2,
             'password' => 'dat123',
-            'shop_id' => 2,
             'created_at' => now(),
             'updated_at' => now(),
             'created_by' => 1,
@@ -72,25 +70,5 @@ class DatabaseSeeder extends Seeder
                 'updated_by' => 1,
             ],
         );
-
-        // DB::table('shops')->insert([
-        //     'name' => 'Shop Hieu',
-        //     'token' => 'hieu123',
-        //     'created_at' => now(),
-        //     'updated_at' => now(),
-        //     'created_by' => 1,
-        //     'updated_by' => 1,
-        // ]);
-
-        // DB::table('shops')->insert([
-        //     'name' => 'Shop Dat',
-        //     'token' => 'dat123',
-        //     'created_at' => now(),
-        //     'updated_at' => now(),
-        //     'created_by' => 1,
-        //     'updated_by' => 1,
-        // ]);
-
-
     }
 }   

@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('shops', function (Blueprint $table) {
+        Schema::create('hubfulfill_products', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();;
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamps(); 
-            $table->softDeletes();
+            $table->string('style');
+            $table->string('color');
+            $table->string('sku');
+            $table->timestamps();
         });
     }
 
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('shops');
+        Schema::dropIfExists('hubfulfill_products');
     }
 };
