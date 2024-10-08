@@ -33,6 +33,9 @@ class MailController extends BaseController
                 $apartment = $param['shippingAddress'][count($param['shippingAddress']) -3];
             }
             $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
+            if (empty($shop)) {
+                $shop = Shop::create(['name' => $param['shop']])->fresh();
+            }
             
             $data = [
                 'order_number' => $param['orderNumber'],
