@@ -28,8 +28,8 @@ class WebhookController extends BaseController
             $order_id = $resource['id'];
             $status = $resource['data']['status'];
             $shop_id = $resource['data']['shop_id'];
-            $keyPrintify = DB::table('shops')->where('shop_printify_id', $shop_id)->first()->token_printify;
-            Helper::trackingInfo('keyPrintify:', $keyPrintify, 'shop_id:', $shop_id);
+            $keyPrintify = env('TOKEN_PRINTIFY');
+            $shop_id = env('SHOP_ID_PRINTIFY');
             if ($status == 'on-hold') {
                 $client = new \GuzzleHttp\Client();
                 $response = $client->get($this->baseUrlPrintify. "shops/{$shop_id}/orders/{$order_id}.json", [
@@ -39,7 +39,6 @@ class WebhookController extends BaseController
                     ],
                 ]);
                 $data = json_decode($response->getBody()->getContents(), true);
-                // dd($data);
                 $cost = $data['total_price'] + $data['total_shipping'] + $data['total_tax'];
                 $order =  Order::where('order_id', $order_id)->first();
                 if ($order) {
@@ -47,10 +46,8 @@ class WebhookController extends BaseController
                     $order->save();
                     Helper::trackingInfo('Webhook cập nhật cost thành công');
                 }else {
-                    Helper::trackingInfo('Không timg thấy order');
+                    Helper::trackingInfo('Không tim thấy order');
                 }
-                
-                
             } 
             
             DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $status]);
