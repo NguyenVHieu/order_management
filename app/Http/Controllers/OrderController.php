@@ -44,7 +44,7 @@ class OrderController extends BaseController
     public function __construct(OrderRepository $orderRepository)
     {   
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
-        $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api';
+        $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/06umr3e/bo-api';
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
