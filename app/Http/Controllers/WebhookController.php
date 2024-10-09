@@ -7,6 +7,7 @@ use App\Models\Log;
 use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController;
 use App\Models\Order;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
 
@@ -14,10 +15,12 @@ use GuzzleHttp\Client;
 class WebhookController extends BaseController
 {
     protected $baseUrlPrintify;
+    protected $baseUrlLenful;
 
     public function __construct()
     {   
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
+        $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
     }
 
     public function updateStatusOrderPrintify(Request $request)
@@ -268,6 +271,65 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật order OTB thành công');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Cập nhật order OTB thất bại');
+        }
+    }
+
+    public function updateOrderLenful()
+    {
+        try {
+            $client = new Client();
+            $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
+                'form_params' => [
+                    'user_name' => env('U_LENFUL'),
+                    'password' => env('P_LENFUL'),
+                ],
+            ]);
+
+            $resLoginFormat = json_decode($resLogin->getBody()->getContents(), true);
+            $token = $resLoginFormat['access_token'] ?? '';
+            if (empty($token)) {
+                Helper::trackingError('Đăng nhập thất bại');
+            }
+
+            $toDate = Carbon::now()->format('Y-m-d');
+            $fromDate = Carbon::now()->subDays(3)->format('Y-m-d');
+
+            $queryParams = [
+                'page' => 1,
+                'limit' => 500,
+                'fields' => 'id,order_number,payment_status,total_price,status',
+                'sort_by' => 'create_date_desc',
+            ];
+
+            $body = [
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
+            ];
+
+            $response = $client->request('POST', $this->baseUrlLenful.'/order/list', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type'  => 'application/json',
+                ],
+                'query' => $queryParams,
+                'json' => $body,
+            ]);
+
+            $res = json_decode($response->getBody()->getContents(), true);
+            if (count($res['data']) > 0) {
+                foreach($res['data'] as $data) {
+                    $columns = [
+                        'cost' => $data['total_price'],
+                        'status' => $data['status'],
+                    ];
+                    DB::table('orders')->where('id', $data['id'])->update($columns);
+                }
+            }
+            
+            Helper::trackingInfo('Cập nhật order lenful thành công!');
+
+        } catch (\Throwable $th) {
+            Helper::trackingError('Cập nhật order lenful thất bại');
         }
     }
 
