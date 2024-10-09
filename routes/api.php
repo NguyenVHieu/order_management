@@ -42,7 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/create-order-sku', 'createOrderSku');
             Route::post('/store-blueprint', 'storeBlueprint');
             Route::post('/approval-order', 'approvalOrder');
-            Route::post('/save-image', 'saveImgOrder');
+            // Route::post('/save-image', 'saveImgOrder');
             Route::post('/update/{id}', 'update');
             Route::get('/{id}', 'edit');
             Route::get('/server/get-list-images', 'getListImage');
@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/update-order-otb', [WebhookController::class, 'updateOrderOtb']);
+Route::post('/orders/save-image', [OrderController::class, 'saveImgOrder']);
 
 Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-status-order', 'updateStatusOrderPrintify');
