@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/update/{id}', 'update');
             Route::get('/{id}', 'edit');
             Route::get('/server/get-list-images', 'getListImage');
+            Route::post('/import-order-flag', 'importOrderFlag');
             
         });
     });

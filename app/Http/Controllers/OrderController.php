@@ -16,9 +16,11 @@ use Exception;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use App\Http\Requests\OrderRequest;
+use App\Imports\OrderImport;
 use Illuminate\Support\Facades\Storage;
 use phpseclib3\Net\SFTP;
 use finfo;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OrderController extends BaseController
 {
@@ -522,6 +524,7 @@ class OrderController extends BaseController
                 return [1 => "Order OTB Failed"];
             }
         } catch (\Throwable $th) {
+            dd($th);
             Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
         }      
@@ -1198,55 +1201,25 @@ class OrderController extends BaseController
         }
     }
 
-    public function getListImage(Request $req)
+    public function importOrderFlag(Request $request)
     {
         try {
-            $files = Storage::disk('ftp')->files('/DemoFTP');
-            $protocol = $req->secure() ? 'https://' : 'http://';
-            $host = $req->getHost();
-            $imageUrls = [];
+            DB::beginTransaction();
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls'
+            ]);
+
+            $file = $request->file('file');
+            $import = new OrderImport();
+            Excel::import($import, $file);
+
+            DB::commit();
+            return $this->sendSuccess('Import order cờ thành công!');
             
-            foreach ($files as $file) {
-                $fileName = basename($file);
-                if (preg_match('/\.(jpg|jpeg|png|gif|bmp|webp)$/i', $fileName)) { // Kiểm tra định dạng file
-                    $imageUrls[] = $protocol.$host.'/api/get-file?fileName='.$fileName;
-                }
-            }
-            return $this->sendSuccess($imageUrls);
-
         } catch (\Throwable $th) {
-            return $this->sendError('Lỗi Server'); 
+            dd($th);
+            DB::rollBack();
+            return $this->sendError('Import order cờ thất bại, errors: '.$th->getMessage());
         }
-    }
-
-    public function getImageTemp(Request $request) 
-    {
-        try {
-            $fileName = $request->fileName;
-            $files = Storage::disk('ftp')->files('/DemoFTP');
-
-            $matchedFiles = array_filter($files, function($file) use ($fileName) {
-                return basename($file) === $fileName; // So sánh chính xác tên file
-            });
-
-            if (empty($matchedFiles)){
-                return $this->sendError('Không có hình ảnh');
-            }
-
-            $filePath = reset($matchedFiles);
-            $fileContent = Storage::disk('ftp')->get($filePath);
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mimeType = $finfo->buffer($fileContent);
-
-            return response($fileContent, 200)
-                    ->header('Content-Type', $mimeType)
-                    ->header('Content-Length', strlen($fileContent));
-
-            return $this->sendSuccess($imageUrls);
-
-        } catch (\Throwable $th) {
-            return $this->sendError('Lỗi Server'); 
-        }
-
     }
 }
