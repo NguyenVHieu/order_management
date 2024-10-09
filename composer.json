@@ -10,7 +10,8 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "league/iso3166": "^4.3",
-        "phpoffice/phpspreadsheet": "^2.2",
+        "maatwebsite/excel": "^3.1",
+        "phpoffice/phpspreadsheet": "^1.15",
         "webklex/laravel-imap": "^4.1",
         "webpatser/laravel-countries": "^1.5"
     },
