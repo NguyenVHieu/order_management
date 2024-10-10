@@ -25,7 +25,8 @@ class UserResource extends JsonResource
             'shop_ids' => $this->shop_ids ?? null,
             'shop_name' => $this->shop_name ?? null,
             'team_id' => $this->team_id ?? null,
-            'team_name' => $this->team_name ?? null
+            'team_name' => $this->team_name ?? null,
+            'folder' => $this->folder,  
         ];
     }
 }

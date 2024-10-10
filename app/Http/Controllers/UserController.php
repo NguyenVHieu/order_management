@@ -76,7 +76,8 @@ class UserController extends BaseController
                 'user_type_id' => $request->user_type_id,
                 'team_id' => $request->team_id,
                 'created_by' => Auth::user()->id,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => date('Y-m-d H:i:s'),
+                'folder' => $request->folder,
             ];
 
             if ($id > 0) {

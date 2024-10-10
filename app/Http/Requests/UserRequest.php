@@ -23,6 +23,7 @@ class UserRequest extends BaseFormRequest
                 'email' => 'required|email|max:255|unique:users,email,' . $id,
                 'user_type_id' => 'required',
                 'shop_ids' => 'required', 
+                'folder' => 'required',
             ];
         } else {
             return [
@@ -30,7 +31,8 @@ class UserRequest extends BaseFormRequest
                 'email' => 'required|email|max:255|unique:users,email',
                 'password' => 'required|max:255',
                 'user_type_id' => 'required',
-                'shop_ids' => 'required',    
+                'shop_ids' => 'required',  
+                'folder' => 'required',  
             ];
         }
     }
@@ -59,6 +61,7 @@ class UserRequest extends BaseFormRequest
             'user_type_id.required' => 'The user type is required.',
             'shop_id.required' => 'The shop is required.',
             'name.required' => 'The name is required.',
+            'folder.required' => 'The folder is required.',
         ];
     }
 

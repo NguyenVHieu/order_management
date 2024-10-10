@@ -671,7 +671,8 @@ class OrderController extends BaseController
                 $info = [];
                 $result = [];
                 foreach ($orders as $order) {
-                    $sku = $this->getSkuLenful($order->product_name, $order->size, $order->color);
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $sku = $this->getSkuLenful($product->lenful, $order->size, $order->color);
                     if ($sku == 0) {
                         $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
