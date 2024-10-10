@@ -73,6 +73,7 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/progress-order-merchize', 'progressOrderMerchize');
     Route::post('/order-payment-merchize', 'orderPaymentMerchize');
     Route::post('/update-order-lenful', 'updateOrderLenful');
+    Route::post('/update-order-hubfulfill', 'updateOrderHubfulfill');
 });
 
 Route::controller(MailController::class)->group(function(){

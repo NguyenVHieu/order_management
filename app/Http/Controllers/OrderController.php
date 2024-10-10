@@ -586,21 +586,38 @@ class OrderController extends BaseController
                         }
                         $identifier = $base . "#" . implode('_', $numbers);
                     }
+                    
+                    $client = new Client();
+                    $resCountry = $client->post('https://countriesnow.space/api/v0.1/countries/states', [
+                        'headers' => [
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => [
+                            'country' => $order->country
+                        ]
+                    ]);   
+                    $resCountry = json_decode($resCountry->getBody()->getContents(), true);
+                    if ($resCountry['error'] == false && count($resCountry['data']['states']) > 0) {
+                        $state = $order->state;
+                        $state = collect($resCountry['data']['states'])->first(function ($item) use ($state) {
+                            return strtoupper($item['state_code']) === strtoupper($state);
+                        });
+                    }
+                        
                     $orderData = [
-                        "order_id" => $identifier,
+                        "order_id" => (string)$identifier. time(),
                         "items" => $lineItems,
                         "shipping" => [
                             "shipping_name" => $order->first_name .' '. $order->last_name,
                             "shipping_address_1" => $order->address,
                             "shipping_city" => $order->city,
                             "shipping_zip" => $order->zip,
-                            "shipping_state" => $order->state,
+                            "shipping_state" => $state['name'],
                             "shipping_country" => $order->country,
                         ],
                         "shipping_method" => $shipping_method
                     ];
 
-                    $client = new Client();
                     $response = $client->post($this->baseUrlHubfulfill.'/orders', [
                         'headers' => [
                             'X-API-KEY' => $this->tokenHubfulfill,
@@ -622,25 +639,13 @@ class OrderController extends BaseController
                                 $first = false;
                             }
     
-                            // $resStatus = $client->get($this->baseUrlHubfulfill.'/orders/'.$orderId, [
-                            //     'headers' => [
-                            //         'X-API-KEY' => $shop->token_hubfulfill,
-                            //         'Content-Type'  => 'application/json',
-                            //     ],
-                            // ]);    
-                            // $resStatusFormat = json_decode($resStatus->getBody()->getContents(), true);
-                            // $data['status_order'] = $resStatusFormat['status'];
-                            // $data['tracking_order'] = $resStatusFormat['tracking_number'];
-    
                             DB::table('orders')->where('id', $key_order)->update($data);
                         }
-                        
                     }else {
                         $result = [];
                         $result[$key. ' '] = 'Lỗi khi tạo order';
                     }
                 }
-                
             } catch (\Throwable $th) {
                 Helper::trackingError($th->getMessage());
                 $result = [];
@@ -731,7 +736,7 @@ class OrderController extends BaseController
                     }
                     $country = DB::table('countries')->where('name', $order->country)->first();
                     $orderData = [
-                        "order_number" => $identifier,
+                        "order_number" => (string)$identifier,
                         "first_name" => $order->first_name,
                         "last_name" => $order->last_name,
                         "country_code" => $country->iso_alpha_2,

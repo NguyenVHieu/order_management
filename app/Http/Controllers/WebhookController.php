@@ -20,7 +20,7 @@ class WebhookController extends BaseController
     public function __construct()
     {   
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
-        $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
+        $this->baseUrlLenful = 'https://s-lencam-v3.lenful.com/api';
     }
 
     public function updateStatusOrderPrintify(Request $request)
@@ -277,11 +277,13 @@ class WebhookController extends BaseController
     public function updateOrderLenful()
     {
         try {
+            $uLenful = env('U_LENFUL');
+            $pLenful = env('P_LENFUL');
             $client = new Client();
-            $resLogin = $client->post($this->baseUrlLenful.'/seller/login', [
+            $resLogin = $client->post('https://s-lencam.lenful.com/api/seller/login', [
                 'form_params' => [
-                    'user_name' => env('U_LENFUL'),
-                    'password' => env('P_LENFUL'),
+                    'user_name' => $uLenful,
+                    'password' => $pLenful,
                 ],
             ]);
 
@@ -292,7 +294,7 @@ class WebhookController extends BaseController
             }
 
             $toDate = Carbon::now()->format('Y-m-d');
-            $fromDate = Carbon::now()->subDays(3)->format('Y-m-d');
+            $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
 
             $queryParams = [
                 'page' => 1,
@@ -306,7 +308,7 @@ class WebhookController extends BaseController
                 'to_date' => $toDate,
             ];
 
-            $response = $client->request('POST', $this->baseUrlLenful.'/order/list', [
+            $response = $client->request('POST', 'https://s-lencam-v3.lenful.com/api/order/list', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $token,
                     'Content-Type'  => 'application/json',
@@ -330,6 +332,44 @@ class WebhookController extends BaseController
 
         } catch (\Throwable $th) {
             Helper::trackingError('Cập nhật order lenful thất bại');
+        }
+    }
+
+    public function updateOrderHubfulfill()
+    {
+        try {
+            $toDate = Carbon::now()->format('Y-m-d');
+            $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
+
+            $orders = DB::table('orders')->where('place_order', 'hubfulfill')
+                               ->where('is_push', true)
+                               ->whereBetween('date_push', [$fromDate, $toDate])  
+                               ->select('order_id')->distinct()   
+                               ->where('id', 138)
+                               ->get();
+
+            foreach($orders as $order) {
+                $client = new Client();
+                $token = env('TOKEN_HUBFULFILL');
+                $response = $client->get('https://hubfulfill.com/api/orders/'.$order->order_id, [
+                    'headers' => [
+                        'X-API-KEY' => $token,
+                        'Content-Type'  => 'application/json',
+                    ],
+                ]);
+
+                $res = json_decode($response->getBody()->getContents(), true);
+                $order = Order::where('order_id', $order->order_id)->first();
+                $order->status_order = $res['status'];
+                $order->tracking_order = $res['tracking_number'] ?? null;
+                $order->cost = $res['total'];
+                $order->save();
+            }
+
+            Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
+
+        } catch (\Throwable $th) {
+            Helper::trackingError('Cập nhật order hubfulfill thất bại');
         }
     }
 
