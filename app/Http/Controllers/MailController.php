@@ -155,10 +155,12 @@ class MailController extends BaseController
                             $item['product'] = $data['product_multi'][$i];
                             if (stripos($data['product_multi'][$i], 'Blanket') !== false) {
                                 $item['size'] = $data['size_blanket'];
+                                $item['blueprint_id'] = $this->getBlueprintId($item['style'] .' '. $item['size']);
                             }else {
                                 $item['size'] = $this->getSize($item['style']);
+                                $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                             }
-                            $item['blueprint_id'] = $this->getBlueprintId($item['style']);
+                            
                             $item['multi'] = true;
                             $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
                             $item['orderNumberGroup'] = $data['orderNumber'];
@@ -174,10 +176,12 @@ class MailController extends BaseController
                         $data['thumb'] = $thumb;
                         if (stripos($data['product'], 'Blanket') !== false) {
                             $data['size'] = $data['size_blanket'];
+                            $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
                         }else {
                             $data['size'] = $this->getSize($data['style']);
+                            $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                         }
-                        $data['blueprint_id'] = $this->getBlueprintId($data['style']);
+                        
                         $data['orderNumberGroup'] = $data['orderNumber'];
                         $data['multi'] = false;
                         $list_data[] = $data;
