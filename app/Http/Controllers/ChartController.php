@@ -118,7 +118,6 @@ class ChartController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }
