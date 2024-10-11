@@ -100,7 +100,7 @@ class ChartController extends BaseController
             $data = $this->orderRepository->calCostOrder($request->all());
             if (!empty($request->user_id)) {
                 $total_cost = 0;
-                if ($data) {
+                if (count($data) > 0) {
                     foreach ($data as $order) {
                         $total_cost += $order->total_cost;
                         $name = $order->user_name;
@@ -118,6 +118,7 @@ class ChartController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }

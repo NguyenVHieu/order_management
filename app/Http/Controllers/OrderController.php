@@ -577,16 +577,6 @@ class OrderController extends BaseController
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
-                    $identifier = $key;
-                    if (count($arr_order_number) > 1) {
-                        $base = strstr($arr_order_number[0], '#', true); // Lấy phần trước dấu #
-                        $numbers = [];
-                        foreach ($arr_order_number as $item) {
-                            $numbers[] = substr($item, strpos($item, '#') + 1); // Lấy phần sau dấu #
-                        }
-                        $identifier = $base . "#" . implode('_', $numbers);
-                    }
-                    
                     $client = new Client();
                     $resCountry = $client->post('https://countriesnow.space/api/v0.1/countries/states', [
                         'headers' => [
@@ -605,7 +595,7 @@ class OrderController extends BaseController
                     }
                         
                     $orderData = [
-                        "order_id" => (string)$identifier. time(),
+                        "order_id" => (string)$key. time(),
                         "items" => $lineItems,
                         "shipping" => [
                             "shipping_name" => $order->first_name .' '. $order->last_name,

@@ -345,7 +345,6 @@ class WebhookController extends BaseController
                                ->where('is_push', true)
                                ->whereBetween('date_push', [$fromDate, $toDate])  
                                ->select('order_id')->distinct()   
-                               ->where('id', 138)
                                ->get();
 
             foreach($orders as $order) {

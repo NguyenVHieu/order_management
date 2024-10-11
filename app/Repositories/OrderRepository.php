@@ -120,16 +120,13 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function calCostOrder($params)
     {   
-        $start_date = Carbon::parse($params['start_date'])->startOfDay();
-        $end_date = Carbon::parse($params['end_date'])->endOfDay(); 
-
         $query = DB::table('orders')->selectRaw('SUM(orders.cost) AS total_cost')
-                    ->join('users', 'users.id', '=', 'orders.approval_by')
-                    ->join('shops', 'shops.id', '=', 'orders.shop_id')
-                    ->join('teams', 'teams.id', '=', 'users.team_id');
+                    ->leftJoin('users', 'users.id', '=', 'orders.approval_by')
+                    ->leftJoin('shops', 'shops.id', '=', 'orders.shop_id')
+                    ->leftJoin('teams', 'teams.id', '=', 'users.team_id');
 
         $query->where('is_push', true);
-        $query->whereBetween('date_push', [$start_date, $end_date]);
+        $query->whereBetween('date_push', [$params['start_date'], $params['end_date']]);
 
         if (!empty($params['user_id'])) 
         {
