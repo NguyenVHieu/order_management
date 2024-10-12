@@ -415,7 +415,8 @@ class OrderController extends BaseController
             $sheet = $spreadsheet->getActiveSheet();
             $arr_type = config('constants.felix_size_otb');
             $row = 2; 
-            // $results= [];
+            $results= [];
+            $check = false;
 
             foreach ($data as $key_order => $orders) {
                 $arr_order_number = array_map(function($order) {
@@ -436,16 +437,22 @@ class OrderController extends BaseController
                     } else {
                         $key_order_otb = $orders[0]->order_number;
                     }
-
+                    $writtenRows = [];
                     foreach ($orders as $index => $order) {
                         $ids[] = $order->id;
                         $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                        if (!$product || empty($product->otb)) {
+                            $results[$order->order_number. ' '. $order->size. ' '. $order->color] = 'Không tìm thấy product';
+                            $check = false;
+                            if (count($writtenRows) > 0) {
+                                foreach (array_reverse($writtenRows) as $writtenRow) {
+                                    $sheet->removeRow($writtenRow, 1);
+                                    $row = $writtenRow;
+                                }
+                            }
+                            break;
+                        }
 
-                        // if (!$product) {
-                        //     $results[$order->order_number. ' '. $order->size. ' '. $order->color] = 'Không tìm thấy product';
-                        //     continue;
-                        // }
-    
                         if (array_key_exists($product->otb, $arr_type)) {
                             $felix_size = $arr_type[$product->otb];
                         }else {
@@ -455,7 +462,7 @@ class OrderController extends BaseController
                         if ($product->otb == 'TODDLER_TSHIRT' && $order->size == '5T-6T') {
                             $sizeFormat = '5|6';
                         }
-    
+
                         $sheet->setCellValue('A' . $row, $key_order_otb); // Cột A
                         $sheet->setCellValue('B' . $row, $order->first_name. ' ' . $order->last_name); // Cột B
                         $sheet->setCellValue('C' . $row, $order->address); // Cột C
@@ -470,68 +477,70 @@ class OrderController extends BaseController
                         $sheet->setCellValue('N' . $row, $order->color);
                         $sheet->setCellValue('O' . $row, $sizeFormat);
                         $sheet->setCellValue('S' . $row, $order->img_1);
+                        $writtenRows[] = $row;
                         $row++;
+                        $check = true;
                     }
                 }
             }
 
-            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-            $writer->save($outputFileOtb);
+            if ($check) {
+                $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+                $writer->save($outputFileOtb);
 
-            $client = new Client();
+                $client = new Client();
 
-            $resLogin = $client->request('POST', 'https://otbzone.com/bot/api/v1/auth/authenticate', [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'password' => $this->pOtb,
-                    'rememberMe' => false,
-                    'username' => $this->uOtb,
-                ],
-            ]);
-
-            $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
-            $token = trim($resLoginConvert['data']['accessToken']['token']) ?? null;
-            
-            if (!$token) {
-                return ['401' => 'Đăng nhập OTB không thành công'];
-            }
-
-            $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/import-queues', [
-                'headers' => [
-                    'Authorization' => 'Bearer '.$token,
-                ],
-                
-                'multipart' => [
-                    [
-                        'name'     => 'type',
-                        'contents' => 'INSTANT_ORDER'
+                $resLogin = $client->request('POST', 'https://otbzone.com/bot/api/v1/auth/authenticate', [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
                     ],
-                    [
-                        'name'     => 'images',
-                        'contents' => fopen($outputFileOtb, 'r'),
-                        'filename' => $nameOutput
+                    'json' => [
+                        'password' => $this->pOtb,
+                        'rememberMe' => false,
+                        'username' => $this->uOtb,
                     ],
-                ],
-            ]);
-            $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
+                ]);
 
-            if ($statusCode == 200) {
-                $data = [
-                    'is_push' => 1, 
-                    'place_order' => 'otb',
-                    'date_push' => date('Y-m-d')
-                ];
-                DB::table('orders')->whereIn('id', $ids)->update($data);
-                return [1 => "Order OTB Success"];
-                // $results['1'] = "Order OTB Success";
+                $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
+                $token = trim($resLoginConvert['data']['accessToken']['token']) ?? null;
                 
-            } else {
-                return [1 => "Order OTB Failed"];
-                // $results['1'] =  "Order OTB Failed";
+                if (!$token) {
+                    return ['401' => 'Đăng nhập OTB không thành công'];
+                }
+
+                $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/import-queues', [
+                    'headers' => [
+                        'Authorization' => 'Bearer '.$token,
+                    ],
+                    
+                    'multipart' => [
+                        [
+                            'name'     => 'type',
+                            'contents' => 'INSTANT_ORDER'
+                        ],
+                        [
+                            'name'     => 'images',
+                            'contents' => fopen($outputFileOtb, 'r'),
+                            'filename' => $nameOutput
+                        ],
+                    ],
+                ]);
+                $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
+    
+                if ($statusCode == 200) {
+                    $data = [
+                        'is_push' => 1, 
+                        'place_order' => 'otb',
+                        'date_push' => date('Y-m-d')
+                    ];
+                    DB::table('orders')->whereIn('id', $ids)->update($data);
+                    $results['1'] = "Order OTB Success";
+                    
+                } else {
+                    $results['1'] =  "Order OTB Failed";
+                }
             }
-            // return $results;
+            return $results;
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
