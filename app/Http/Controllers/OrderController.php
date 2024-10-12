@@ -415,7 +415,7 @@ class OrderController extends BaseController
             $sheet = $spreadsheet->getActiveSheet();
             $arr_type = config('constants.felix_size_otb');
             $row = 2; 
-            $results= [];
+            // $results= [];
 
             foreach ($data as $key_order => $orders) {
                 $arr_order_number = array_map(function($order) {
@@ -441,10 +441,10 @@ class OrderController extends BaseController
                         $ids[] = $order->id;
                         $product = DB::table('key_blueprints')->where('style', $order->style)->first();
 
-                        if (!$product) {
-                            $results[$order->order_number. ' '. $order->size. ' '. $order->color] = 'Không tìm thấy product';
-                            continue;
-                        }
+                        // if (!$product) {
+                        //     $results[$order->order_number. ' '. $order->size. ' '. $order->color] = 'Không tìm thấy product';
+                        //     continue;
+                        // }
     
                         if (array_key_exists($product->otb, $arr_type)) {
                             $felix_size = $arr_type[$product->otb];
@@ -524,12 +524,14 @@ class OrderController extends BaseController
                     'date_push' => date('Y-m-d')
                 ];
                 DB::table('orders')->whereIn('id', $ids)->update($data);
-                $results['1'] = "Order OTB Success";
+                return [1 => "Order OTB Success"];
+                // $results['1'] = "Order OTB Success";
                 
             } else {
-                $results['1'] =  "Order OTB Failed";
+                return [1 => "Order OTB Failed"];
+                // $results['1'] =  "Order OTB Failed";
             }
-            return $results;
+            // return $results;
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
