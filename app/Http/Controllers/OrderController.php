@@ -161,7 +161,6 @@ class OrderController extends BaseController
                 }
                 
             } catch (\Throwable $th) {
-                dd($th);
                 Helper::trackingError($th->getMessage());
                 $result = [];
                 $result[$key.' '] = "Lỗi khi tạo order";
@@ -525,7 +524,6 @@ class OrderController extends BaseController
                 return [1 => "Order OTB Failed"];
             }
         } catch (\Throwable $th) {
-            dd($th);
             Helper::trackingError($th->getMessage());
             return [1 => "Order OTB Failed"];
         }      

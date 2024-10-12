@@ -104,11 +104,12 @@ class ChartController extends BaseController
                     foreach ($data as $order) {
                         $total_cost += $order->total_cost;
                         $name = $order->user_name;
+                        $order->total_cost = (float)$order->total_cost;
                     }
 
                     $res = [
                         'user_name' => $name,
-                        'total_cost' => $total_cost,
+                        'total_cost' => (float)$total_cost,
                         'value' => $data
                     ];
                     return $this->sendSuccess($res);
