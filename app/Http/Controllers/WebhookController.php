@@ -270,6 +270,7 @@ class WebhookController extends BaseController
 
             Helper::trackingInfo('Cập nhật order OTB thành công');
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             Helper::trackingInfo('Cập nhật order OTB thất bại');
         }
     }
@@ -331,6 +332,7 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật order lenful thành công!');
 
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             Helper::trackingError('Cập nhật order lenful thất bại');
         }
     }
@@ -368,6 +370,7 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
 
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
             Helper::trackingError('Cập nhật order hubfulfill thất bại');
         }
     }
