@@ -322,7 +322,7 @@ class WebhookController extends BaseController
                 foreach($res['data'] as $data) {
                     $columns = [
                         'cost' => $data['total_price'],
-                        'status' => $data['status'],
+                        'status_order' => $data['status'],
                     ];
                     DB::table('orders')->where('id', $data['id'])->update($columns);
                 }
