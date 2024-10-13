@@ -50,7 +50,7 @@ class OrderRepository implements OrderRepositoryInterface
             $join->on('orders.shop_id', '=', 'user_shops.shop_id');
         });
 
-        $query2->join('shops', function($join) {
+        $query2->join('shops', function($join) { 
             $join->on('shops.id', '=', 'user_shops.shop_id');
         });
 

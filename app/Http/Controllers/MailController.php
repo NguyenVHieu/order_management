@@ -43,7 +43,7 @@ class MailController extends BaseController
                 'price' => $param['price'],
                 'shop_id' => $shop->id ?? null,
                 'size' => $param['size'] ?? null,
-                'blueprint_id' => $param['blueprint_id'] ?? null,
+                'blueprint_id' => $param['blueprint_id'] ?? null, 
                 'style' => $param['style'] != 'N/A' ? $param['style'] : null,
                 'color' => $param['color'] != 'N/A' ? $param['color'] : null,
                 'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
