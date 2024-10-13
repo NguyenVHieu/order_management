@@ -28,20 +28,20 @@ class OrderRepository implements OrderRepositoryInterface
             $query->where('user_shops.user_id',  $params['userId']);
         }
 
-        if (!empty($params['dateOrderFrom'] || $params['dateOrderTo'])) {
-            if (!empty($params['dateOrderFrom'])) {
-                $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
-            }
-    
-            if (!empty($params['dateOrderTo'])) {
-                $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
-            }
-
-            $query->where('orders.is_push', true);
-        }
-
         if (!empty($params['type'])) {
             if ($params['type'] == 1) {
+
+                if (!empty($params['dateOrderFrom'] || $params['dateOrderTo'])) {
+                    if (!empty($params['dateOrderFrom'])) {
+                        $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
+                    }
+            
+                    if (!empty($params['dateOrderTo'])) {
+                        $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
+                    }
+
+                }
+
                 $query->where('orders.is_push', true);
             } else if ($params['type'] == 2) {
                 $query->where('orders.is_push', false)->where('is_approval', true);
