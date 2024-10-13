@@ -1223,12 +1223,14 @@ class OrderController extends BaseController
     public function appendSheetFlag($data){
         try{
             $orders = collect($data)->flatten(1);
-            $spreadsheetId = '1j2qWxzHreBjwrsrzRTkw97dqUGUgWCMlNR-GU1PaZNo';
+            $spreadsheetId = '1GI6UwF1LQEBeqg9dqfG8KO5WwTuKM5bRiqqc00ASGFE';
             $range = 'Custom Flags, Banners, Yard Signs!A:A';
             $values = $orders->map(function($item) {
                 $seller = DB::table('users')->where('id', $item->approval_by)->first();
                 $shop = DB::table('shops')->where('id', $item->shop_id)->first();
-            
+                if (!$shop || !$seller) {
+                    return ['1' => 'Không tìm thấy shop hoặc seller'];
+                }
                 return [
                     date('Y-m-d'),
                     '#'.$item->order_number,
@@ -1266,10 +1268,10 @@ class OrderController extends BaseController
             ];
 
             $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
-            return 'Success';
+            return ['1' => 'Success'];
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
-            return 'Push order cờ thất bại';
+            return ['1' => 'Push order cờ thất bại'];
         }
     }
 }
