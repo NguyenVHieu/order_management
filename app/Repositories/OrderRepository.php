@@ -24,6 +24,10 @@ class OrderRepository implements OrderRepositoryInterface
             $join->on('shops.id', '=', 'user_shops.shop_id');
         });
 
+        $query->leftJoin('users', function($join){
+            $join->on('orders.approval_by', '=', 'users.id');
+        });
+
         if ($params['userType'] != -1) {
             $query->where('user_shops.user_id',  $params['userId']);
         }
@@ -52,10 +56,7 @@ class OrderRepository implements OrderRepositoryInterface
 
         $query->orderBy('id', 'DESC');
         return $query->get();
-        
-
     }
-
 
     public function listOrder($order_number) 
     {
