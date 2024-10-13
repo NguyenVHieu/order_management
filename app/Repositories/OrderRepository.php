@@ -25,10 +25,6 @@ class OrderRepository implements OrderRepositoryInterface
         });
 
         if ($params['userType'] != -1) {
-            if ($params['userType'] == 2) {
-                $query->where('orders.is_approval', true);
-            }
-
             $query->where('user_shops.user_id',  $params['userId']);
         }
 
@@ -44,29 +40,20 @@ class OrderRepository implements OrderRepositoryInterface
             $query->where('orders.is_push', true);
         }
 
-        $query2 = Order::query()->select($columns)->distinct()->where('is_push', false);
-
-        $query2->join('user_shops', function($join) {  
-            $join->on('orders.shop_id', '=', 'user_shops.shop_id');
-        });
-
-        $query2->join('shops', function($join) {
-            $join->on('shops.id', '=', 'user_shops.shop_id');
-        });
-
-        if ($params['userType'] != -1) {
-            if ($params['userType'] == 2) {
-                $query2->where('orders.is_approval', true);
+        if (!empty($params['type'])) {
+            if ($params['type'] == 1) {
+                $query->where('orders.is_push', true);
+            } else if ($params['type'] == 2) {
+                $query->where('orders.is_push', false)->where('is_approval', true);
+            } else {
+                $query->where('orders.is_push', false)->where('is_approval', false);
             }
-
-            $query2->where('user_shops.user_id',  $params['userId']);
         }
-        
-        $data = $query->union($query2)
-                   ->orderBy('id', 'desc')
-                   ->get();
 
-        return $data;
+        $query->orderBy('id', 'DESC');
+        return $query->get();
+        
+
     }
 
 

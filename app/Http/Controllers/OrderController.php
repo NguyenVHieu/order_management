@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Storage;
 use phpseclib3\Net\SFTP;
 use finfo;
 use Maatwebsite\Excel\Facades\Excel;
+use Google\Client as Google_Client;
+use Google\Service\Sheets;
 
 class OrderController extends BaseController
 {
@@ -800,6 +802,7 @@ class OrderController extends BaseController
             $params = [
                 'userType' => $userType,
                 'shopId' => $shopId,
+                'type' => $req->type,
                 'userId' => Auth::user()->id,
                 'dateOrderFrom' => $req->date_order_from,
                 'dateOrderTo' => $req->date_order_to,
@@ -905,6 +908,9 @@ class OrderController extends BaseController
                         break;
                     case 'lenful':
                         $results[] = $this->pushOrderToLenful($data);
+                        break;
+                    case 'flag':
+                        $results[] = $this->appendSheetFlag($data);
                         break;
                     default:
                         return $this->sendError('Không tìm thấy nơi đặt hàng', 404);
@@ -1151,10 +1157,9 @@ class OrderController extends BaseController
 
             $order = DB::table('orders')->where('id', $request->id)->first();
             if ($request->all == true) {
-                DB::table('orders')->where('order_number', $order->order_number)->update($data);
+                DB::table('orders')->where('order_number_group', $order->order_number_group)->update($data);
             }else {
                 DB::table('orders')->where('id', $request->id)->update($data);
-                DB::table('orders')->where('order_number', $order->order_number)->update(['place_order' => $data['place_order']]);
             }
             
             return $this->sendSuccess('ok');
@@ -1214,25 +1219,56 @@ class OrderController extends BaseController
         }
     }
 
-    public function importOrderFlag(Request $request)
-    {
-        try {
-            DB::beginTransaction();
-            $request->validate([
-                'file' => 'required|mimes:xlsx,xls'
+    public function appendSheetFlag($data){
+        try{
+            $orders = collect($data)->flatten(1);
+            $spreadsheetId = '1j2qWxzHreBjwrsrzRTkw97dqUGUgWCMlNR-GU1PaZNo';
+            $range = 'Custom Flags, Banners, Yard Signs!A:A';
+            $values = $orders->map(function($item) {
+                $seller = DB::table('users')->where('id', $item->approval_by)->first();
+                $shop = DB::table('shops')->where('id', $item->shop_id)->first();
+            
+                return [
+                    date('Y-m-d'),
+                    '#'.$item->order_number,
+                    $item->quantity,
+                    $item->size,
+                    $item->img_1,
+                    $item->first_name. ' ' . $item->last_name,
+                    $item->address,
+                    $item->city,
+                    $item->zip,
+                    $item->state,
+                    $item->country,
+                    $item->img_6,
+                    '',
+                    '',
+                    $seller->name,
+                    $shop->name
+                ];
+            })->toArray();
+
+            $client = new Google_Client();
+            $client->setApplicationName('Laravel Google Sheets Integration');
+            $client->addScope(Sheets::SPREADSHEETS);            
+            $client->setAuthConfig(public_path('toolorder.json'));
+            $client->setAccessType('offline');
+
+            $service = new Sheets($client);
+
+            $body = new \Google\Service\Sheets\ValueRange([
+                'values' => $values,
             ]);
 
-            $file = $request->file('file');
-            $import = new OrderImport();
-            Excel::import($import, $file);
+            $params = [
+                'valueInputOption' => 'RAW'
+            ];
 
-            DB::commit();
-            return $this->sendSuccess('Import order cờ thành công!');
-            
+            $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
+            return 'Success';
         } catch (\Throwable $th) {
-            dd($th);
-            DB::rollBack();
-            return $this->sendError('Import order cờ thất bại, errors: '.$th->getMessage());
+            Helper::trackingError($th->getMessage());
+            return 'Push order cờ thất bại';
         }
     }
 }

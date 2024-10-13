@@ -83,6 +83,7 @@ class MailController extends BaseController
     public function fetchMailOrder()
     {
         try {
+            set_time_limit(-1);
             Helper::trackingInfo('fetchMailOrder start at ' . now());
             $client = \Webklex\IMAP\Facades\Client::account('default');
             $client->connect();
@@ -106,13 +107,14 @@ class MailController extends BaseController
 
                     $patterns = [
                         'size_blanket' => '/(\d+x\d+)/',
+                        'size' => '/Sizes:\s*(.*)/',
                         'orderNumber' => '/Your order number is:\s*(.*)/',
                         'shippingAddress' => '/Shipping address\s*(.*?)\s*(?=USPS®|Shipping internationally|\z)/s',
                         'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nStyle:|\nPrimary color (Matching with color chart):|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
                         'product_multi' => '/([^\n<]+(?:\n[^\n<]+)*)/',
                         'style' => '/Style:\s*(.*)/',
                         'color' => '/Primary color \(Matching with color chart\):\s*(.*)/i',
-                        'personalization' => '/Personalization:\s*(.*)/',
+                        'personalization' => '/Personalization:\s*(.*?)\s*Shop:/s',
                         'shop' => '/Shop:\s*(.*?)(?=\n|$)/i',
                         'quantity' => '/Quantity:\s*(\d+)/',
                         'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
@@ -156,7 +158,10 @@ class MailController extends BaseController
                             if (stripos($data['product_multi'][$i], 'Blanket') !== false) {
                                 $item['size'] = $data['size_blanket'];
                                 $item['blueprint_id'] = $this->getBlueprintId($item['style'] .' '. $item['size']);
-                            }else {
+                            }else if (stripos($data['product_multi'][$i], 'Flag') !== false){
+                                $item['size'] = $data['size'];
+                                $item['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
+                            } else {
                                 $item['size'] = $this->getSize($item['style']);
                                 $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                             }
@@ -170,14 +175,14 @@ class MailController extends BaseController
                         
                     }else {
                         $data['product'] = str_replace(['<', "\n"], '', $data['product']);
-                        if (stripos($data['product'], 'Flag') !== false) {
-                            continue;
-                        }
                         $data['thumb'] = $thumb;
                         if (stripos($data['product'], 'Blanket') !== false) {
                             $data['size'] = $data['size_blanket'];
                             $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
-                        }else {
+                        }else if ( stripos($data['product'], 'Flag') !== false){
+                            $data['size'] = $data['size'];
+                            $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
+                        } else {
                             $data['size'] = $this->getSize($data['style']);
                             $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                         }
