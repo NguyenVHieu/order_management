@@ -37,11 +37,11 @@ class OrderRepository implements OrderRepositoryInterface
 
                 if (!empty($params['dateOrderFrom'] || $params['dateOrderTo'])) {
                     if (!empty($params['dateOrderFrom'])) {
-                        $query->whereDate('orders.recieved_mail_at', '>=', $params['dateOrderFrom'].' 00:00:00');
+                        $query->whereDate('orders.date_push', '>=', $params['dateOrderFrom']);
                     }
             
                     if (!empty($params['dateOrderTo'])) {
-                        $query->whereDate('orders.recieved_mail_at', '<=', $params['dateOrderTo'].' 23:59:59');
+                        $query->whereDate('orders.date_push', '<=', $params['dateOrderTo']);
                     }
 
                 }
