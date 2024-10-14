@@ -1225,12 +1225,19 @@ class OrderController extends BaseController
             $orders = collect($data)->flatten(1);
             $spreadsheetId = '1GI6UwF1LQEBeqg9dqfG8KO5WwTuKM5bRiqqc00ASGFE';
             $range = 'Custom Flags, Banners, Yard Signs!A:A';
-            $values = $orders->map(function($item) {
+            $ids = [];
+            foreach ($orders as $order) {
+                $ids[] = $order->id;
+            }
+            $key = '';
+            $values = $orders->map(function($item) use(&$key) {
                 $seller = DB::table('users')->where('id', $item->approval_by)->first();
                 $shop = DB::table('shops')->where('id', $item->shop_id)->first();
                 if (!$shop || !$seller) {
                     return ['1' => 'Không tìm thấy shop hoặc seller'];
                 }
+
+                $key .= ($key ? '_' : '') . $item->order_number;
                 return [
                     date('d/m/Y'),
                     '#'.$item->order_number,
@@ -1267,11 +1274,20 @@ class OrderController extends BaseController
                 'valueInputOption' => 'RAW'
             ];
 
-            $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
-            return ['1' => 'Success'];
+            $d = $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
+            $data = [
+                'is_push' => 1,
+                'push_by' => Auth::user()->id,
+                'date_push' => date('Y-m-d'),
+                'status_order' => 'pushed',
+                'place_order' => 'interest_print'
+            ];
+
+            DB::table('orders')->whereIn('id', $ids)->update($data);
+            return [$key => 'Success'];
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
-            return ['1' => 'Push order cờ thất bại'];
+            return [$key => 'Push order cờ thất bại'];
         }
     }
 }
