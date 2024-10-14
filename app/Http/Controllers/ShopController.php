@@ -60,7 +60,7 @@ class ShopController extends BaseController
     public function destroy($id)
     {
         try {
-            $DB::table('shops')->where('id', $id)->delete();
+            DB::table('shops')->where('id', $id)->delete();
             return $this->sendSuccess('Success!');
         } catch (\Throwable $th) {
             return $this->sendError('Lỗi Server');
