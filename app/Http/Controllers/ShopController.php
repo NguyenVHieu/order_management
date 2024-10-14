@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
+use App\Http\Requests\ShopRequest;
 use App\Http\Requests\TeamRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
@@ -16,19 +17,19 @@ use App\Models\Shop;
 use App\Models\Team;
 use App\Models\UserType;
 
-class TeamController extends BaseController
+class ShopController extends BaseController
 {
     public function index()
     {
         try {
-            $data = DB::table('teams')->get();
+            $data = DB::table('shops')->get();
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
             return $this->sendError('Lỗi Server');
         }
     }
 
-    public function updateOrCreate(TeamRequest $request)
+    public function updateOrCreate(ShopRequest $request)
     {
         try {
             $id = $request->id ?? 0;
@@ -36,9 +37,9 @@ class TeamController extends BaseController
                 'name' => $request->name,
             ];
             if ($id > 0) {
-                DB::table('teams')->where('id', $id)->update($data);
+                DB::table('shops')->where('id', $id)->update($data);
             } else {
-                DB::table('teams')->insert($data);
+                DB::table('shops')->insert($data);
             }
             return $this->sendSuccess('Success!');
         } catch (\Throwable $th) {
@@ -49,7 +50,7 @@ class TeamController extends BaseController
     public function edit($id)
     {
         try {
-            $data = DB::table('teams')->where('id', $id)->first();
+            $data = DB::table('shops')->where('id', $id)->first();
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
             return $this->sendError('Lỗi Server');
@@ -59,7 +60,7 @@ class TeamController extends BaseController
     public function destroy($id)
     {
         try {
-            $team = DB::table('teams')->where('id', $id)->delete();
+            $DB::table('shops')->where('id', $id)->delete();
             return $this->sendSuccess('Success!');
         } catch (\Throwable $th) {
             return $this->sendError('Lỗi Server');

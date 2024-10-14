@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
@@ -53,6 +54,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('teams')->group(function () {
         Route::controller(TeamController::class)->group(function(){
+            Route::get('/', 'index');
+            Route::post('/', 'updateOrCreate');
+            Route::get('/create', 'create');
+            Route::get('/{id}', 'edit');
+            Route::delete('/{id}', 'destroy');
+        });
+    });
+
+    Route::prefix('shops')->group(function () {
+        Route::controller(ShopController::class)->group(function(){
             Route::get('/', 'index');
             Route::post('/', 'updateOrCreate');
             Route::get('/create', 'create');
