@@ -910,7 +910,7 @@ class OrderController extends BaseController
                     case 'lenful':
                         $results[] = $this->pushOrderToLenful($data);
                         break;
-                    case 'flag':
+                    case 'interest_print':
                         $results[] = $this->appendSheetFlag($data);
                         break;
                     default:
