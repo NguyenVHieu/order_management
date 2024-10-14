@@ -1232,7 +1232,7 @@ class OrderController extends BaseController
                     return ['1' => 'Không tìm thấy shop hoặc seller'];
                 }
                 return [
-                    date('Y-m-d'),
+                    date('d/m/Y'),
                     '#'.$item->order_number,
                     $item->quantity,
                     $item->size,
