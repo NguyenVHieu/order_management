@@ -19,28 +19,18 @@ class MailController extends BaseController
     public function getInformationProduct($params)
     {
         foreach($params as $param) {
-            $first_name = explode(" ", $param['shippingAddress'][0])[0];
-            $last_name = explode(" ", $param['shippingAddress'][0])[1];
-            $address = $param['shippingAddress'][1];
-            $country = $param['shippingAddress'][count($param['shippingAddress']) -1];
-            $infoCity = explode(", ", $param['shippingAddress'][count($param['shippingAddress']) -2]);
-            $city = $infoCity[0];
-            $state = explode(" ", $infoCity[1])[0];
-            $zip = explode(" ", $infoCity[1])[1];   
-            $apartment = null;
+            $parts = explode(" ", $param['name']);
 
-            if ($param['shippingAddress'][count($param['shippingAddress']) -3] != $address) {
-                $apartment = $param['shippingAddress'][count($param['shippingAddress']) -3];
-            }
+            $firstName = $parts[0];
+            $lastName = implode(" ", array_slice($parts, 1));
             $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
             if (empty($shop)) {
                 $shop = Shop::create(['name' => $param['shop']])->fresh();  
             }
             
             $data = [
-                'order_number' => $param['orderNumber'],
+                'order_number' => $param['orderNumber'] != 'N/A' ? $param['orderNumber'] : time(),
                 'product_name' => $param['product'],
-                'price' => $param['price'],
                 'shop_id' => $shop->id ?? null,
                 'size' => $param['size'] ?? null,
                 'blueprint_id' => $param['blueprint_id'] ?? null,
@@ -49,21 +39,16 @@ class MailController extends BaseController
                 'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
                 'thumbnail' => $param['thumb'],
                 'quantity' =>  $param['quantity'],
-                'item_total' => $param['itemTotal'],
-                'discount' => $param['discount'],
-                'sub_total' => $param['subtotal'],
-                'shipping' => $param['shipping'],
-                'sale_tax' => $param['salesTax'],
-                'order_total' => $param['orderTotal'],
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'address' => $address,
-                'country' => $country,
-                'state' => $state,
-                'apartment' => $apartment,
+                'sale_tax' => $param['salesTax'] != 'N/A' ? $param['salesTax'] : null,
+                'order_total' => $param['orderTotal'] != 'N/A' ? $param['orderTotal'] : null,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'address' => $param['address'],
+                'country' => $param['country'],
+                'state' => $param['state'],
                 'recieved_mail_at' => $param['recieved_mail_at'],
-                'zip' => $zip,
-                'city' => $city,
+                'zip' => $param['zip'],
+                'city' => $param['city'],
                 'is_push' => false,
                 'is_approval' => false,
                 'multi' => $param['multi'], 
@@ -91,111 +76,115 @@ class MailController extends BaseController
             $inbox = $client->getFolder('INBOX');
 
             $messages = $inbox->query()->subject('You made a sale on Etsy')->unseen()->get();
-            
             $list_data = [];
             if (count($messages) > 0) {
                 foreach ($messages as $message) {
-                    // Trích xuất thông tin từ email
-                    $subject = $message->getSubject();
-                    $from = $message->getFrom()[0]->mail;
-                    $date = $message->getDate();
-                    
-                    $emailBody = $this->removeLinks($message->getTextBody());
-                    $emailHtml = $message->getHTMLBody();
-                    $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
-                    $thumb = $this->extractInfo($thumbRegex, $emailHtml);
+                    try {
+                        // Trích xuất thông tin từ email
+                        $subject = $message->getSubject();
+                        $from = $message->getFrom()[0]->mail;
+                        $date = $message->getDate();
+                        
+                        $emailBody = $this->removeLinks($message->getTextBody());
+                        $emailHtml = $message->getHTMLBody();
+                        $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
+                        $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
-                    $patterns = [
-                        'size_blanket' => '/(\d+x\d+)/',
-                        'size' => '/Sizes:\s*(.*)/',
-                        'orderNumber' => '/Your order number is:\s*(.*)/',
-                        'shippingAddress' => '/Shipping address\s*(.*?)\s*(?=USPS®|Shipping internationally|\z)/s',
-                        'product' => '/Learn about Etsy Seller Protection.*?\n(.*?)(?=\nStyle:|\nPrimary color (Matching with color chart):|\nPersonalization:|\nShop:|\nTransaction ID:|\nQuantity:|\nPrice:|\nOrder total|$)/s',
-                        'product_multi' => '/([^\n<]+(?:\n[^\n<]+)*)/',
-                        'style' => '/Style:\s*(.*)/',
-                        'color' => '/Primary color \(Matching with color chart\):\s*(.*)/i',
-                        'personalization' => '/Personalization:\s*(.*?)\s*Shop:/s',
-                        'shop' => '/Shop:\s*(.*?)(?=\n|$)/i',
-                        'quantity' => '/Quantity:\s*(\d+)/',
-                        'price' => '/Price:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'itemTotal' => '/Item total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'discount' => '/Discount:\s*- (?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'subtotal' => '/Subtotal:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'shipping' => '/Shipping:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'salesTax' => '/Sales tax:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/',
-                        'orderTotal' => '/Order total:\s*(?:US\$|\$)(\d+(?:\.\d{1,2})?)/'
-                    ];
-                    $data = [];
-                    foreach ($patterns as $key => $pattern) {
-                        if ($key === 'shippingAddress' || $key === 'product') {
-                            $data[$key] = $this->extractInfo($pattern, $emailBody, true);
-                        } else {
-                            $data[$key] = $this->extractInfo($pattern, $emailBody);
-                        }
-                        $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
-                    }
+                        $patterns = [
+                            'orderNumber' => '/http:\/\/www\.etsy\.com\/your\/orders\/\s*(.*)/',
+                            'name' => '/<span class=\'name\'>([^<]+)<\/span>/',
+                            'address' => '/<span class=\'first-line\'>([^<]+)<\/span>/',
+                            'city' => '/<span class=\'city\'>([^<]+)<\/span>/',
+                            'state' => '/<span class=\'state\'>([^<]+)<\/span>/',
+                            'zip' => '/<span class=\'zip\'>([^<]+)<\/span>/',
+                            'country' => '/<span class=\'country-name\'>([^<]+)<\/span>/',
+                            'product' => '/Item:\s*(.+)/',
+                            'style' => '/Style:\s*(.*)|Sizes:\s*(.*)/',
+                            'color' => '/(?:Primary color \(Matching with color chart\)|Shirt Colors):\s*(.*)/i',
+                            'quantity' => '/Quantity:\s*(.+)/',
+                            'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
+                            'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
+                            'size' => '/Sizes:\s*(.*)/',
+                            'size_blanket' => '/(\d+x\d+)/',
+                            'personalization' => '/Personalization:\s*(.*)/',
 
-                    $data['shippingAddress'] = explode("\n", str_replace("\r", "", trim($data['shippingAddress'])));
-                    
-                    $filteredArray = array_filter($data['shippingAddress'], function($item) {
-                        return strpos($item, '*') === false; // Giữ lại các phần tử không có ký tự '*'
-                    });
-                    $data['shippingAddress'] = array_values($filteredArray);
-                    $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
-                    $data['shop'] = is_array($data['shop']) ? $data['shop'][0] : $data['shop'];
-                    if (is_array($data['style'])){
-                        $countStyle = count($data['style']);
-                        $data['product_multi']  = $this->getProductMulti($data['product_multi'], $countStyle);
-                        for ($i=0; $i < $countStyle; $i++) {
-                            $item = [];
-                            $item['style'] = $data['style'][$i];
-                            $item['color'] = $data['color'][$i];
-                            $item['personalization'] = $data['personalization'][$i];
-                            $item['price'] = $data['price'][$i];
-                            $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
-                            $item['thumb'] = $thumb[$i];
-                            $item['product'] = $data['product_multi'][$i];
-                            if (stripos($data['product_multi'][$i], 'Blanket') !== false) {
-                                $item['size'] = $data['size_blanket'];
-                                $item['blueprint_id'] = $this->getBlueprintId($item['style'] .' '. $item['size']);
-                            }else if (stripos($data['product_multi'][$i], 'Flag') !== false){
-                                $item['size'] = $data['size'];
-                                $item['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
+                        ];
+
+
+                        $data = [];
+                        foreach ($patterns as $key => $pattern) {
+                            if ($key === 'shippingAddress' || $key === 'product') {
+                                $data[$key] = $this->extractInfo($pattern, $emailBody, true);
                             } else {
-                                $item['size'] = $this->getSize($item['style']);
-                                $item['blueprint_id'] = $this->getBlueprintId($item['style']);
+                                $data[$key] = $this->extractInfo($pattern, $emailBody);
+                            }
+                            $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
+                        }
+
+                        $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
+                        $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
+                        $data['orderNumer1'] =  $this->extractInfo('/Your order number is (\d+)/', $emailHtml, true);
+                        $getShop = is_array($shop) ? $shop[0] : $shop;
+                        $data['shop'] = str_replace("\r", '', $getShop);
+                        
+                        if (is_array($data['style'])){
+                            $countStyle = count($data['style']);
+                            for ($i=0; $i < $countStyle; $i++) {
+                                $item = [];
+                                $item['style'] = $data['style'][$i];
+                                $item['color'] = $data['color'][$i];
+                                $item['personalization'] = $data['personalization'][$i];
+                                $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
+                                $item['thumb'] = $thumb[$i];
+                                $item['product'] = $data['product'][$i];
+                                if (stripos($data['product'][$i], 'Blanket') !== false) {
+                                    $item['size'] = $data['size_blanket'];
+                                    $item['blueprint_id'] = $this->getBlueprintId($item['style'] .' '. $item['size']);
+                                }else if (stripos($data['product'][$i], 'Flag') !== false){
+                                    $item['size'] = $data['size'];
+                                    $item['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
+                                } else {
+                                    $item['size'] = $this->getSize($item['style']);
+                                    $item['blueprint_id'] = $this->getBlueprintId($item['style']);
+                                }
+                                
+                                $item['multi'] = true;
+                                $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
+                                $item['orderNumberGroup'] = $data['orderNumber'];
+                                $mergedArray = array_merge($data, $item);
+                                $list_data[] = $mergedArray;   
                             }
                             
-                            $item['multi'] = true;
-                            $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
-                            $item['orderNumberGroup'] = $data['orderNumber'];
-                            $mergedArray = array_merge($data, $item);
-                            $list_data[] = $mergedArray;   
+                        }else {
+                            $data['thumb'] = $thumb;
+                            if (stripos($data['product'], 'Blanket') !== false) {
+                                $data['size'] = $data['size_blanket'];
+                                $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
+                            }else if ( stripos($data['product'], 'Flag') !== false){
+                                $data['size'] = $data['size'];
+                                $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
+                            } else {
+                                $data['size'] = $this->getSize($data['style']);
+                                $data['blueprint_id'] = $this->getBlueprintId($data['style']);
+                            }
+                            
+                            
+                            $data['orderNumberGroup'] = $data['orderNumber'];
+                            $data['multi'] = false;
+                            $list_data[] = $data;
                         }
-                        
-                    }else {
-                        $data['product'] = str_replace(['<', "\n"], '', $data['product']);
-                        $data['thumb'] = $thumb;
-                        if (stripos($data['product'], 'Blanket') !== false) {
-                            $data['size'] = $data['size_blanket'];
-                            $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
-                        }else if ( stripos($data['product'], 'Flag') !== false){
-                            $data['size'] = $data['size'];
-                            $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
-                        } else {
-                            $data['size'] = $this->getSize($data['style']);
-                            $data['blueprint_id'] = $this->getBlueprintId($data['style']);
-                        }
-                        
-                        $data['orderNumberGroup'] = $data['orderNumber'];
-                        $data['multi'] = false;
-                        $list_data[] = $data;
-                    }
 
-                    $message->setFlag('SEEN');
-                    $client->expunge();
+                        $message->setFlag('SEEN');
+                        $client->expunge();
+                    } catch (\Throwable $th) {
+                        continue;
+                        Helper::trackingInfo('fetchMailOrder child error ' . $th->getMessage());
+                    }
+                    
                 }
+                
                 $this->getInformationProduct($list_data);
+                Helper::trackingInfo('lỗi insert' . $th->getMessage());
                 
             } 
             Helper::trackingInfo('fetchMailOrder end at ' . now());
@@ -219,7 +208,7 @@ class MailController extends BaseController
 
     private function removeLinks($body)
     {
-        return preg_replace('/http[^\s]+/', '', $body);
+        return preg_replace('/https+/', '', $body);
     }
 
     public function getSize($style) 
