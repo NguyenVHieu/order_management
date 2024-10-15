@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('order_id')->nullable();
-            $table->string('order_number');
-            $table->string('price');
+            $table->string('order_number')->nullable();
+            $table->string('price')->nullable();
             $table->string('place_order')->nullable();
             $table->unsignedBigInteger('shop_id')->nullable();;
             $table->string('size')->nullable();
@@ -38,12 +38,12 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->string('apartment')->nullable();    
             $table->string('address')->nullable();
-            $table->decimal('item_total')->default(0.00);
-            $table->decimal('discount')->default(0.00);
-            $table->decimal('sub_total')->default(0.00);
-            $table->decimal('shipping')->default(0.00);
-            $table->decimal('sale_tax')->default(0.00);
-            $table->decimal('order_total')->default(0.00);
+            $table->decimal('item_total')->default(0.00)->nullable();
+            $table->decimal('discount')->default(0.00)->nullable();
+            $table->decimal('sub_total')->default(0.00)->nullable();
+            $table->decimal('shipping')->default(0.00)->nullable();
+            $table->decimal('sale_tax')->default(0.00)->nullable();
+            $table->decimal('order_total')->default(0.00)->nullable();
             $table->string('img_1')->nullable();
             $table->string('img_2')->nullable();
             $table->string('img_3')->nullable();
