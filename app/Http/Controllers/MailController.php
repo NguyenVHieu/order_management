@@ -99,7 +99,7 @@ class MailController extends BaseController
                             'zip' => '/<span class=\'zip\'>([^<]+)<\/span>/',
                             'country' => '/<span class=\'country-name\'>([^<]+)<\/span>/',
                             'product' => '/Item:\s*(.+)/',
-                            'style' => '/Style:\s*(.*)|Sizes:\s*(.*)/',
+                            'style' => '/Style:\s*(.*)/',
                             'color' => '/(?:Primary color \(Matching with color chart\)|Shirt Colors):\s*(.*)/i',
                             'quantity' => '/Quantity:\s*(.+)/',
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
