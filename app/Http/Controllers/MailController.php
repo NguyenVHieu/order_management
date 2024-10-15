@@ -178,19 +178,18 @@ class MailController extends BaseController
                         $client->expunge();
                     } catch (\Throwable $th) {
                         continue;
-                        Helper::trackingInfo('fetchMailOrder child error ' . $th->getMessage());
+                        Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                     }
                     
                 }
                 
                 $this->getInformationProduct($list_data);
-                Helper::trackingInfo('lỗi insert' . $th->getMessage());
                 
             } 
             Helper::trackingInfo('fetchMailOrder end at ' . now());
             return $this->sendSuccess('clone order ok');
         } catch (\Throwable $th) {
-            Helper::trackingInfo('fetchMailOrder error' . $th->getMessage());
+            Helper::trackingError('fetchMailOrder error' . $th->getMessage());
             return $this->sendError($th->getMessage(), 500);
         }
     }
