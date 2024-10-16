@@ -202,7 +202,7 @@ class OrderController extends BaseController
                         'cost' => 0.00
                     ];
 
-                    $lineItems[] = [
+                    $item = [
                         "name" => "Product API". $order->order_number,
                         "quantity" => $order->quantity,
                         "image" => $order->img_6,
@@ -222,6 +222,21 @@ class OrderController extends BaseController
                             ]
                         ]
                     ];
+
+                    if (!empty($order->img_2)) {
+                        $item["design_back"] = $order->img_2; 
+                    }
+
+                    if (!empty($order->img_3)) {
+                        $item["design_sleeve"] = $order->img_3; 
+                    }
+
+                    if (!empty($order->img_4)) {
+                        $item["design_hood"] = $order->img_4; 
+                    }
+
+                    $lineItems[] = $item;
+
                     $items[] = $order->order_number;
                 }
 
@@ -571,7 +586,7 @@ class OrderController extends BaseController
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
-                    $lineItems[] = [
+                    $item = [
                         "sku" => $product->sku,
                         "quantity" => (int)$order->quantity,
                         "design" => [
@@ -585,6 +600,28 @@ class OrderController extends BaseController
                         'date_push' => date('Y-m-d'),
                         'push_by' => Auth::user()->id
                     ];
+
+                    if ($order->img_1 != null) {
+                        $item['design']['artwork_front_url'] = $order->img_1;
+                    }
+
+                    if ($order->img_2 != null) {
+                        $item['design']['artwork_back_url'] = $order->img_2;
+                    }
+
+                    if ($order->img_3 != null) {
+                        $item['design']['artwork_right_url'] = $order->img_3;
+                    }
+
+                    if ($order->img_4 != null) {
+                        $item['design']['artwork_left_url'] = $order->img_4;
+                    }
+
+                    if ($order->img_5 != null) {
+                        $item['design']['artwork_both_url'] = $order->img_5;
+                    }
+
+                    $lineItems[] = $item;
 
                     $arr_order_number[] = $order->order_number;
                 }
@@ -697,7 +734,7 @@ class OrderController extends BaseController
                         'cost' => 0.00
                     ];
 
-                    $lineItems[] = [
+                    $item = [
                         "design_sku" => $sku."-DESIGN",
                         "product_sku" => $sku,
                         "quantity" => 1,
@@ -713,6 +750,39 @@ class OrderController extends BaseController
 
                         "shippings" => [0]
                     ];
+                    if (!empty($order->img_2)) {
+                        $item["designs"][] = [
+                            "position" => 2,
+                            "link" => $order->img_2,
+                        ];
+                    }
+                    if (!empty($order->img_3)) {
+                        $item["designs"][] = [
+                            "position" => 3,
+                            "link" => $order->img_3,
+                        ];
+                    }
+                    if (!empty($order->img_4)) {
+                        $item["designs"][] = [
+                            "position" => 4,
+                            "link" => $order->img_4,
+                        ];
+                    }
+                    if (!empty($order->img_5)) {
+                        $item["designs"][] = [
+                            "position" => 0,
+                            "link" => $order->img_5,
+                        ];
+                    }
+
+                    if (!empty($order->img_7)) {
+                        $item["designs"][] = [
+                            "position" => -1,
+                            "link" => $order->img_7,
+                        ];
+                    }
+                    
+                    $lineItems[] = $item;
                     $items[] = $order->order_number;
                 }
 
