@@ -1238,12 +1238,39 @@ class OrderController extends BaseController
                     return ['1' => 'Không tìm thấy shop hoặc seller'];
                 }
 
+                $size = $this->getSizeFlag($item->size);
+                $side = $this->getSideFlag($item->size);
+
+                if ($size != null && $side != null) {
+                    $sizeFlag = $size . $side;
+                    if ($sizeFlag == 'WB1') {
+                        $total_cost = (int)$item->quantity * 19.00;  
+                    } else if ($sizeFlag == 'WB2') {
+                        $total_cost = (int)$item->quantity * 20.50;
+                    } else if ($sizeFlag == 'S1') {
+                        $total_cost = (int)$item->quantity * 10;
+                    } else if ($sizeFlag == 'S2') {
+                        $total_cost = (int)$item->quantity * 11.50;
+                    } else if ($sizeFlag == 'L1') {
+                        $total_cost = (int)$item->quantity * 12;
+                    } else if ($sizeFlag == 'L2') {
+                        $total_cost = (int)$item->quantity * 13.50;
+                    } else {
+                        $sizeFlag = '';
+                        $total_cost = 0;
+                    }
+
+                }else {
+                    $sizeFlag = '';
+                    $total_cost = 0;
+                }
+
                 $key .= ($key ? '_' : '') . $item->order_number;
                 return [
                     date('d/m/Y'),
                     '#'.$item->order_number,
                     $item->quantity,
-                    $item->size,
+                    $sizeFlag,
                     $item->img_1,
                     $item->first_name. ' ' . $item->last_name,
                     $item->address,
@@ -1255,7 +1282,8 @@ class OrderController extends BaseController
                     '',
                     '',
                     $seller->name,
-                    $shop->name
+                    $shop->name,
+                    $total_cost
                 ];
             })->toArray();
 
@@ -1290,5 +1318,27 @@ class OrderController extends BaseController
             Helper::trackingError($th->getMessage());
             return [$key => 'Push order cờ thất bại'];
         }
+    }
+
+    public function getSideFlag($size) {
+        $size = strtolower($size);
+        if (stripos($size, 'double-sided') !== false) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+
+    public function getSizeFlag($size){
+        if (stripos($size, '12x18') !== false) {
+            return 'S';
+        } else if (stripos($size, '28x40') !== false){
+            return 'L';
+        } else if (stripos($size, '36x60') !== false || stripos($size, '3x5') !== false){
+            return 'WB';
+        } else {
+            return '';
+        }
+        
     }
 }
