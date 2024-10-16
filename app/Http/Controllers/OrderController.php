@@ -1268,8 +1268,7 @@ class OrderController extends BaseController
                 'state' => $request->state,
                 'im_code' => $request->im_code,
                 'tax' => $request->tax,
-                'shipping' => (float)$request->shipping,
-                'is_shipping' => (float)$request->shipping > 0 ? true : false,
+                'is_shipping' => $request->is_shipping,
                 'apartment' => $request->address_2,
                 'updated_at' => now(),
                 'updated_by' => Auth::user()->id
@@ -1286,7 +1285,6 @@ class OrderController extends BaseController
             DB::commit();
             return $this->sendSuccess('Cập nhật order thành công!');
         } catch (\Throwable $th) {
-            dd($th);
             DB::rollBack(); 
             Helper::trackingError($th->getMessage());
             return $this->sendError('Cập nhật order thất bại');
