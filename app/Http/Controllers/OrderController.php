@@ -1272,6 +1272,8 @@ class OrderController extends BaseController
                 'tax' => $request->tax,
                 'is_shipping' => $request->is_shipping,
                 'apartment' => $request->address_2,
+                'email' => $request->email,
+                'phone' => $request->phone,
                 'updated_at' => now(),
                 'updated_by' => Auth::user()->id
             ];
