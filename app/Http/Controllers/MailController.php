@@ -107,9 +107,7 @@ class MailController extends BaseController
                             'size' => '/Sizes:\s*(.*)/',
                             'size_blanket' => '/(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*(.*)/',
-
                         ];
-
 
                         $data = [];
                         foreach ($patterns as $key => $pattern) {
@@ -123,27 +121,29 @@ class MailController extends BaseController
 
                         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                         $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
-                        $data['orderNumer1'] =  $this->extractInfo('/Your order number is (\d+)/', $emailHtml, true);
                         $getShop = is_array($shop) ? $shop[0] : $shop;
                         $data['shop'] = str_replace("\r", '', $getShop);
                         
-                        if (is_array($data['style'])){
-                            $countStyle = count($data['style']);
+                        if (is_array($data['product'])){
+                            $countStyle = count($data['product']);
                             for ($i=0; $i < $countStyle; $i++) {
                                 $item = [];
-                                $item['style'] = $data['style'][$i];
                                 $item['color'] = $data['color'][$i];
                                 $item['personalization'] = $data['personalization'][$i];
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
+                                    $item['style'] = $data['style'][$i];
                                     $item['size'] = $data['size_blanket'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style'] .' '. $item['size']);
                                 }else if (stripos($data['product'][$i], 'Flag') !== false){
+                                    $item['style'] = $data['style'][$i];
                                     $item['size'] = $data['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
                                 } else {
+                                    $style = $this->extractInfo('/(?:Style|Sizes):\s*(.*)/', $emailBody);
+                                    $item['style'] = str_replace("\r", "", $style[$i]);
                                     $item['size'] = $this->getSize($item['style']);
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }
@@ -156,18 +156,22 @@ class MailController extends BaseController
                             }
                             
                         }else {
+
                             $data['thumb'] = $thumb;
                             if (stripos($data['product'], 'Blanket') !== false) {
+                                $data['style'] = $data['style'];
                                 $data['size'] = $data['size_blanket'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
                             }else if ( stripos($data['product'], 'Flag') !== false){
+                                $item['style'] = $data['style'];
                                 $data['size'] = $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
                             } else {
+                                $style = $this->extractInfo('/(?:Style|Sizes):\s*(.*)/', $emailBody);
+                                $data['style'] = str_replace("\r", "", $style);
                                 $data['size'] = $this->getSize($data['style']);
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }
-                            
                             
                             $data['orderNumberGroup'] = $data['orderNumber'];
                             $data['multi'] = false;
