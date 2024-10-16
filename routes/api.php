@@ -32,7 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/{id}', 'edit');
                 Route::delete('/{id}', 'destroy');
             });
+            
         });
+        Route::delete('/delete-orders/{id}', [OrderController::class, 'deleteOrder']);
     });
 
     Route::prefix('orders')->group(function () {

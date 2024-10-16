@@ -45,4 +45,8 @@ class Order extends Model
         'created_by',
         'updated_by',
     ];
+
+    protected $casts = [
+        'is_shipping' => 'boolean',
+    ];
 }

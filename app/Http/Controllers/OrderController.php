@@ -1266,6 +1266,11 @@ class OrderController extends BaseController
                 'address' => $request->address,
                 'zip' => $request->zip,
                 'state' => $request->state,
+                'im_code' => $request->im_code,
+                'tax' => $request->tax,
+                'shipping' => (float)$request->shipping,
+                'is_shipping' => (float)$request->shipping > 0 ? true : false,
+                'apartment' => $request->address_2,
                 'updated_at' => now(),
                 'updated_by' => Auth::user()->id
             ];
@@ -1281,6 +1286,7 @@ class OrderController extends BaseController
             DB::commit();
             return $this->sendSuccess('Cập nhật order thành công!');
         } catch (\Throwable $th) {
+            dd($th);
             DB::rollBack(); 
             Helper::trackingError($th->getMessage());
             return $this->sendError('Cập nhật order thất bại');
@@ -1294,7 +1300,7 @@ class OrderController extends BaseController
             if (!$order) {
                 return $this->sendError('Không tìm thấy đơn hàng');
             }
-
+            $order->is_shipping = (boolean) $order->is_shipping;
 
             return $this->sendSuccess($order);
         } catch (\Throwable $th) {
@@ -1422,5 +1428,19 @@ class OrderController extends BaseController
             return '';
         }
         
+    }
+
+    public function deleteOrder($id) {
+        try {
+            $order = DB::table('orders')->where('id', $id)->first();
+            if (!$order) {
+                return $this->sendError('Không tìm thấy đơn hàng');
+            }
+            DB::table('orders')->where('id', $id)->delete();
+            return $this->sendSuccess('Success!');
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Hiển thị đơn hàng thất bại', 500);
+        }
     }
 }
