@@ -124,7 +124,7 @@ class OrderController extends BaseController
                         "external_id" => "order_sku_" . $key_order_number,
                         "label" => "order_sku_" . $key_order_number,
                         "line_items" => array_values($lineItems),
-                        "shipping_method" => 1,
+                        "shipping_method" => $order->is_shipping == true ? 2 : 1,
                         "is_printify_express" => false,
                         "is_economy_shipping" => false,
                         "send_shipping_notification" => false,
@@ -497,6 +497,7 @@ class OrderController extends BaseController
                         $sheet->setCellValue('M' . $row, $order->first_name. ' ' . $order->last_name);
                         $sheet->setCellValue('N' . $row, $order->color);
                         $sheet->setCellValue('O' . $row, $sizeFormat);
+                        $sheet->setCellValue('Q' . $row, $order->is_shipping == true ? 1 : '');
                         $sheet->setCellValue('S' . $row, $order->img_1);
                         $sheet->setCellValue('T' . $row, $order->img_2 ?? '');
                         $sheet->setCellValue('U' . $row, $order->img_3 ?? '');
@@ -759,7 +760,7 @@ class OrderController extends BaseController
                             ]
                         ],
 
-                        "shippings" => [0]
+                        "shippings" => [$order->is_shipping == true ? 2 : 0]
                     ];
                     if (!empty($order->img_2)) {
                         $item["designs"][] = [
@@ -835,7 +836,8 @@ class OrderController extends BaseController
                         "zip" => $order->zip,
                         "address_1" => $order->address,
                         "address_2" => $order->apartment ?? '',
-                        "items" => array_values($lineItems)
+                        "items" => array_values($lineItems),
+
                     ];
 
                     $resOrder = $client->post($this->baseUrlLenful.'/order/'.$this->shopIdLenful.'/create', [
@@ -1434,7 +1436,7 @@ class OrderController extends BaseController
             if (!$order) {
                 return $this->sendError('Không tìm thấy đơn hàng');
             }
-            DB::table('orders')->where('id', $id)->delete();
+            DB::table('orders')->where('order_number_group', $order->order_number_group)->delete();
             return $this->sendSuccess('Success!');
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());

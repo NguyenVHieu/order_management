@@ -23,7 +23,7 @@ class OrderRequest extends BaseFormRequest
             'city' => 'required',
             'address' => 'required',
             'zip' => 'required',
-            'state' => 'required',
+            // 'state' => 'required',
         ];
     }
 
@@ -51,7 +51,7 @@ class OrderRequest extends BaseFormRequest
             'city.required' => 'The city is required.',
             'address.required' => 'The address is required.',
             'zip.required' => 'The zip is required.',
-            'state.required' => 'The state is required.',
+            // 'state.required' => 'The state is required.',
         ];
     }
 
