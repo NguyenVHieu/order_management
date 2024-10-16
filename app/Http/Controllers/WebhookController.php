@@ -321,7 +321,7 @@ class WebhookController extends BaseController
             $res = json_decode($response->getBody()->getContents(), true);
             if (count($res['data']) > 0) {
                 foreach($res['data'] as $data) {
-                    $order = Order::where('order_id', $data['id']);
+                    $order = Order::where('order_id', $data['id'])->first();
                     if ($order) {
                         $order->cost = (float)$data['total_price'];
                         $order->status = $data['status'];
