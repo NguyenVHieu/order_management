@@ -494,6 +494,11 @@ class OrderController extends BaseController
                         $sheet->setCellValue('N' . $row, $order->color);
                         $sheet->setCellValue('O' . $row, $sizeFormat);
                         $sheet->setCellValue('S' . $row, $order->img_1);
+                        $sheet->setCellValue('T' . $row, $order->img_2 ?? '');
+                        $sheet->setCellValue('U' . $row, $order->img_3 ?? '');
+                        $sheet->setCellValue('V' . $row, $order->img_4 ?? '');
+                        $sheet->setCellValue('W' . $row, $order->img_5 ?? '');
+                        $sheet->setCellValue('X' . $row, $order->img_6 ?? '');
                         $writtenRows[] = $row;
                         $row++;
                         $check = true;
@@ -718,7 +723,8 @@ class OrderController extends BaseController
                 $result = [];
                 foreach ($orders as $order) {
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
-                    $sku = $this->getSkuLenful($product->lenful, $order->size, $order->color);
+                    $name_prod = $product->lenfull ?? '';
+                    $sku = $this->getSkuLenful($name_prod, $order->size, $order->color);
                     if ($sku == 0) {
                         $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
