@@ -28,6 +28,10 @@ class OrderRepository implements OrderRepositoryInterface
             $join->on('orders.approval_by', '=', 'users.id');
         });
 
+        $query->leftJoin('categories', function($join){
+            $join->on('orders.category_id', '=', 'categories.id');
+        });
+
         if ($params['userType'] != -1) {
             $query->where('user_shops.user_id',  $params['userId']);
         }

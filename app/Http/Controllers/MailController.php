@@ -52,7 +52,8 @@ class MailController extends BaseController
                 'is_push' => false,
                 'is_approval' => false,
                 'multi' => $param['multi'], 
-                'order_number_group' => $param['orderNumberGroup'] ?? null           
+                'order_number_group' => $param['orderNumberGroup'] ?? null,
+                'category_id' => $param['category_id'] ?? null    
             ];
 
             $order = DB::table('orders')->where('order_number', $data['order_number'])
@@ -99,7 +100,7 @@ class MailController extends BaseController
                             'zip' => '/<span class=\'zip\'>([^<]+)<\/span>/',
                             'country' => '/<span class=\'country-name\'>([^<]+)<\/span>/',
                             'product' => '/Item:\s*(.+)/',
-                            'style' => '/Style:\s*(.*)/',
+                            'style' => '/Size:\s*(.*)/',
                             'color' => '/(?:Primary color \(Matching with color chart\)|Shirt Colors):\s*(.*)/i',
                             'quantity' => '/Quantity:\s*(.+)/',
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
@@ -147,6 +148,7 @@ class MailController extends BaseController
                                     $item['size'] = $this->getSize($item['style']);
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }
+                                $item['category_id'] = DB::table('key_categories')->where('style', $item['style'])->first()->category_id ?? null;
                                 
                                 $item['multi'] = true;
                                 $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
@@ -163,7 +165,7 @@ class MailController extends BaseController
                                 $data['size'] = $data['size_blanket'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
                             }else if ( stripos($data['product'], 'Flag') !== false){
-                                $item['style'] = $data['style'];
+                                $data['style'] = $data['style'];
                                 $data['size'] = $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style'] .' '. $data['size']);
                             } else {
@@ -172,7 +174,7 @@ class MailController extends BaseController
                                 $data['size'] = $this->getSize($data['style']);
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }
-                            
+                            $data['category_id'] = DB::table('key_categories')->where('style', $data['style'])->first()->category_id ?? null;
                             $data['orderNumberGroup'] = $data['orderNumber'];
                             $data['multi'] = false;
                             $list_data[] = $data;

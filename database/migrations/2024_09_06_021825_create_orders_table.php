@@ -63,6 +63,7 @@ return new class extends Migration
             $table->string('order_number_group')->nullable();
             $table->unsignedBigInteger('push_by')->nullable();
             $table->unsignedBigInteger('approval_by')->nullable();
+            $table->unsignedBigInteger('category_id')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
