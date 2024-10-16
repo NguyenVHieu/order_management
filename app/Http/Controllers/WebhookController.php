@@ -321,11 +321,12 @@ class WebhookController extends BaseController
             $res = json_decode($response->getBody()->getContents(), true);
             if (count($res['data']) > 0) {
                 foreach($res['data'] as $data) {
-                    $columns = [
-                        'cost' => (float)$data['total_price'],
-                        'status_order' => $data['status'],
-                    ];
-                    DB::table('orders')->where('id', $data['id'])->update($columns);
+                    $order = Order::where('order_id', $data['id']);
+                    if ($order) {
+                        $order->cost = (float)$data['total_price'];
+                        $order->status = $data['status'];
+                        $order->save();
+                    }
                 }
             }
             
