@@ -27,6 +27,11 @@ class MailController extends BaseController
             if (empty($shop)) {
                 $shop = Shop::create(['name' => $param['shop']])->fresh();  
             }
+            if ($param['shipping'] != 'N/A' && $param['shipping'] != '0.00'){
+                $shipping = $param['shipping'];
+            }else {
+                $shipping = 0;
+            }
             
             $data = [
                 'order_number' => $param['orderNumber'] != 'N/A' ? $param['orderNumber'] : time(),
@@ -40,12 +45,15 @@ class MailController extends BaseController
                 'thumbnail' => $param['thumb'],
                 'quantity' =>  $param['quantity'],
                 'sale_tax' => $param['salesTax'] != 'N/A' ? $param['salesTax'] : null,
+                'shipping' => $shipping,
+                'is_shipping' => (float)$shipping > 0 ? true : false,
                 'order_total' => $param['orderTotal'] != 'N/A' ? $param['orderTotal'] : null,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'address' => $param['address'],
                 'country' => $param['country'],
-                'state' => $param['state'],
+                'state' => $param['state'] != 'N/A' ? $param['state'] : null,
+                'apartment' => $param['apartment'] != 'N/A' ? $param['apartment'] : null,
                 'recieved_mail_at' => $param['recieved_mail_at'],
                 'zip' => $param['zip'],
                 'city' => $param['city'],
@@ -53,7 +61,8 @@ class MailController extends BaseController
                 'is_approval' => false,
                 'multi' => $param['multi'], 
                 'order_number_group' => $param['orderNumberGroup'] ?? null,
-                'category_id' => $param['category_id'] ?? null    
+                'category_id' => $param['category_id'] ?? null,
+                'im' => $param['im'] != 'N/A' ? $param['im'] : null
             ];
 
             $order = DB::table('orders')->where('order_number', $data['order_number'])
@@ -87,6 +96,7 @@ class MailController extends BaseController
                         $date = $message->getDate();
                         
                         $emailBody = $this->removeLinks($message->getTextBody());
+
                         $emailHtml = $message->getHTMLBody();
                         $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
                         $thumb = $this->extractInfo($thumbRegex, $emailHtml);
@@ -98,16 +108,19 @@ class MailController extends BaseController
                             'city' => '/<span class=\'city\'>([^<]+)<\/span>/',
                             'state' => '/<span class=\'state\'>([^<]+)<\/span>/',
                             'zip' => '/<span class=\'zip\'>([^<]+)<\/span>/',
+                            'apartment' => '/<span class=\'second-line\'>([^<]+)<\/span>/',
                             'country' => '/<span class=\'country-name\'>([^<]+)<\/span>/',
                             'product' => '/Item:\s*(.+)/',
                             'style' => '/Size:\s*(.*)/',
                             'color' => '/(?:Primary color \(Matching with color chart\)|Shirt Colors):\s*(.*)/i',
                             'quantity' => '/Quantity:\s*(.+)/',
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
+                            'shipping' => '/Shipping:\s*\$?(\d+(\.\d{2})?|US)/',
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
                             'size' => '/Sizes:\s*(.*)/',
                             'size_blanket' => '/(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*(.*)/',
+                            
                         ];
 
                         $data = [];
@@ -122,8 +135,10 @@ class MailController extends BaseController
 
                         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                         $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
+                        $data['im'] = $this->extractInfo('/IOSS number,\s*(IM\d+)/', $emailHtml, true);
                         $getShop = is_array($shop) ? $shop[0] : $shop;
                         $data['shop'] = str_replace("\r", '', $getShop);
+
                         
                         if (is_array($data['product'])){
                             $countStyle = count($data['product']);
@@ -179,7 +194,7 @@ class MailController extends BaseController
                             $data['multi'] = false;
                             $list_data[] = $data;
                         }
-
+                        
                         $message->setFlag('SEEN');
                         $client->expunge();
                     } catch (\Throwable $th) {

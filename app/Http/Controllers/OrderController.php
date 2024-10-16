@@ -138,6 +138,10 @@ class OrderController extends BaseController
                             "zip" => $order->zip
                         ]
                     ];
+
+                    if(!empty($order->apartment)){
+                        $orderData['address_to']['address2'] = $order->apartment;
+                    }
                     
                     
                     $client = new Client();
@@ -258,7 +262,7 @@ class OrderController extends BaseController
                         "shipping_info" => [
                             "full_name" => $order->first_name . "" . $order->last_name,
                             "address_1" => $order->address,
-                            "address_2" => "",
+                            "address_2" => $order->apartment ?? '',
                             "city" => $order->city,
                             "state" => $order->state,
                             "postcode" => $order->zip,
@@ -661,6 +665,7 @@ class OrderController extends BaseController
                         "shipping" => [
                             "shipping_name" => $order->first_name .' '. $order->last_name,
                             "shipping_address_1" => $order->address,
+                            "shipping_address_2" => $order->apartment ?? '',
                             "shipping_city" => $order->city,
                             "shipping_zip" => $order->zip,
                             "shipping_state" => $state['name'],
@@ -829,6 +834,7 @@ class OrderController extends BaseController
                         "city" => $order->city,
                         "zip" => $order->zip,
                         "address_1" => $order->address,
+                        "address_2" => $order->apartment ?? '',
                         "items" => array_values($lineItems)
                     ];
 

@@ -186,9 +186,9 @@ class WebhookController extends BaseController
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'password' => 'TABlAGgAYQBuAGgAJgAyADIAOQA0AA==',
+                    'password' => env('P_OTB'),
                     'rememberMe' => false,
-                    'username' => 'lehanhhong2294@gmail.com',
+                    'username' => env('U_OTB'),
                 ],
             ]);
 
