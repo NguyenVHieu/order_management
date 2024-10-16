@@ -61,7 +61,7 @@ return new class extends Migration
             $table->decimal('cost', 10, 2)->default(0.00)->nullable();
             $table->date('date_push')->nullable();
             $table->string('order_number_group')->nullable();
-            $table->string('im')->nullable();
+            $table->string('im_code')->nullable();
             $table->decimal('tax')->default(0.00)->nullable();
             $table->boolean('is_shipping')->default(false)->nullable();
             $table->unsignedBigInteger('push_by')->nullable();

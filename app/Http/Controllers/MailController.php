@@ -62,7 +62,7 @@ class MailController extends BaseController
                 'multi' => $param['multi'], 
                 'order_number_group' => $param['orderNumberGroup'] ?? null,
                 'category_id' => $param['category_id'] ?? null,
-                'im' => $param['im'] != 'N/A' ? $param['im'] : null
+                'im_code' => $param['im'] != 'N/A' ? $param['im'] : null
             ];
 
             $order = DB::table('orders')->where('order_number', $data['order_number'])
