@@ -1082,7 +1082,20 @@ class OrderController extends BaseController
                             'approval_by' => Auth::user()->id,
                         ];
                     } else {
-                        $columns['is_approval'] = false;
+                        $columns = [
+                            'is_approval' => false,
+                            'is_push' => false,
+                            'order_id' => null,
+                            'place_order' => null,
+                            'variant_id' => null,
+                            'print_provider_id' => null,
+                            'status_order' => null,
+                            'tracking_order' => null,
+                            'cost' => 0.00,
+                            'date_push' => null,
+                            'push_by' => null,
+                            'approval_by' => null
+                        ];
                     }
                     
                     DB::table('orders')->where('id', $id)->update($columns);
