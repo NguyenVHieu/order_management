@@ -1295,7 +1295,9 @@ class OrderController extends BaseController
             if ($order->multi == true) {
                 DB::table('orders')->where('order_number', $order->order_number)->update($data);
             }
-
+            $data['order_number'] = $request->order_number;
+            $data['order_number_group'] = strpos($request->order_number, '#') !== false ? strstr($request->order_number, '#', true) : $request->order_number;
+            $data['note'] = $request->note;
             $data['color'] = $request->color;
             $data['size'] = $request->size;
 

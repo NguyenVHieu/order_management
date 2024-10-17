@@ -42,7 +42,7 @@ class MailController extends BaseController
                 'style' => $param['style'] != 'N/A' ? $param['style'] : null,
                 'color' => $param['color'] != 'N/A' ? $param['color'] : null,
                 'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
-                'thumbnail' => $param['thumb'],
+                'thumbnail' => str_replace('75x75', '1000x1000', $param['thumb']),
                 'quantity' =>  $param['quantity'],
                 'sale_tax' => $param['salesTax'] != 'N/A' ? $param['salesTax'] : null,
                 'shipping' => $shipping,
@@ -96,8 +96,9 @@ class MailController extends BaseController
                         $date = $message->getDate();
                         
                         $emailBody = $this->removeLinks($message->getTextBody());
-
+                        
                         $emailHtml = $message->getHTMLBody();
+                        dd($emailBody, $emailHtml);
                         $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
                         $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
@@ -120,6 +121,7 @@ class MailController extends BaseController
                             'size' => '/Sizes:\s*(.*)/',
                             'size_blanket' => '/(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*(.*)/',
+                            'personalization_2' => '/Note from [\w\d]+:\s*(.*?)\s*-{10,}/s'
                             
                         ];
 
@@ -132,6 +134,7 @@ class MailController extends BaseController
                             }
                             $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
                         }
+                        dd($data);
 
                         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                         $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
@@ -149,6 +152,10 @@ class MailController extends BaseController
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
+                                if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false){
+                                    continue;
+                                }
+
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
                                     $item['style'] = $data['style'][$i];
                                     $item['size'] = $data['size_blanket'];
@@ -175,6 +182,10 @@ class MailController extends BaseController
                         }else {
 
                             $data['thumb'] = $thumb;
+                            if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false){
+                                continue;
+                            }
+
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['style'] = $data['style'];
                                 $data['size'] = $data['size_blanket'];
