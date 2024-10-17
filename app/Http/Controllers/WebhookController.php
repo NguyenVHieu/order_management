@@ -198,6 +198,8 @@ class WebhookController extends BaseController
             if (!$token) {
                 return ['401' => 'Đăng nhập OTB không thành công'];
             }
+            $currentTimestampInMilliseconds = now()->timestamp * 1000;
+            $sevenDaysAgoTimestampInMilliseconds = now()->subDays(10)->timestamp * 1000;
 
             $response = $client->request('POST', 'https://otbzone.com/bot/api/v1/data-lists', [
                 'headers' => [
@@ -205,24 +207,24 @@ class WebhookController extends BaseController
                 ],
                 
                 'json' => [
-                    'model' => 'orderdraft',
-                    // 'filters' => [
-                    //     [
-                    //         'field' => 'createdAt',
-                    //         'operation' => 'between',
-                    //         'value' => ['1725123600000', '1730393999999'],
-                    //         'dayAgo' => 7,
-                    //     ],
-                    // ],
+                    'model' => 'order',
+                    'filters' => [
+                        [
+                            'field' => 'createdAt',
+                            'operation' => 'between',
+                            'value' => [$sevenDaysAgoTimestampInMilliseconds, $currentTimestampInMilliseconds],
+                            'dayAgo' => 7,
+                        ],
+                    ],
                     'filterType' => 'AND',
                     'sorting' => [
                         'field' => 'createdAt',
-                        'direction' => 'desc',
+                        'direction' => 'asc',
                     ],
-                    // 'pagination' => [
-                    //     'page' => 1,
-                    //     'pageSize' => 20,
-                    // ],
+                    'pagination' => [
+                        'page' => 1,
+                        'pageSize' => 1000,
+                    ],
                     'filtersRef' => [],
                 ],
             ]);
@@ -234,7 +236,7 @@ class WebhookController extends BaseController
                 $data = [
                     'order_id' => $order['id'],
                     'status_order' => $order['orderSellerStatus'] != '' ? $order['orderSellerStatus'] : null,
-                    'tracking_order' => $order['addedTrackingCode'] != 0 ? $order['addedTrackingCode'] : null,
+                    'tracking_order' => !empty($order['trackingCodes'][0]['trackingCode']) ? $order['trackingCodes'][0]['trackingCode'] : null,
                 ];
                 $order_number = $order['refId'];
                 $arr_order_number = [];

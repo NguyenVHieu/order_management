@@ -1024,10 +1024,11 @@ class OrderController extends BaseController
             if (!file_exists($directory)) {
                 mkdir($directory, 0755, true);
             }
+            $name = rawurlencode($image->getClientOriginalName());
 
-            $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
+            $path = $image->move($directory, $time. '_'. $name);
 
-            $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
+            $url = asset('uploads/' .$dateFolder. '/'. $time. '_'. $name);
 
             return $url;
         } catch (\Exception $ex) {
