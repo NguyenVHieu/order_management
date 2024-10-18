@@ -1274,7 +1274,7 @@ class OrderController extends BaseController
     public function update(OrderRequest $request, $id)
     {
         try {
-            $type = $request->type ?? 0;
+            $type = $request->type ?? 0; // type = 1 là update note
             DB::beginTransaction();
             $order = DB::table('orders')->where('id', $id)->first();
             if ($type == 1) {

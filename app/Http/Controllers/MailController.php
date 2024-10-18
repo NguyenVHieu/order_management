@@ -42,15 +42,16 @@ class MailController extends BaseController
                 'style' => $param['style'] != 'N/A' ? $param['style'] : null,
                 'color' => $param['color'] != 'N/A' ? $param['color'] : null,
                 'personalization' => $param['personalization'] != 'N/A' ? $param['personalization'] : null,
+                'personalization_2' => $param['personalization_2'] != 'N/A' ? $param['personalization_2'] : null,
                 'thumbnail' => str_replace('75x75', '1000x1000', $param['thumb']),
                 'quantity' =>  $param['quantity'],
                 'sale_tax' => $param['salesTax'] != 'N/A' ? $param['salesTax'] : null,
                 'shipping' => $shipping,
-                'is_shipping' => (float)$shipping > 0 ? true : false,
+                'is_shipping' => $param['is_shipping'],
                 'order_total' => $param['orderTotal'] != 'N/A' ? $param['orderTotal'] : null,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
-                'address' => $param['address'],
+                'address' => html_entity_decode($param['address']),
                 'country' => $param['country'],
                 'state' => $param['state'] != 'N/A' ? $param['state'] : null,
                 'apartment' => $param['apartment'] != 'N/A' ? $param['apartment'] : null,
@@ -98,6 +99,7 @@ class MailController extends BaseController
                         $emailBody = $this->removeLinks($message->getTextBody());
                         
                         $emailHtml = $message->getHTMLBody();
+                        // dd($emailHtml, $emailBody);
                         $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
                         $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
@@ -119,9 +121,7 @@ class MailController extends BaseController
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
                             'size' => '/Sizes:\s*(.*)/',
                             'size_blanket' => '/(\d+x\d+)/',
-                            'personalization' => '/Personalization:\s*(.*)/',
-                            'personalization_2' => '/Note from [\w\d]+:\s*(.*?)\s*-{10,}/s'
-                            
+                            'personalization' => '/Personalization:\s*(.*)/', 
                         ];
 
                         $data = [];
@@ -139,7 +139,10 @@ class MailController extends BaseController
                         $data['im'] = $this->extractInfo('/IOSS number,\s*(IM\d+)/', $emailHtml, true);
                         $getShop = is_array($shop) ? $shop[0] : $shop;
                         $data['shop'] = str_replace("\r", '', $getShop);
-                        
+                        $express = $this->extractInfo('/<div[^>]*class="[^"]*grey-copy[^"]*"[^>]*>\s*(Express)\s*<\/div>/i', $emailHtml);
+                        $data['is_shipping'] = $express === 'Express' ? true : false;
+                        $data['personalization_2'] = $this->extractInfo('/Note from buyer.*?<div[^>]*>(.*?)<\/div>/is', $emailHtml);
+
                         if (is_array($data['product'])){
                             $countStyle = count($data['product']);
                             for ($i=0; $i < $countStyle; $i++) {

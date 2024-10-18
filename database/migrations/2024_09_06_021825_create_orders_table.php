@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->string('style')->nullable();
             $table->string('personalization')->nullable();
+            $table->string('personalization_2')->nullable();
             $table->unsignedBigInteger('variant_id')->nullable();
             $table->unsignedBigInteger('print_provider_id')->nullable();
             $table->unsignedBigInteger('blueprint_id')->nullable();
@@ -64,6 +65,7 @@ return new class extends Migration
             $table->string('im_code')->nullable();
             $table->decimal('tax')->default(0.00)->nullable();
             $table->boolean('is_shipping')->default(false)->nullable();
+            $table->string('note')->nullable();
             $table->unsignedBigInteger('push_by')->nullable();
             $table->unsignedBigInteger('approval_by')->nullable();
             $table->unsignedBigInteger('category_id')->nullable();
