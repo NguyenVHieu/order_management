@@ -98,7 +98,6 @@ class MailController extends BaseController
                         $emailBody = $this->removeLinks($message->getTextBody());
                         
                         $emailHtml = $message->getHTMLBody();
-                        dd($emailBody, $emailHtml);
                         $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
                         $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
@@ -134,21 +133,19 @@ class MailController extends BaseController
                             }
                             $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
                         }
-                        dd($data);
 
                         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                         $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
                         $data['im'] = $this->extractInfo('/IOSS number,\s*(IM\d+)/', $emailHtml, true);
                         $getShop = is_array($shop) ? $shop[0] : $shop;
                         $data['shop'] = str_replace("\r", '', $getShop);
-
                         
                         if (is_array($data['product'])){
                             $countStyle = count($data['product']);
                             for ($i=0; $i < $countStyle; $i++) {
                                 $item = [];
-                                $item['color'] = $data['color'][$i];
-                                $item['personalization'] = $data['personalization'][$i];
+                                $item['color'] = $data['color'][$i] ?? null;
+                                $item['personalization'] = $data['personalization'] != 'N/A' && isset($data['personalization'][$i]) ? $data['personalization'][$i] : null;
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
@@ -209,8 +206,9 @@ class MailController extends BaseController
                         $message->setFlag('SEEN');
                         $client->expunge();
                     } catch (\Throwable $th) {
-                        continue;
+                        dd($th);
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
+                        continue;
                     }
                     
                 }

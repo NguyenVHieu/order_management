@@ -1274,34 +1274,40 @@ class OrderController extends BaseController
     public function update(OrderRequest $request, $id)
     {
         try {
+            $type = $request->type ?? 0;
             DB::beginTransaction();
             $order = DB::table('orders')->where('id', $id)->first();
-            $data = [
-                'country' => $request->country,
-                'city' => $request->city,
-                'address' => $request->address,
-                'zip' => $request->zip,
-                'state' => $request->state,
-                'im_code' => $request->im_code,
-                'tax' => $request->tax,
-                'is_shipping' => $request->is_shipping,
-                'apartment' => $request->address_2,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'updated_at' => now(),
-                'updated_by' => Auth::user()->id
-            ];
-
-            if ($order->multi == true) {
-                DB::table('orders')->where('order_number', $order->order_number)->update($data);
+            if ($type == 1) {
+                $data['note'] = $request->note ?? null;
+                DB::table('orders')->where('id', $id)->update($data);
+            } else {
+                $data = [
+                    'country' => $request->country,
+                    'city' => $request->city,
+                    'address' => $request->address,
+                    'zip' => $request->zip,
+                    'state' => $request->state,
+                    'im_code' => $request->im_code,
+                    'tax' => $request->tax,
+                    'is_shipping' => $request->is_shipping,
+                    'apartment' => $request->address_2,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                    'updated_at' => now(),
+                    'updated_by' => Auth::user()->id
+                ];
+    
+                if ($order->multi == true) {
+                    DB::table('orders')->where('order_number', $order->order_number)->update($data);
+                }
+                $data['order_number'] = $request->order_number;
+                $data['order_number_group'] = strpos($request->order_number, '#') !== false ? strstr($request->order_number, '#', true) : $request->order_number;
+                $data['color'] = $request->color;
+                $data['size'] = $request->size;
+                $data['style'] = $request->style;
+                DB::table('orders')->where('id', $id)->update($data);
             }
-            $data['order_number'] = $request->order_number;
-            $data['order_number_group'] = strpos($request->order_number, '#') !== false ? strstr($request->order_number, '#', true) : $request->order_number;
-            $data['note'] = $request->note;
-            $data['color'] = $request->color;
-            $data['size'] = $request->size;
-
-            DB::table('orders')->where('id', $id)->update($data);
+            
             DB::commit();
             return $this->sendSuccess('Cập nhật order thành công!');
         } catch (\Throwable $th) {

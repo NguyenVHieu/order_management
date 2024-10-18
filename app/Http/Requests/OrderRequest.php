@@ -16,15 +16,25 @@ class OrderRequest extends BaseFormRequest
      */
     public function rules()
     {
-        return [
-            'color' => 'required',
-            'size' => 'required',
-            'country' => 'required',
-            'city' => 'required',
-            'address' => 'required',
-            'zip' => 'required',
-            // 'state' => 'required',
-        ];
+
+        $type = $this->input('type') ?? 0;
+        
+        if ($type != 1) {
+            return [
+                'color' => 'required',
+                'size' => 'required',
+                'country' => 'required',
+                'city' => 'required',
+                'address' => 'required',
+                'zip' => 'required',
+                'style' => 'required',
+                'order_number' =>'required',
+                // 'state' => 'required',
+            ];
+        }
+
+        return [];
+        
     }
 
     /**
@@ -51,6 +61,8 @@ class OrderRequest extends BaseFormRequest
             'city.required' => 'The city is required.',
             'address.required' => 'The address is required.',
             'zip.required' => 'The zip is required.',
+            'style.required' => 'The style is required.',
+            'order_number' => 'The order number is required.',
             // 'state.required' => 'The state is required.',
         ];
     }
