@@ -152,9 +152,6 @@ class MailController extends BaseController
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
-                                if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false){
-                                    continue;
-                                }
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
                                     $item['style'] = $data['style'][$i];
@@ -170,6 +167,10 @@ class MailController extends BaseController
                                     $item['size'] = $this->getSize($item['style']);
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }
+                                if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false || 
+                                    stripos($item['style'], 'digital') !== false || stripos($item['style'], 'upgrade') !== false){
+                                    continue;
+                                }
                                 $item['category_id'] = DB::table('key_categories')->where('style', $item['style'])->first()->category_id ?? null;
                                 
                                 $item['multi'] = true;
@@ -182,10 +183,7 @@ class MailController extends BaseController
                         }else {
 
                             $data['thumb'] = $thumb;
-                            if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false){
-                                continue;
-                            }
-
+                         
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['style'] = $data['style'];
                                 $data['size'] = $data['size_blanket'];
@@ -200,6 +198,11 @@ class MailController extends BaseController
                                 $data['size'] = $this->getSize($data['style']);
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }
+                            if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false ||
+                                stripos($data['style'], 'digital') !== false || stripos($data['style'], 'upgrade') !== false){
+                                continue;
+                            }
+                            
                             $data['category_id'] = DB::table('key_categories')->where('style', $data['style'])->first()->category_id ?? null;
                             $data['orderNumberGroup'] = $data['orderNumber'];
                             $data['multi'] = false;
