@@ -209,7 +209,6 @@ class MailController extends BaseController
                         $message->setFlag('SEEN');
                         $client->expunge();
                     } catch (\Throwable $th) {
-                        dd($th);
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                         continue;
                     }
