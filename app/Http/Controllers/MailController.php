@@ -169,6 +169,8 @@ class MailController extends BaseController
                                 }
                                 if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false || 
                                     stripos($item['style'], 'digital') !== false || stripos($item['style'], 'upgrade') !== false){
+                                    $message->setFlag('SEEN');
+                                    $client->expunge();
                                     continue;
                                 }
                                 $item['category_id'] = DB::table('key_categories')->where('style', $item['style'])->first()->category_id ?? null;
@@ -200,6 +202,8 @@ class MailController extends BaseController
                             }
                             if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false ||
                                 stripos($data['style'], 'digital') !== false || stripos($data['style'], 'upgrade') !== false){
+                                $message->setFlag('SEEN');
+                                $client->expunge();
                                 continue;
                             }
                             
