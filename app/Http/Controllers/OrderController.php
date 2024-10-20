@@ -1467,4 +1467,19 @@ class OrderController extends BaseController
             return $this->sendError('Hiển thị đơn hàng thất bại', 500);
         }
     }
+
+    public function getInfoOrder() {
+        try {
+            $colors = DB::table('colors')->select('color')->pluck('color')->toArray();
+            $styles = DB::table('key_blueprints')->select('style')->distinct()->pluck('style')->toArray();
+            $data = [
+                'colors' => $colors,
+                'styles' => $styles
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('get color thất bại', 500);
+        }
+    }
 }
