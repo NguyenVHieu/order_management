@@ -1470,11 +1470,15 @@ class OrderController extends BaseController
 
     public function getInfoOrder() {
         try {
-            $colors = DB::table('colors')->select('color')->pluck('color')->toArray();
-            $styles = DB::table('key_blueprints')->select('style')->distinct()->pluck('style')->toArray();
+            $colors = DB::table('colors')->pluck('color')->toArray();
+            $styles = DB::table('key_blueprints')->distinct()->pluck('style')->toArray();
+            $sizes = DB::table('sizes')
+            ->select(DB::raw('REPLACE(name, "\\\\", "") as name')) // Loại bỏ backslash
+            ->get();
             $data = [
                 'colors' => $colors,
-                'styles' => $styles
+                'styles' => $styles,
+                'sizes' => $sizes
             ];
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
