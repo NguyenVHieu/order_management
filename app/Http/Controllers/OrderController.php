@@ -619,12 +619,12 @@ class OrderController extends BaseController
                         $item['design']['artwork_back_url'] = $order->img_2;
                     }
 
-                    if ($order->img_3 != null) {
-                        $item['design']['artwork_right_url'] = $order->img_3;
+                    if ($order->img_4 != null) {
+                        $item['design']['artwork_right_url'] = $order->img_4;
                     }
 
-                    if ($order->img_4 != null) {
-                        $item['design']['artwork_left_url'] = $order->img_4;
+                    if ($order->img_3 != null) {
+                        $item['design']['artwork_left_url'] = $order->img_3;
                     }
 
                     if ($order->img_5 != null) {
@@ -1094,7 +1094,8 @@ class OrderController extends BaseController
                             'cost' => 0.00,
                             'date_push' => null,
                             'push_by' => null,
-                            'approval_by' => null
+                            'approval_by' => null,
+                            'date_unapproval' => now()
                         ];
                     }
                     
@@ -1395,7 +1396,10 @@ class OrderController extends BaseController
                     '',
                     $seller->name,
                     $shop->name,
-                    $total_cost
+                    $total_cost,
+                    '',
+                    '',
+                    $item->img_2
                 ];
             })->toArray();
 

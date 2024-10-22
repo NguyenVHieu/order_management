@@ -66,6 +66,7 @@ return new class extends Migration
             $table->decimal('tax')->default(0.00)->nullable();
             $table->boolean('is_shipping')->default(false)->nullable();
             $table->string('note')->nullable();
+            $table->timestamp('date_unapproval')->nullable(); 
             $table->unsignedBigInteger('push_by')->nullable();
             $table->unsignedBigInteger('approval_by')->nullable();
             $table->unsignedBigInteger('category_id')->nullable();
