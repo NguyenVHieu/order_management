@@ -1256,7 +1256,7 @@ class OrderController extends BaseController
             $data['place_order'] = $request->place_order;
 
             $order = DB::table('orders')->where('id', $request->id)->first();
-            if ($request->all == true) {
+            if (strtolower($request->all) === "true") {
                 DB::table('orders')->where('order_number_group', $order->order_number_group)->update($data);
             }else {
                 DB::table('orders')->where('id', $request->id)->update($data);
