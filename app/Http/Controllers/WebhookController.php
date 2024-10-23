@@ -33,25 +33,25 @@ class WebhookController extends BaseController
             $shop_id = $resource['data']['shop_id'];
             $keyPrintify = env('TOKEN_PRINTIFY');
             $shop_id = env('SHOP_ID_PRINTIFY');
-            if ($status == 'on-hold') {
-                $client = new \GuzzleHttp\Client();
-                $response = $client->get($this->baseUrlPrintify. "shops/{$shop_id}/orders/{$order_id}.json", [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $keyPrintify,
-                        'Content-Type'  => 'application/json',
-                    ],
-                ]);
-                $data = json_decode($response->getBody()->getContents(), true);
-                $cost = $data['total_price'] + $data['total_shipping'] + $data['total_tax'];
-                $order =  Order::where('order_id', $order_id)->first();
-                if ($order) {
-                    $order->cost = $cost / 100;
-                    $order->save();
-                    Helper::trackingInfo('Webhook cập nhật cost thành công');
-                }else {
-                    Helper::trackingInfo('Không tim thấy order');
-                }
-            } 
+            // if ($status == 'on-hold') {
+            $client = new \GuzzleHttp\Client();
+            $response = $client->get($this->baseUrlPrintify. "shops/{$shop_id}/orders/{$order_id}.json", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $keyPrintify,
+                    'Content-Type'  => 'application/json',
+                ],
+            ]);
+            $data = json_decode($response->getBody()->getContents(), true);
+            $cost = $data['total_price'] + $data['total_shipping'] + $data['total_tax'];
+            $order =  Order::where('order_id', $order_id)->first();
+            if ($order) {
+                $order->cost = $cost / 100;
+                $order->save();
+                Helper::trackingInfo('Webhook cập nhật cost thành công');
+            }else {
+                Helper::trackingInfo('Không tim thấy order');
+            }
+            // } 
             
             DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $status]);
             Helper::trackingInfo('Webhook cập nhật status thành công');
