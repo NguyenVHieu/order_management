@@ -8,6 +8,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\TiktokController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -101,3 +102,6 @@ Route::prefix('charts')->group(function () {
         Route::get('/init-data', 'initData');
     });
 });
+
+Route::get('/refresh-token', [TiktokController::class, 'refreshToken']);
+Route::get('/get-auth-code', [TiktokController::class, 'getAuthCode']);
