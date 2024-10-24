@@ -237,7 +237,7 @@ class WebhookController extends BaseController
             $data = $res['data']['data'];
             foreach($data as $order) {
                 $tracking = !empty($order['trackingCodes'][0]['trackingCode']) ? $order['trackingCodes'][0]['trackingCode'] : null;
-                $code_tracking = !empty($order['trackingCodes'][0]['carrierCode']) ? $order['trackingCodes'][0]['trackingCarrierCode'] : null;
+                $code_tracking = !empty($order['trackingCodes'][0]['trackingCarrierCode']) ? $order['trackingCodes'][0]['trackingCarrierCode'] : null;
                 $data = [
                     'order_id' => $order['id'],
                     'status_order' => $order['orderSellerStatus'] != '' ? $order['orderSellerStatus'] : null,
