@@ -68,7 +68,8 @@ class WebhookController extends BaseController
             $resource = $request['resource'];
             $order_id = $resource['id'];
             $tracking_number = $resource['data']['carrier']['tracking_number'];
-            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking_number]);
+            $code_tracking = $resource['data']['carrier']['code'];
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $code_tracking.'.'.$tracking_number]);
             Helper::trackingInfo('Webhook cập nhật tracking number thành công');
 
         } catch (\Throwable $th) {
@@ -95,8 +96,10 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Tracking Merchize:' . json_encode($request->all()));
             $tracking_order = $request['resource']['tracking_number'];
+            $code_tracking_1 = $request['resource']['service'];
+            $code_tracking_2 = $request['resource']['tracking_company'];
             $order_id = $request['resource']['order_code'];
-            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking_order]);
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $code_tracking_1.'.'.$code_tracking_2.'.'.$tracking_order]);
             Helper::trackingInfo('Webhook cập nhật tracking number merchize này');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
@@ -233,10 +236,12 @@ class WebhookController extends BaseController
 
             $data = $res['data']['data'];
             foreach($data as $order) {
+                $tracking = !empty($order['trackingCodes'][0]['trackingCode']) ? $order['trackingCodes'][0]['trackingCode'] : null;
+                $code_tracking = !empty($order['trackingCodes'][0]['carrierCode']) ? $order['trackingCodes'][0]['trackingCarrierCode'] : null;
                 $data = [
                     'order_id' => $order['id'],
                     'status_order' => $order['orderSellerStatus'] != '' ? $order['orderSellerStatus'] : null,
-                    'tracking_order' => !empty($order['trackingCodes'][0]['trackingCode']) ? $order['trackingCodes'][0]['trackingCode'] : null,
+                    'tracking_order' => $code_tracking . '.' . $tracking,
                 ];
                 $order_number = $order['refId'];
                 $arr_order_number = [];
@@ -343,6 +348,7 @@ class WebhookController extends BaseController
     public function updateOrderHubfulfill()
     {
         try {
+            $arrayShipping = config('constants.shipping_hubfulfill');
             $toDate = Carbon::now()->format('Y-m-d');
             $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
 
@@ -361,13 +367,19 @@ class WebhookController extends BaseController
                         'Content-Type'  => 'application/json',
                     ],
                 ]);
-
+                
                 $res = json_decode($response->getBody()->getContents(), true);
                 $order = Order::where('order_id', $order->order_id)->first();
-                $order->status_order = $res['status'];
-                $order->tracking_order = $res['tracking_number'] ?? null;
-                $order->cost = $res['total'];
-                $order->save();
+                if ($order) {
+                    $codeTracking = $arrayShipping[$order->country] ?? null;
+                    $order->status_order = $res['status'];
+                    $order->tracking_order = $codeTracking.'.'.$res['tracking_number'] ?? null;
+                    $order->cost = $res['total'];
+                    $order->save();
+                }else {
+                    Helper::trackingInfo('Không timg thấy order');
+                }
+                
             }
 
             Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
