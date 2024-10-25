@@ -96,10 +96,9 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Tracking Merchize:' . json_encode($request->all()));
             $tracking_order = $request['resource']['tracking_number'];
-            $code_tracking_1 = $request['resource']['service'];
-            $code_tracking_2 = $request['resource']['tracking_company'];
-            $order_id = $request['resource']['order_code'];
-            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $code_tracking_1.'.'.$code_tracking_2.'.'.$tracking_order]);
+            $code_tracking = $request['resource']['tracking_company'];
+            $order_id = $request['resource']['name'];
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' =>$code_tracking.'.'.$tracking_order]);
             Helper::trackingInfo('Webhook cập nhật tracking number merchize này');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
