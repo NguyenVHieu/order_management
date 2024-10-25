@@ -241,7 +241,7 @@ class WebhookController extends BaseController
                 $data = [
                     'order_id' => $order['id'],
                     'status_order' => $order['orderSellerStatus'] != '' ? $order['orderSellerStatus'] : null,
-                    'tracking_order' => $code_tracking . '.' . $tracking,
+                    'tracking_order' => $code_tracking != null ? $code_tracking . '.' . $tracking : $tracking,
                 ];
                 $order_number = $order['refId'];
                 $arr_order_number = [];
