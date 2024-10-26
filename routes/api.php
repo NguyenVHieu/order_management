@@ -89,6 +89,7 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/order-payment-merchize', 'orderPaymentMerchize');
     Route::post('/update-order-lenful', 'updateOrderLenful');
     Route::post('/update-order-hubfulfill', 'updateOrderHubfulfill');
+    Route::post('/backupdb', 'backupDB');
 });
 
 Route::controller(MailController::class)->group(function(){

@@ -52,6 +52,27 @@
             'WOMEN_TSHIRT' => 'W-',
             'Y_PULLOVER_HOODIE' => 'YH-',
             'Y_TSHIRT' => 'Y-',
+        ],
+
+        'sizeShirt' => [
+            'NB (0-3M)',
+            '6M',
+            '12M',
+            '18M',
+            '24M',
+            '2T',
+            '3T',
+            '4T',
+            '5T',
+            '5T-6T',
+            'L',
+            'M',
+            'S',
+            'XL',
+            '2XL',
+            '3XL',
+            '4XL',
+            '5XL',
         ]
     ];
 ?>

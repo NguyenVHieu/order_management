@@ -10,7 +10,7 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
-
+use Illuminate\Support\Facades\File;
 
 class WebhookController extends BaseController
 {
@@ -386,6 +386,60 @@ class WebhookController extends BaseController
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             Helper::trackingError('Cập nhật order hubfulfill thất bại');
+        }
+    }
+
+    function backupDB()
+    {
+        // Thông tin kết nối từ file .env
+        $dbName = env('DB_DATABASE');
+        $dbUser = env('DB_USERNAME');
+        $dbPass = env('DB_PASSWORD');
+        $dbHost = env('DB_HOST');
+        $dbPort = env('DB_PORT');
+    
+        $backupPath = storage_path('backups');
+    
+        // Tạo thư mục lưu trữ nếu chưa tồn tại
+        if (!File::exists($backupPath)) {
+            File::makeDirectory($backupPath, 0755, true);
+        }
+    
+        // Đường dẫn lưu trữ file backup
+        $backupFile = $backupPath . '/' . $dbName . '_' . date('Y-m-d_H-i-s') . '.sql';
+        $mysqldumpPath = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
+    
+        // Kiểm tra xem mysqldump có tồn tại không
+        if (!File::exists($mysqldumpPath)) {
+            Helper::trackingError('Không tìm thấy mysqldump. Vui lòng kiểm tra đường dẫn.');
+        }
+    
+        // Lệnh để thực hiện sao lưu cơ sở dữ liệu
+        $command = sprintf(
+            '"%s" --user=%s --password=%s --host=%s --port=%d %s > "%s"',
+            escapeshellarg($mysqldumpPath),
+            escapeshellarg($dbUser),
+            escapeshellarg($dbPass),
+            escapeshellarg($dbHost),
+            (int)$dbPort,  // Chuyển đổi cổng sang số nguyên
+            escapeshellarg($dbName),
+            escapeshellarg($backupFile)
+        );
+    
+        try {
+            // Thực thi lệnh
+            $output = [];
+            $resultCode = null;
+            exec($command, $output, $resultCode);
+    
+            if ($resultCode !== 0) {
+                throw new \Exception("Lỗi khi thực hiện sao lưu cơ sở dữ liệu. Mã lỗi: " . $resultCode);
+            }
+    
+            Helper::trackingInfo('Backup DB thành công');
+        } catch (\Exception $e) {
+            dd($e);
+            Helper::trackingError('loi khi backup db');
         }
     }
 
