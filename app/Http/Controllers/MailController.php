@@ -176,8 +176,8 @@ class MailController extends BaseController
 
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }
-                                if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false || 
-                                    stripos($item['style'], 'digital') !== false || stripos($item['style'], 'upgrade') !== false){
+                                if (stripos($item['product'][$i], 'digital') !== false || stripos($item['product'][$i], 'upgrade') !== false || 
+                                    stripos($item['style'][$i], 'digital') !== false || stripos($item['style'][$i], 'upgrade') !== false){
                                     $message->setFlag('SEEN');
                                     $client->expunge();
                                     continue;
@@ -235,8 +235,6 @@ class MailController extends BaseController
                     }
                     
                 }
-
-                // dd($list_data);
                 
                 $this->getInformationProduct($list_data);
                 

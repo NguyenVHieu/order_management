@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sizes', function (Blueprint $table) {
+        Schema::create('task_images', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('task_id'); // ID của task liên kết
+            $table->string('image_url'); // URL của ảnh
             $table->timestamps();
         });
     }
@@ -22,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sizes');
+        Schema::dropIfExists('task_images');
     }
 };
