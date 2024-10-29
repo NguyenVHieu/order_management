@@ -1129,11 +1129,17 @@ class OrderController extends BaseController
                 'Content-Type'  => 'application/json',
             ],
         ]);
+        
         $resFormat = json_decode($resVariant->getBody()->getContents(), true);
         $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color) {
-            
+
+            if (strpos($size,'"') === false && strpos($size, 'x') !== false) {
+                $size = str_replace('x', '" × ', $size). '"';
+            }
+
             $title = str_replace('″', "''", $variant['title']);
             $size = str_replace('″', '"', $size);
+            $size = str_replace('x', '×', $size);
             $color = str_replace('″', '"', $color);
             $resultColor = true;
             $resultSize = true;
@@ -1143,7 +1149,7 @@ class OrderController extends BaseController
             }
 
             if ($size != null) {
-                $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false;
+                $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
             }
 
             if ($resultColor && $resultSize) {
