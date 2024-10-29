@@ -1381,27 +1381,26 @@ class OrderController extends BaseController
                 return [
                     date('d/m/Y'),
                     '#'.$item->order_number,
-                    $item->quantity,
+                    (string)$item->quantity,
                     $sizeFlag,
-                    $item->img_1,
+                    $item->img_1 ?? '',
                     $item->first_name. ' ' . $item->last_name,
                     $item->address,
                     $item->city,
                     $item->zip,
-                    $item->state,
+                    $item->state ?? '',
                     $item->country,
-                    $item->img_6,
+                    $item->img_6 ?? '',
                     '',
                     '',
                     $seller->name,
                     $shop->name,
-                    $total_cost,
+                    (string)$total_cost,
                     '',
                     '',
-                    $item->img_2
+                    $item->img_2 ?? ''
                 ];
             })->toArray();
-
             $client = new Google_Client();
             $client->setApplicationName('Laravel Google Sheets Integration');
             $client->addScope(Sheets::SPREADSHEETS);            
