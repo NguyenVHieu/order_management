@@ -1342,8 +1342,8 @@ class OrderController extends BaseController
     public function appendSheetFlag($data){
         try{
             $orders = collect($data)->flatten(1);
-            $spreadsheetId = '1GI6UwF1LQEBeqg9dqfG8KO5WwTuKM5bRiqqc00ASGFE';
-            $range = 'Custom Flags, Banners, Yard Signs!A:A';
+            $spreadsheetId = '1tTXxP2JKEojJAe3DX5vWD2mVDhP1TjoBy_cZ6nK7D9M';
+            $range = 'Sheet order do tool push!A:A';
             $ids = [];
             foreach ($orders as $order) {
                 $ids[] = $order->id;
@@ -1356,30 +1356,26 @@ class OrderController extends BaseController
                     return ['1' => 'Không tìm thấy shop hoặc seller'];
                 }
 
-                $size = $this->getSizeFlag($item->size);
-                $side = $this->getSideFlag($item->size);
-
-                if ($size != null && $side != null) {
-                    $sizeFlag = $size . $side;
-                    if ($sizeFlag == 'WB1') {
+                $size = $item->size;
+                if ($size) {
+                    if ($size == 'WB1') {
                         $total_cost = (int)$item->quantity * 19.00;  
-                    } else if ($sizeFlag == 'WB2') {
+                    } else if ($size == 'WB2') {
                         $total_cost = (int)$item->quantity * 20.50;
-                    } else if ($sizeFlag == 'S1') {
+                    } else if ($size == 'S1') {
                         $total_cost = (int)$item->quantity * 10;
-                    } else if ($sizeFlag == 'S2') {
+                    } else if ($size == 'S2') {
                         $total_cost = (int)$item->quantity * 11.50;
-                    } else if ($sizeFlag == 'L1') {
+                    } else if ($size == 'L1') {
                         $total_cost = (int)$item->quantity * 12;
-                    } else if ($sizeFlag == 'L2') {
+                    } else if ($size == 'L2') {
                         $total_cost = (int)$item->quantity * 13.50;
                     } else {
-                        $sizeFlag = '';
+                        $size = '';
                         $total_cost = 0;
                     }
-
                 }else {
-                    $sizeFlag = '';
+                    $size = '';
                     $total_cost = 0;
                 }
 
@@ -1388,7 +1384,7 @@ class OrderController extends BaseController
                     date('d/m/Y'),
                     '#'.$item->order_number,
                     (string)$item->quantity,
-                    $sizeFlag,
+                    $size,
                     $item->img_1 ?? '',
                     $item->first_name. ' ' . $item->last_name,
                     $item->address,
@@ -1399,14 +1395,14 @@ class OrderController extends BaseController
                     $item->img_6 ?? '',
                     '',
                     '',
-                    $seller->name,
-                    $shop->name,
                     (string)$total_cost,
                     '',
+                    $seller->name,
                     '',
-                    $item->img_2 ?? ''
+                    '',
                 ];
             })->toArray();
+
             $client = new Google_Client();
             $client->setApplicationName('Laravel Google Sheets Integration');
             $client->addScope(Sheets::SPREADSHEETS);            
@@ -1423,7 +1419,7 @@ class OrderController extends BaseController
                 'valueInputOption' => 'RAW'
             ];
 
-            $d = $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
+            $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
             $data = [
                 'is_push' => 1,
                 'push_by' => Auth::user()->id,

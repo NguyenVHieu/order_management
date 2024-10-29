@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use App\Models\Order;
 use App\Models\Shop;
 use App\Repositories\OrderRepository;
+use Google\Service\Compute\Help;
 
 class MailController extends BaseController
 {
@@ -19,6 +20,7 @@ class MailController extends BaseController
     public function getInformationProduct($params)
     {
         foreach($params as $param) {
+            Helper::trackingInfo('start order number: ' . $param['orderNumber']);
             $parts = explode(" ", $param['name']);
 
             $firstName = $parts[0];
@@ -73,6 +75,8 @@ class MailController extends BaseController
             if (empty($order)) {
                 DB::table('orders')->insert($data);
             }
+
+            Helper::trackingInfo('end order number: ' . $param['orderNumber']);
         }
     }
 
@@ -127,6 +131,7 @@ class MailController extends BaseController
                         
 
                         $data = [];
+                        
                         foreach ($patterns as $key => $pattern) {
                             if ($key === 'shippingAddress' || $key === 'product') {
                                 $data[$key] = $this->extractInfo($pattern, $emailBody, true);
@@ -135,6 +140,7 @@ class MailController extends BaseController
                             }
                             $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
                         }
+                        Helper::trackingInfo('start order number: ' . $data['orderNumber']);
                         // dd($data['personalization']);
                         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                         $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
@@ -229,6 +235,7 @@ class MailController extends BaseController
                         
                         $message->setFlag('SEEN');
                         $client->expunge();
+                        Helper::trackingInfo('end order number: ' . $data['orderNumber']);
                     } catch (\Throwable $th) {
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                         continue;
