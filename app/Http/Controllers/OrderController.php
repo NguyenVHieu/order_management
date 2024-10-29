@@ -23,7 +23,8 @@ use finfo;
 use Maatwebsite\Excel\Facades\Excel;
 use Google\Client as Google_Client;
 use Google\Service\Sheets;
-
+use Illuminate\Support\Facades\Http;
+use Intervention\Image\Facades\Image;
 class OrderController extends BaseController
 {
     protected $shopIdPrintify;
@@ -1491,5 +1492,36 @@ class OrderController extends BaseController
             Helper::trackingError($th->getMessage());
             return $this->sendError('get color thất bại', 500);
         }
+    }
+
+    public function compressImage(Request $request)
+    {
+        $request->validate([
+            'url' => 'required|url',
+        ]);
+
+        // Lấy URL ảnh
+        $url = $request->input('url');
+
+        // Tải ảnh về
+        $imageContent = file_get_contents($url);
+        if (!$imageContent) {
+            return response()->json(['error' => 'Unable to download image.'], 400);
+        }
+
+        // Nén ảnh
+        $image = Image::make($imageContent);
+        $image->resize(800, null, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+
+        // Lưu ảnh nén vào bộ nhớ tạm thời
+        $tempFilePath = 'images/compressed_image.jpg';
+        $image->save(storage_path('app/' . $tempFilePath), 75); // 75 là chất lượng nén
+
+        // Trả về ảnh nén với Content-Type là image/jpeg
+        return response()->file(storage_path('app/' . $tempFilePath), [
+            'Content-Type' => 'image/jpeg',
+        ])->deleteFileAfterSend(true);
     }
 }
