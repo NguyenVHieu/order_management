@@ -21,8 +21,6 @@ class OrderRequest extends BaseFormRequest
         
         if ($type != 1) {
             return [
-                'color' => 'required',
-                'size' => 'required',
                 'country' => 'required',
                 'city' => 'required',
                 'address' => 'required',
@@ -55,8 +53,6 @@ class OrderRequest extends BaseFormRequest
     public function messages()
     {
         return [
-            'color.required' => 'The color is required.',
-            'size.required' => 'The size is required.',
             'country.required' => 'The country is required.',
             'city.required' => 'The city is required.',
             'address.required' => 'The address is required.',
