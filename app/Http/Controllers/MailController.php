@@ -298,7 +298,7 @@ class MailController extends BaseController
     {
         if (stripos($style, 'NB (0-3M)') !== false) {
             return 'NB (0-3M)';
-        } else if (stripos($style, 'Canvas') !== false) {
+        } else if (stripos($style, 'Canvas') !== false && stripos($style, 'Bella+Canvas') === false) {
             return str_replace("Canvas ", "", $style);
         } else if (stripos($style, 'Poster') !== false ) {
             return str_replace("Poster ", "", $style);
