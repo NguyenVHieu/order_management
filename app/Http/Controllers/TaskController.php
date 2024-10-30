@@ -56,8 +56,11 @@ class TaskController extends BaseController
     public function update(Request $request, $id)
     {
         try{
-            $data = [];
-            $data['status_id'] = $request->status_id;
+            $data = [
+                'status_id' => $request->status_id,
+                'updated_by' => Auth::user()->id,
+                'updated_at' => now()
+            ];
 
             if ($request->status_id == 1){
                 $data['designer_process'] = Auth::user()->id;
@@ -65,10 +68,6 @@ class TaskController extends BaseController
             } else if ($request->status == 6) {
                 $data['is_done'] = true;
                 $data['url_done'] = $request->url_done;
-                $data['updated_by'] = Auth::user()->id;
-                $data['done_at'] = Carbon::now();
-            } else {
-                $data['updated_by'] = Auth::user()->id;
                 $data['done_at'] = Carbon::now();
             }
 
