@@ -8,7 +8,7 @@ class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks()
     {
-        return Task::with(['status', 'images', 'designer', 'createdBy'])->get();
+        return Task::with(['status', 'images', 'designer', 'createdBy'])->orderBy('created_at', 'DESC')->get();
     }
 
     public function getTaskById($id)
