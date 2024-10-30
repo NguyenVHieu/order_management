@@ -25,6 +25,9 @@ use Google\Client as Google_Client;
 use Google\Service\Sheets;
 use Illuminate\Support\Facades\Http;
 use Intervention\Image\Facades\Image;
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+
 class OrderController extends BaseController
 {
     protected $shopIdPrintify;
@@ -1386,14 +1389,14 @@ class OrderController extends BaseController
                     '#'.$item->order_number,
                     (string)$item->quantity,
                     $size,
-                    $item->img_1 ?? '',
+                    $this->saveImgeDrive($item->img_1) ?? '',
                     $item->first_name. ' ' . $item->last_name,
                     $item->address,
                     $item->city,
                     $item->zip,
                     $item->state ?? '',
                     $item->country,
-                    $item->img_6 ?? '',
+                    $this->saveImgeDrive($item->img_6) ?? '',
                     '',
                     '',
                     (string)$total_cost,
@@ -1494,34 +1497,63 @@ class OrderController extends BaseController
         }
     }
 
-    public function compressImage(Request $request)
+    public function saveImgeDrive($imageUrl) 
     {
-        $request->validate([
-            'url' => 'required|url',
-        ]);
+        try {
+            // Thiết lập Client
+            $client = new Google_Client();
+            $client->setAuthConfig(public_path('toolorder.json'));
+            $client->addScope(Drive::DRIVE_FILE);
+            $client->setAccessType('offline');
+            
+            // Tạo Drive service
+            $service = new Drive($client);
+            
+            $imageContent = file_get_contents($imageUrl);
+            if ($imageContent === false) {
+                throw new Exception('Could not download image from URL.');
+            }
 
-        // Lấy URL ảnh
-        $url = $request->input('url');
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($imageContent);
 
-        // Tải ảnh về
-        $imageContent = file_get_contents($url);
-        if (!$imageContent) {
-            return response()->json(['error' => 'Unable to download image.'], 400);
+            // Tạo đối tượng file
+            $fileMetadata = new DriveFile();
+            $fileMetadata->setName(basename($imageUrl));
+    
+            // Đọc nội dung file
+    
+            // Upload file lên Google Drive
+            $result = $service->files->create(
+                $fileMetadata,
+                [
+                    'data' => $imageContent,
+                    'mimeType' => $mimeType, // Sử dụng loại MIME thực tế của file
+                    'uploadType' => 'multipart',
+                    'fields' => 'id'
+                ]
+            );
+    
+            // Thiết lập quyền truy cập cho file
+            $permission = new \Google\Service\Drive\Permission();
+            $permission->setType('anyone'); // Chia sẻ cho bất kỳ ai có link
+            $permission->setRole('reader'); // Quyền đọc
+    
+            // Tạo permission
+            $service->permissions->create($result->id, $permission);
+    
+            // Trả về URL
+            if (isset($result->id)) {
+                $fileId = $result->id;
+                return "https://drive.google.com/file/d/$fileId/view"; // Đường dẫn truy cập
+            } else {
+                throw new Exception('Upload failed, no file ID returned.');
+            }
+    
+            return $url;
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError('Error: ' . $ex->getMessage(), 500);
         }
-
-        // Nén ảnh
-        $image = Image::make($imageContent);
-        $image->resize(800, null, function ($constraint) {
-            $constraint->aspectRatio();
-        });
-
-        // Lưu ảnh nén vào bộ nhớ tạm thời
-        $tempFilePath = 'images/compressed_image.jpg';
-        $image->save(storage_path('app/' . $tempFilePath), 75); // 75 là chất lượng nén
-
-        // Trả về ảnh nén với Content-Type là image/jpeg
-        return response()->file(storage_path('app/' . $tempFilePath), [
-            'Content-Type' => 'image/jpeg',
-        ])->deleteFileAfterSend(true);
     }
 }
