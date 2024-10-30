@@ -67,11 +67,38 @@ class TaskController extends BaseController
                 $data['url_done'] = $request->url_done;
                 $data['updated_by'] = Auth::user()->id;
                 $data['done_at'] = Carbon::now();
+            } else {
+                $data['updated_by'] = Auth::user()->id;
+                $data['done_at'] = Carbon::now();
             }
 
             $data = $this->taskRepository->updateTask($id, $data);
             return $this->sendSuccess($data);
 
+
+        } catch (\Exception $e) {
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    public function changeStatus(Request $request, $id)
+    {
+        try {
+            $data = [
+                'status_id' => $request->status_id,
+                'updated_at' => now(),
+                'updated_by' => Auth::user()->id,
+            ];
+
+            if ($request->status_id == 7) {
+                $data['is_done'] = 1;
+                $data['url_done'] = $request->url_done;
+                $data['done_at'] = now();
+            }
+
+            $res = $this->taskRepository->updateTask($id, $data);
+            return $this->sendSuccess($res);
 
         } catch (\Exception $e) {
             Helper::trackingError($e->getMessage());

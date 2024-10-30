@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::controller(TaskController::class)->group(function(){
             Route::get('/', 'index'); 
             Route::post('/', 'store');
+            Route::post('/change-status', 'changeStatus');
         });
     });
 
