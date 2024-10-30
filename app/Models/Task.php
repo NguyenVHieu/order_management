@@ -14,7 +14,7 @@ class Task extends Model
         'status_id',
         'created_by',
         'category_design_id',
-        'designer_id',
+        'designer_tag',
         'deadline',
         'updated_by',
         'url_done',

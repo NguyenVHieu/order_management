@@ -60,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('tasks')->group(function () {
         Route::controller(TaskController::class)->group(function(){
             Route::get('/', 'index'); 
+            Route::post('/', 'store');
         });
     });
 

@@ -32,16 +32,16 @@ class TaskController extends BaseController
             
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }
 
-    public function store(TaskRequest $request)
+    public function store(Request $request)
     {
         try {
             $data = $this->getData($request);
             $data['created_at'] = Carbon::now();
+            $data['deadline'] = Carbon::now()->addDay();
             $data['created_by'] = Auth::user()->id;
 
             $task = $this->taskRepository->createTask($data);
@@ -108,8 +108,7 @@ class TaskController extends BaseController
             'description' => $request['description'] ?? null,
             'status_id' => $request['status_id'],
             'category_design_id' => $request['category_design_id'] ?? null,
-            'designer_id' => $request['designer_id'] ?? null,
-            'deadline' => $request['deadline'] ?? null,
+            'designer_tag' => $request['designer_tag'] ?? null,
             'level_task' => $request['level_task'],
             'comment' => $request['comment']
         ];
