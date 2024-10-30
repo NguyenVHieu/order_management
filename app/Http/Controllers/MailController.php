@@ -187,9 +187,13 @@ class MailController extends BaseController
                                     $item['style'] = str_replace("\r", "", $style[$i]);
                                     $sizeOther = $this->getSize($item['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
-                                        $item['size'] = $data['size'][$i];
-                                        
-                                        $item['style'] = $item['style'].' '.$data['size'];
+                                        if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
+                                            $item['style'] = $item['style'].' '.$data['size'][$i];
+                                            $item['size'] = $sizeOther;
+                                        } else {
+                                            $item['size'] = $data['size'][$i];
+                                            $item['style'] = $item['style'].' '.$item['size'];
+                                        }
                                     } else {
                                         $item['size'] = $sizeOther;
                                     }
