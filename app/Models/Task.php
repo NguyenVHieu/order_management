@@ -20,4 +20,24 @@ class Task extends Model
         'url_done',
         'level_task',
     ];
+
+    public function status()
+    {
+        return $this->belongsTo(StatusTask::class, 'status_id');
+    }
+
+    public function images()
+    {
+        return $this->hasMany(TaskImage::class, 'task_id');
+    }
+
+    public function designer()
+    {
+        return $this->belongsTo(User::class, 'designer_tag');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

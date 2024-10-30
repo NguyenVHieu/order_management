@@ -5,6 +5,7 @@ use App\Http\Controllers\ChartController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
@@ -53,6 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/import-order-flag', 'importOrderFlag');
             Route::get('/info/get', 'getInfoOrder');
             
+        });
+    });
+
+    Route::prefix('tasks')->group(function () {
+        Route::controller(TaskController::class)->group(function(){
+            Route::get('/', 'index'); 
         });
     });
 
@@ -106,3 +113,4 @@ Route::prefix('charts')->group(function () {
 
 Route::get('/refresh-token', [TiktokController::class, 'refreshToken']);
 Route::get('/get-auth-code', [TiktokController::class, 'getAuthCode']);
+Route::get('/compress-image', [OrderController::class, 'compressImage']);

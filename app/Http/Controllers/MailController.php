@@ -29,34 +29,34 @@ class MailController extends BaseController
             if (empty($shop)) {
                 $shop = Shop::create(['name' => $param['shop']])->fresh();  
             }
-            if ($param['shipping'] != 'N/A' && $param['shipping'] != '0.00'){
+            if ($param['shipping'] != '' && $param['shipping'] != '0.00'){
                 $shipping = $param['shipping'];
             }else {
                 $shipping = 0;
             }
             
             $data = [
-                'order_number' => $param['orderNumber'] != 'N/A' ? $param['orderNumber'] : time(),
+                'order_number' => $param['orderNumber'] != '' ? $param['orderNumber'] : time(),
                 'product_name' => $param['product'],
                 'shop_id' => $shop->id ?? null,
                 'size' => $param['size'] ?? null,
                 'blueprint_id' => $param['blueprint_id'] ?? null,
-                'style' => $param['style'] != 'N/A' ? $param['style'] : null,
-                'color' => $param['color'] != 'N/A' ? $param['color'] : null,
-                'personalization' => $param['personalization'] != 'N/A' ? html_entity_decode($param['personalization']) : null,
-                'personalization_2' => $param['personalization_2'] != 'N/A' ? $param['personalization_2'] : null,
+                'style' => $param['style'] != '' ? $param['style'] : null,
+                'color' => $param['color'] != '' ? $param['color'] : null,
+                'personalization' => $param['personalization'] != '' ? html_entity_decode($param['personalization']) : null,
+                'personalization_2' => $param['personalization_2'] != '' ? $param['personalization_2'] : null,
                 'thumbnail' => str_replace('75x75', '1000x1000', $param['thumb']),
                 'quantity' =>  $param['quantity'],
-                'sale_tax' => $param['salesTax'] != 'N/A' ? $param['salesTax'] : null,
+                'sale_tax' => $param['salesTax'] != '' ? $param['salesTax'] : null,
                 'shipping' => $shipping,
                 'is_shipping' => $param['is_shipping'],
-                'order_total' => $param['orderTotal'] != 'N/A' ? $param['orderTotal'] : null,
+                'order_total' => $param['orderTotal'] != '' ? $param['orderTotal'] : null,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'address' => html_entity_decode($param['address']),
                 'country' => $param['country'],
-                'state' => $param['state'] != 'N/A' ? $param['state'] : null,
-                'apartment' => $param['apartment'] != 'N/A' ? $param['apartment'] : null,
+                'state' => $param['state'] != '' ? $param['state'] : null,
+                'apartment' => $param['apartment'] != '' ? $param['apartment'] : null,
                 'recieved_mail_at' => $param['recieved_mail_at'],
                 'zip' => $param['zip'],
                 'city' => $param['city'],
@@ -65,7 +65,7 @@ class MailController extends BaseController
                 'multi' => $param['multi'], 
                 'order_number_group' => $param['orderNumberGroup'] ?? null,
                 'category_id' => $param['category_id'] ?? null,
-                'im_code' => $param['im'] != 'N/A' ? $param['im'] : null
+                'im_code' => $param['im'] != '' ? $param['im'] : null
             ];
 
             $order = DB::table('orders')->where('order_number', $data['order_number'])
@@ -86,6 +86,8 @@ class MailController extends BaseController
             set_time_limit(-1);
             Helper::trackingInfo('fetchMailOrder start at ' . now());
             $sizeShirt = config('constants.sizeShirt');
+            $sizeStyle = config('constants.sizeStyle');
+            $sizeCanvas = config('constants.sizeCanvas');
             $client = \Webklex\IMAP\Facades\Client::account('default');
             $client->connect();
 
@@ -102,9 +104,7 @@ class MailController extends BaseController
                         $date = $message->getDate();
                         
                         $emailBody = $this->removeLinks($message->getTextBody());
-                        
                         $emailHtml = $message->getHTMLBody();
-                        // dd($emailBody);
                         $thumbRegex = '/<img[^>]+src="([^"]+\.jpg)"/';
                         $thumb = $this->extractInfo($thumbRegex, $emailHtml);
 
@@ -128,7 +128,21 @@ class MailController extends BaseController
                             'size_blanket' => '/(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*([\s\S]*?)(?=\r?\nQuantity:|$)/', 
                         ];
-                        
+
+                        $personalizationList = [];
+
+                        preg_match_all('/Style:.*?\n(.*?)(?=Quantity:)/s', $emailBody, $matches);
+                        if (count($matches[0]) > 1) {
+                            foreach($matches[1] as $match) {
+                                if (preg_match('/Personalization:\s*(.*?)(?=\n\s*\n|$)/s', $match, $personalizationMatch)) {
+                                    // Nếu có, lưu giá trị `Personalization`
+                                    $personalizationList[] = $personalizationMatch[1];
+                                } else {
+                                    // Nếu không có, gán giá trị `null`
+                                    $personalizationList[] = null;
+                                }
+                            }
+                        }
 
                         $data = [];
                         
@@ -141,7 +155,6 @@ class MailController extends BaseController
                             $data[$key] = str_replace(["\r", "\\r"], "", $data[$key]);
                         }
                         Helper::trackingInfo('start order number: ' . $data['orderNumber']);
-                        // dd($data['personalization']);
                         $data['recieved_mail_at']  = \Carbon\Carbon::parse($date)->format('Y-m-d H:i:s');
                         $shop = $this->extractInfo('/Shop:\s*(.+)/', $emailHtml, true);
                         $data['im'] = $this->extractInfo('/IOSS number,\s*(IM\d+)/', $emailHtml, true);
@@ -156,7 +169,7 @@ class MailController extends BaseController
                             for ($i=0; $i < $countStyle; $i++) {
                                 $item = [];
                                 $item['color'] = $data['color'][$i] ?? null;
-                                $item['personalization'] = $data['personalization'] != 'N/A' && isset($data['personalization'][$i]) ? $data['personalization'][$i] : null;
+                                $item['personalization'] = $personalizationList[$i] ?? null;
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
@@ -175,6 +188,7 @@ class MailController extends BaseController
                                     $sizeOther = $this->getSize($item['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         $item['size'] = $data['size'][$i];
+                                        
                                         $item['style'] = $item['style'].' '.$data['size'];
                                     } else {
                                         $item['size'] = $sizeOther;
@@ -213,8 +227,13 @@ class MailController extends BaseController
                                 $data['style'] = str_replace("\r", "", $style);
                                 $sizeOther = $this->getSize($data['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
-                                        $data['size'] = $data['size'];
-                                        $data['style'] = $data['style'].' '.$data['size'];
+                                        if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
+                                            $data['style'] = $data['style'].' '.$data['size'];
+                                            $data['size'] = $sizeOther;
+                                        } else {
+                                            $data['size'] = $data['size'];
+                                            $data['style'] = $data['style'].' '.$data['size'];
+                                        }
                                     } else {
                                         $data['size'] = $sizeOther;
                                     }
@@ -258,10 +277,11 @@ class MailController extends BaseController
     {
         $options = $singleLine ? 's' : '';
         preg_match_all($pattern, $body, $matches);
+
         if (isset($matches[1]) && count($matches[1]) > 1) {
-            return $matches[1] ?? 'N/A';
+            return $matches[1] ?? '';
         } else {
-            return $matches[1][0] ?? 'N/A';
+            return $matches[1][0] ?? '';
         } 
     }
 
@@ -274,10 +294,14 @@ class MailController extends BaseController
     {
         if (stripos($style, 'NB (0-3M)') !== false) {
             return 'NB (0-3M)';
+        } else if (stripos($style, 'Canvas') !== false) {
+            return str_replace("Canvas ", "", $style);
+        } else if (stripos($style, 'Poster') !== false ) {
+            return str_replace("Poster ", "", $style);
+        } else {
+            $size = explode(" ", $style);
+            return $size[count($size) -1];
         }
-
-        $size = explode(" ", $style);
-        return $size[count($size) -1];
     }
 
     public function getBlueprintId($style)

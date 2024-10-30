@@ -10,14 +10,15 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
 use App\Http\Requests\TaskRequest;
-use App\Repositories\TaskRepositoryInterface;
+use App\Http\Resources\TaskResource;
+use App\Repositories\TaskRepository;
 use Carbon\Carbon;
 
-class ShopController extends BaseController
+class TaskController extends BaseController
 {
     protected $taskRepository;
 
-    public function __construct(TaskRepositoryInterface $taskRepository)
+    public function __construct(TaskRepository $taskRepository)
     {
         $this->taskRepository = $taskRepository;
     }
@@ -25,39 +26,13 @@ class ShopController extends BaseController
     public function index()
     {
         try {
-            $tasks = $this->taskRepository->getAllTasks();
-            $task_done = $this->taskRepository->getAllTasks('done');
-            $groupedTasks = [
-                'resource' => [],
-                'to_do' => [],
-                'support_review' => [],
-                'review' => [],
-                'fix' => [],
-            ];
-        
-            // Sử dụng Query để phân loại
-            foreach ($tasks as $task) {
-                switch ($task->status_id) {
-                    case 1:
-                        $groupedTasks['resource'][] = $task;
-                        break;
-                    case 2:
-                        $groupedTasks['to_do'][] = $task;
-                        break;
-                    case 3:
-                        $groupedTasks['support_review'][] = $task;
-                        break;
-                    case 4:
-                        $groupedTasks['review'][] = $task;
-                        break;
-                    case 5:
-                        $groupedTasks['fix'][] = $task;
-                        break;
-                }
-            }
+            $results = $this->taskRepository->getAllTasks();
 
-            return $this->sendSuccess($groupedTasks);
+            $data = TaskResource::collection($results)->resource;
+            
+            return $this->sendSuccess($data);
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }

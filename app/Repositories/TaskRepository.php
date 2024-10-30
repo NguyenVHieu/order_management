@@ -1,13 +1,14 @@
 <?php
 namespace App\Repositories;
 
+use App\Repositories\Interfaces\TaskRepositoryInterface;
 use App\Models\Task;
 
 class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks()
     {
-        return Task::with('images')->where('is_done', false)->get();
+        return Task::with(['status', 'images', 'designer', 'createdBy'])->get();
     }
 
     public function getTaskById($id)
