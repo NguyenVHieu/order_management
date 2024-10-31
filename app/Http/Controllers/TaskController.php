@@ -81,18 +81,27 @@ class TaskController extends BaseController
         }
     }
 
-    public function changeStatus(Request $request, $id)
+    public function changeStatus(Request $request)
     {
         try {
+            $id = $request->id;
+            $status = DB::table('status_tasks')->where('name', $request->status)->first();
+            $task = $this->taskRepository->getTaskById($id);
+            
+            if (!$task || !$status) {
+                return $this->sendError('Không tìm thấy task hoặc status'); 
+            }
+
+            $status_id = $status->id;
+
             $data = [
-                'status_id' => $request->status_id,
+                'status_id' => $status_id,
                 'updated_at' => now(),
                 'updated_by' => Auth::user()->id,
             ];
 
-            if ($request->status_id == 7) {
+            if ($status_id == 7) {
                 $data['is_done'] = 1;
-                $data['url_done'] = $request->url_done;
                 $data['done_at'] = now();
             }
 

@@ -19,6 +19,8 @@ class Task extends Model
         'updated_by',
         'url_done',
         'level_task',
+        'is_done',
+        'done_at',
     ];
 
     public function status()
