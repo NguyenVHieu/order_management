@@ -26,8 +26,13 @@ class TaskController extends BaseController
     public function index(Request $request)
     {
         try {
+            $status = DB::table('status_tasks')->where('name', $request->status)->first();
+
+            if (!$status) {
+                return $this->sendError('Không tìm thấy status'); 
+            }
             $params = [
-                'status_id' => $request->status_id ?? 1,
+                'status_id' => $status->id,
             ];
 
             $results = $this->taskRepository->getAllTasks($params);
