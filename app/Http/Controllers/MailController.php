@@ -202,8 +202,8 @@ class MailController extends BaseController
                                 }
                                 if (stripos($item['product'][$i], 'digital') !== false || stripos($item['product'][$i], 'upgrade') !== false || 
                                     stripos($item['style'][$i], 'digital') !== false || stripos($item['style'][$i], 'upgrade') !== false){
-                                    $message->setFlag('SEEN');
-                                    $client->expunge();
+                                    // $message->setFlag('SEEN');
+                                    // $client->expunge();
                                     continue;
                                 }
                                 $item['category_id'] = DB::table('key_categories')->where('style', $item['style'])->first()->category_id ?? null;
@@ -245,8 +245,8 @@ class MailController extends BaseController
                             }
                             if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false ||
                                 stripos($data['style'], 'digital') !== false || stripos($data['style'], 'upgrade') !== false){
-                                $message->setFlag('SEEN');
-                                $client->expunge();
+                                // $message->setFlag('SEEN');
+                                // $client->expunge();
                                 continue;
                             }
                             
@@ -256,8 +256,8 @@ class MailController extends BaseController
                             $list_data[] = $data;
                         }
                         
-                        $message->setFlag('SEEN');
-                        $client->expunge();
+                        // $message->setFlag('SEEN');
+                        // $client->expunge();
                         Helper::trackingInfo('end order number: ' . $data['orderNumber']);
                     } catch (\Throwable $th) {
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
@@ -268,6 +268,11 @@ class MailController extends BaseController
                 
                 $this->getInformationProduct($list_data);
                 // Ngắt kết nối sau khi xong
+                foreach($messages as $message) {
+                    $message->setFlag('SEEN');
+                    $client->expunge();
+                }
+               
                 $client->disconnect();
                 
             } 
