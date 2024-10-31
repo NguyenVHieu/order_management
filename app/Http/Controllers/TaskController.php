@@ -122,7 +122,10 @@ class TaskController extends BaseController
                 $data['done_at'] = now();
             }
 
-            $res = $this->taskRepository->updateTask($id, $data);
+            $this->taskRepository->updateTask($id, $data);
+
+            $updatedTask = $this->taskRepository->getTaskById($id);
+            $res = new TaskResource($updatedTask);
             return $this->sendSuccess($res);
 
         } catch (\Exception $e) {
