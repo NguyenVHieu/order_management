@@ -11,7 +11,7 @@ class TaskRepository implements TaskRepositoryInterface
         return Task::with(['status', 'images', 'designer', 'createdBy'])
             ->where('status_id', $params['status_id'])
             ->orderBy('created_at', 'DESC')
-            ->paginate(12);
+            ->paginate(1);
     }
 
     public function getTaskById($id)
