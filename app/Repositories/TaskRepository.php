@@ -6,9 +6,12 @@ use App\Models\Task;
 
 class TaskRepository implements TaskRepositoryInterface
 {
-    public function getAllTasks()
+    public function getAllTasks($params)
     {
-        return Task::with(['status', 'images', 'designer', 'createdBy'])->orderBy('created_at', 'DESC')->get();
+        return Task::with(['status', 'images', 'designer', 'createdBy'])
+            ->where('status_id', $params['status_id'])
+            ->orderBy('created_at', 'DESC')
+            ->paginate(12);
     }
 
     public function getTaskById($id)

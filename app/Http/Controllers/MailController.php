@@ -267,6 +267,8 @@ class MailController extends BaseController
                 }
                 
                 $this->getInformationProduct($list_data);
+                // Ngắt kết nối sau khi xong
+                $client->disconnect();
                 
             } 
             Helper::trackingInfo('fetchMailOrder end at ' . now());

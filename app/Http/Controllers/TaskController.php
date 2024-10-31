@@ -23,15 +23,26 @@ class TaskController extends BaseController
         $this->taskRepository = $taskRepository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $results = $this->taskRepository->getAllTasks();
+            $params = [
+                'status_id' => $request->status_id ?? 1,
+            ];
 
-            $data = TaskResource::collection($results)->resource;
+            $results = $this->taskRepository->getAllTasks($params);
+
+            $tasks = TaskResource::collection($results);
+            $paginator = $tasks->resource->toArray();
+
+            $data = [
+                'tasks' => $tasks,
+                'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
+            ];
             
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());   
             return $this->sendError('Lỗi Server');
         }
     }
@@ -87,7 +98,7 @@ class TaskController extends BaseController
             $id = $request->id;
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
             $task = $this->taskRepository->getTaskById($id);
-            
+
             if (!$task || !$status) {
                 return $this->sendError('Không tìm thấy task hoặc status'); 
             }
