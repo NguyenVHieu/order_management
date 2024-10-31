@@ -39,6 +39,7 @@ class TaskController extends BaseController
 
             $tasks = TaskResource::collection($results);
             $paginator = $tasks->resource->toArray();
+            $paginator['data'] = $paginator['data'] ?? [];  
 
             $data = [
                 'tasks' => $tasks,

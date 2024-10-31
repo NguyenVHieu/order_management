@@ -3,15 +3,24 @@ namespace App\Repositories;
 
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use App\Models\Task;
+use Carbon\Carbon;
 
 class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks($params)
     {
-        return Task::with(['status', 'images', 'designer', 'createdBy'])
+        $query = Task::with(['status', 'images', 'designer', 'createdBy'])
             ->where('status_id', $params['status_id'])
-            ->orderBy('created_at', 'DESC')
-            ->paginate(1);
+            ->orderBy('created_at', 'DESC');
+
+        if ($params['status_id'] == 7) {
+            $daysAgo = Carbon::now()->subDays(6)->startOfDay();
+            $today = Carbon::now()->endOfDay();
+            $query->whereBetween('created_at', [$daysAgo, $today]);
+            return $query->get();
+        }
+
+        return $query->paginate(1);
     }
 
     public function getTaskById($id)
