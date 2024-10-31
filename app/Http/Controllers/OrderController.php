@@ -1084,6 +1084,7 @@ class OrderController extends BaseController
                             'is_approval' => true,
                             'approval_by' => Auth::user()->id,
                         ];
+                        DB::table('orders')->where('id', $id)->update($columns);
                     } else {
                         $columns = [
                             'is_approval' => false,
@@ -1100,13 +1101,12 @@ class OrderController extends BaseController
                             'approval_by' => null,
                             'date_unapproval' => now()
                         ];
+
+                        DB::table('orders')->where('order_number_group', $data->order_number_group)->update($columns);
+
                     }
-                    
-                    DB::table('orders')->where('id', $id)->update($columns);
-                    
                 } else {
                     DB::rollBack();
-                    
                     return $this->sendError('Không tìm thấy order', 404);
                 }
             }
