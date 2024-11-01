@@ -1199,12 +1199,41 @@ class OrderController extends BaseController
             return 0;
         }
 
-        $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color) {
+        $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color, $product_name) {
             
             
             $option = $variant['option_values'];
             $resultColor = true;
             $resultSize = true;
+
+            if ($product_name === 'Woven Blanket') {
+                if ($size === '50x60') {
+                    $size = 'S';
+                } else if ($size === '60x80') {
+                    $size = 'L';
+                } else {
+                    return false;
+                }
+            } else if ($product_name === 'Outdoor Flag') {
+                if (stripos($size, '3x5') !== false || stripos($size, '12x18') !== false) {
+                    $size = 'L';
+                } else if (stripos($size, '4x6') !== false || stripos($size, '28x40') !== false) {  
+                    $size = 'XL';
+                } else if (stripos($size, '5x8') !== false || stripos($size, '36x60') !== false) {
+                    $size = '2XL';
+                } else if (stripos($size, '6x10') !== false) {
+                    $size = '61x122cm';
+                } else {
+                    return false;
+                }
+                
+                $optionCheck = '2 Holes ';
+                if (in_array($optionCheck, $option)) {
+                    $resultColor = true;
+                } else {
+                    $resultColor = false;
+                }
+            }
 
             if (!empty($color) && strpos($variant['full_name'], 'Color') !== false) {
                 if (in_array($color, $option)) {
