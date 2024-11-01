@@ -131,7 +131,7 @@ class MailController extends BaseController
 
                         $personalizationList = [];
 
-                        preg_match_all('/Style:.*?\n(.*?)(?=Quantity:)/s', $emailBody, $matches);
+                        preg_match_all('/Item:.*?\n(.*?)(?=Quantity:)/s', $emailBody, $matches);
                         if (count($matches[0]) > 1) {
                             foreach($matches[1] as $match) {
                                 if (preg_match('/Personalization:\s*(.*?)(?=\n\s*\n|$)/s', $match, $personalizationMatch)) {
