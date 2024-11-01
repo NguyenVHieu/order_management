@@ -20,7 +20,7 @@ class TaskRepository implements TaskRepositoryInterface
             return $query->get();
         }
 
-        return $query->paginate(1);
+        return $query->paginate(12);
     }
 
     public function getTaskById($id)
