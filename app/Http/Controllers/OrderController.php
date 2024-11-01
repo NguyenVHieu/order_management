@@ -116,7 +116,7 @@ class OrderController extends BaseController
                     ];
 
                     if (!empty($order->img_1)) {
-                        $item["print_areas"]["font"] = $order->img_1; // Thêm font nếu có img_1
+                        $item["print_areas"]["front"] = $order->img_1; // Thêm font nếu có img_1
                     }
 
                     if (!empty($order->img_2)) {
