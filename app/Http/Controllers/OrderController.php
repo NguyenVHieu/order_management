@@ -1356,6 +1356,10 @@ class OrderController extends BaseController
                 $data['color'] = $request->color;
                 $data['size'] = $request->size;
                 $data['style'] = $request->style;
+                
+                $blueprint = DB::table('key_blueprints')->where('style', $data['style'])->first();
+                $data['blueprint_id'] = $blueprint->product_printify_id ?? null;
+
                 DB::table('orders')->where('id', $id)->update($data);
             }
             
