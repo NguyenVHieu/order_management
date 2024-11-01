@@ -1215,17 +1215,18 @@ class OrderController extends BaseController
                     return false;
                 }
             } else if ($product_name === 'Outdoor Flag') {
-                if (stripos($size, '3x5') !== false || stripos($size, '12x18') !== false) {
+                if (stripos($size, '3x5') !== false || stripos($size, '36x60') !== false) {
                     $size = 'L';
-                } else if (stripos($size, '4x6') !== false || stripos($size, '28x40') !== false) {  
+                } else if (stripos($size, '4x6') !== false) {  
                     $size = 'XL';
-                } else if (stripos($size, '5x8') !== false || stripos($size, '36x60') !== false) {
-                    $size = '2XL';
-                } else if (stripos($size, '6x10') !== false) {
-                    $size = '61x122cm';
+                } else if (stripos($size, '12x18') !== false) {
+                    $size = 'S';
+                } else if (stripos($size, '28x40') !== false){
+                    $size = 'M';
                 } else {
                     return false;
                 }
+                
                 
                 $optionCheck = '2 Holes ';
                 if (in_array($optionCheck, $option)) {
