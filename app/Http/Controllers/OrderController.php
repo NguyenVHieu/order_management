@@ -223,17 +223,24 @@ class OrderController extends BaseController
                             [
                                 "name" =>  "product",
                                 "option" =>  $product->merchize ?? ''
-                            ],
-                            [
-                                "name" =>  "Color",
-                                "option" =>  $order->color ?? ''
-                            ],
-                            [
-                                "name" =>  "Size",
-                                "option" =>  $order->size ?? ''
                             ]
                         ]
                     ];
+
+                    if(!empty($order->color)) {{
+                        $item["attributes"][] = [
+                            "name" =>  "Color",
+                            "option" =>  $order->color
+                        ];
+                    }}
+
+                    if(!empty($order->size)) {{
+                        $item["attributes"][] = [
+                            "name" =>  "Size",
+                            "option" =>  $order->size
+                        ];
+                    }}
+
 
                     if (!empty($order->img_2)) {
                         $item["design_back"] = $order->img_2; 
