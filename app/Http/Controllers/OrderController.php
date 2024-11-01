@@ -110,10 +110,14 @@ class OrderController extends BaseController
                         "blueprint_id" => $order->blueprint_id,
                         "variant_id" => $variant_id,
                         "print_areas" => [
-                            "front" => $order->img_1,
+                            // "front" => $order->img_1,
                         ],
                         "quantity" => $order->quantity
                     ];
+
+                    if (!empty($order->img_1)) {
+                        $item["print_areas"]["font"] = $order->img_1; // Thêm font nếu có img_1
+                    }
 
                     if (!empty($order->img_2)) {
                         $item["print_areas"]["back"] = $order->img_2; // Thêm back nếu có img_2
