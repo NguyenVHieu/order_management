@@ -221,7 +221,6 @@ class MailController extends BaseController
                          
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['size'] = $data['size_blanket'];
-                                dd($data['size'], $data['style']);
                                 $data['style'] = $data['style'] . ' '. $data['size'];
                                 
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
