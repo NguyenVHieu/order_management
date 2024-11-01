@@ -125,7 +125,7 @@ class MailController extends BaseController
                             'shipping' => '/Shipping:\s*\$?(\d+(\.\d{2})?|US)/',
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
                             'size' => '/(?:Finish|Sizes):\s*(.*)/',
-                            'size_blanket' => '/(\d+x\d+)/',
+                            'size_blanket' => '/Size:\s*(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*([\s\S]*?)(?=\r?\nQuantity:|$)/', 
                         ];
 
@@ -221,7 +221,9 @@ class MailController extends BaseController
                          
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['size'] = $data['size_blanket'];
+                                dd($data['size'], $data['style']);
                                 $data['style'] = $data['style'] . ' '. $data['size'];
+                                
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }else if ( stripos($data['product'], 'Flag') !== false){
                                 $data['style'] = $data['style']. ' '. $data['size'];
@@ -260,6 +262,7 @@ class MailController extends BaseController
                         // $client->expunge();
                         Helper::trackingInfo('end order number: ' . $data['orderNumber']);
                     } catch (\Throwable $th) {
+                        dd($th);
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                         continue;
                     }
