@@ -1532,7 +1532,7 @@ class OrderController extends BaseController
 
             $data = [
                 'colors' => $colors,
-                'styles' => $mergedStyles,
+                'styles' => array_values($mergedStyles),
                 'sizes' => $sizes
             ];
             return $this->sendSuccess($data);
