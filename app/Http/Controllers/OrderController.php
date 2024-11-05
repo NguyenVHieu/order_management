@@ -306,7 +306,6 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
-                dd($th);
                 Helper::trackingError($th->getMessage());
                 $result = [];
                 $result[$key.' '] = 'Lỗi khi tạo order';
