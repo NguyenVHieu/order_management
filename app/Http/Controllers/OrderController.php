@@ -52,7 +52,7 @@ class OrderController extends BaseController
     public function __construct(OrderRepository $orderRepository)
     {   
         $this->baseUrlPrintify = 'https://api.printify.com/v1/';
-        $this->baseUrlMerchize = 'https://bo-5mwlab0.merchize.com/bo-api';
+        $this->baseUrlMerchize = 'https://bo-group-2-2.merchize.com/ylbf9aa/bo-api';
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
@@ -306,6 +306,7 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 Helper::trackingError($th->getMessage());
                 $result = [];
                 $result[$key.' '] = 'Lỗi khi tạo order';
@@ -917,7 +918,7 @@ class OrderController extends BaseController
             $blueprints = DB::table('key_blueprints')
                         ->join('blueprints', 'key_blueprints.product_printify_name', '=', 'blueprints.name')
                         ->select('blueprints.blueprint_id as value', 'key_blueprints.product_printify_name as label')->distinct()
-                        ->where('key_blueprints.product_printify_name', '!=', null)
+                        ->whereNotNull('key_blueprints.product_printify_name')
                         ->get();
 
             $orders = $this->orderRepository->index($params, $columns);
