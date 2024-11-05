@@ -1154,7 +1154,6 @@ class OrderController extends BaseController
                 $size = str_replace('x', '" × ', $size). '"';
             }
 
-            $title = str_replace('″', "''", $variant['title']);
             $size = str_replace('″', '"', $size);
             $size = str_replace('x', '×', $size);
             $color = str_replace('″', '"', $color);
@@ -1162,11 +1161,12 @@ class OrderController extends BaseController
             $resultSize = true;
 
             if ($color != null) {
-                $resultColor = stripos($title, ' / '.$color) !== false || stripos($title, $color.' / ') !== false;
+                $resultColor = in_array($color, $variant['options']);
             }
 
             if ($size != null) {
-                $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
+                // $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
+                $resultSize = in_array($size, $variant['options']);
             }
 
             if ($resultColor && $resultSize) {
@@ -1358,6 +1358,10 @@ class OrderController extends BaseController
                 $data['color'] = $request->color;
                 $data['size'] = $request->size;
                 $data['style'] = $request->style;
+                
+                $blueprint = DB::table('key_blueprints')->where('style', $data['style'])->first();
+                $data['blueprint_id'] = $blueprint->product_printify_id ?? null;
+
                 DB::table('orders')->where('id', $id)->update($data);
             }
             
@@ -1530,7 +1534,7 @@ class OrderController extends BaseController
 
             $data = [
                 'colors' => $colors,
-                'styles' => $mergedStyles,
+                'styles' => array_values($mergedStyles),
                 'sizes' => $sizes
             ];
             return $this->sendSuccess($data);
