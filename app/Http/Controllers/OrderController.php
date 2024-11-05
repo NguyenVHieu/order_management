@@ -569,10 +569,12 @@ class OrderController extends BaseController
                 $statusCode = $response->getStatusCode(); // Lấy mã trạng thái HTTP
     
                 if ($statusCode == 200) {
+                    // dd()
                     $data = [
                         'is_push' => 1, 
                         'place_order' => 'otb',
-                        'date_push' => date('Y-m-d')
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id
                     ];
                     DB::table('orders')->whereIn('id', $ids)->update($data);
                     $results['1'] = "Order OTB Success";
