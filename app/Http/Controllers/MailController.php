@@ -124,7 +124,7 @@ class MailController extends BaseController
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
                             'shipping' => '/Shipping:\s*\$?(\d+(\.\d{2})?|US)/',
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
-                            'size' => '/(?:Finish|Sizes):\s*(.*)/',
+                            'size' => '/(?:Finish|Sizes|Options):\s*(.*)/',
                             'size_blanket' => '/Size:\s*(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*([\s\S]*?)(?=\r?\nQuantity:|$)/', 
                         ];
