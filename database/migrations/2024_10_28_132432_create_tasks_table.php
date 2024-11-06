@@ -19,14 +19,12 @@ return new class extends Migration
             $table->unsignedBigInteger('status_id');
             $table->unsignedBigInteger('created_by');
             $table->unsignedBigInteger('category_design_id');
-            $table->unsignedBigInteger('designer_tag')->nullable();
-            $table->unsignedBigInteger('designer_process')->nullable();
+            $table->unsignedBigInteger('designer_recipient_id')->nullable();
             $table->timestamps();
             $table->timestamp('deadline')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->string('url_done', 255)->nullable();
-            $table->unsignedTinyInteger('level_task')->default(1);
-            $table->text('comment')->nullable();
+            $table->unsignedBigInteger('count_product')->default(1);
         });
     }
 

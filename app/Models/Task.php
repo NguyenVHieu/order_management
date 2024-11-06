@@ -14,11 +14,11 @@ class Task extends Model
         'status_id',
         'created_by',
         'category_design_id',
-        'designer_tag',
+        'design_recipient_id',
         'deadline',
         'updated_by',
         'url_done',
-        'level_task',
+        'count_product',
         'is_done',
         'done_at',
     ];

@@ -56,15 +56,29 @@ class TaskController extends BaseController
     public function store(Request $request)
     {
         try {
+            DB::beginTransaction();
             $data = $this->getData($request);
-            $data['created_at'] = Carbon::now();
-            $data['deadline'] = Carbon::now()->addDay();
-            $data['created_by'] = Auth::user()->id;
+            $data['status_id'] = 1;
 
             $task = $this->taskRepository->createTask($data);
+            $task_images = $request->file ?? [];  
+
+            if (!empty($task_images)) {
+                foreach($task_images as $image) {
+                    $url = $this->saveImageTask($image);
+                    $data_image = [
+                        'task_id' => $task->id,
+                        'image_url' => $url
+                    ];
+                    DB::table('task_images')->insert($data_image);  
+                }
+            }
+
+            DB::commit();
             return $this->sendSuccess($task);
             
          } catch (\Exception $e) {
+            DB::rollBack();
             Helper::trackingError($e->getMessage());
             return $this->sendError($e->getMessage());
         }
@@ -159,13 +173,14 @@ class TaskController extends BaseController
     public function getData($request) 
     {
         $data = [
-            'title' => $request['title'],
-            'description' => $request['description'] ?? null,
-            'status_id' => $request['status_id'],
-            'category_design_id' => $request['category_design_id'] ?? null,
-            'designer_tag' => $request['designer_tag'] ?? null,
-            'level_task' => $request['level_task'],
-            'comment' => $request['comment']
+            'title' => $request->title,
+            'description' => $request->description ?? null,
+            'status_id' => $request->status_id,
+            'category_design_id' => $request->category_design_id ?? null,
+            'design_recipient_id' => $request->design_recipient_id ?? null,
+            'count_product' => $request->count_product,
+            'created_by' => $request->userId,
+            'created_at' => now()   
         ];
 
         return $data;
@@ -189,5 +204,25 @@ class TaskController extends BaseController
             Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi Server');
         } 
+    }
+
+    public function saveImageTask($image)
+    {
+        $dateFolder = now()->format('Ymd');
+        $time = now()->format('his');
+
+        $directory = public_path('tasks/' . $dateFolder);
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        // $name = rawurlencode($image->getClientOriginalName());
+
+        $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
+
+        $url = asset('tasks/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
+
+        return $url;
+        
     }
 }
