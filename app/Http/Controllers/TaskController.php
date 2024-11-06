@@ -174,9 +174,9 @@ class TaskController extends BaseController
     public function initForm() 
     {
         try {
-            $templates = DB::table('templates')->select(['id as value', 'name as text'])->get();
-            $category_designs = DB::table('category_designs')->select(['id as value', 'name as text'])->get();    
-            $designers = DB::table('users')->where('user_type_id', 4)->select(['id as value', 'name as text'])->get();
+            $templates = DB::table('templates')->select(['id as value', 'name as label'])->get();
+            $category_designs = DB::table('category_designs')->select(['id as value', 'name as label'])->get();    
+            $designers = DB::table('users')->where('user_type_id', 4)->select(['id as value', 'name as label'])->get();
 
             $data = [
                 'templates' => $templates,
