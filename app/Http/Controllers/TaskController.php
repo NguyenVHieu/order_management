@@ -174,9 +174,9 @@ class TaskController extends BaseController
     public function initForm() 
     {
         try {
-            $templates = DB::table('templates')->get();
-            $category_designs = DB::table('category_designs')->get();    
-            $designers = DB::table('users')->where('user_type_id', 4)->select(['id', 'name'])->get();
+            $templates = DB::table('templates')->select(['id as value', 'name as text'])->get();
+            $category_designs = DB::table('category_designs')->select(['id as value', 'name as text'])->get();    
+            $designers = DB::table('users')->where('user_type_id', 4)->select(['id as value', 'name as text'])->get();
 
             $data = [
                 'templates' => $templates,
@@ -188,6 +188,6 @@ class TaskController extends BaseController
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi Server');
-        }
+        } 
     }
 }
