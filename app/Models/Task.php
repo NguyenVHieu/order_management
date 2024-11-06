@@ -35,7 +35,7 @@ class Task extends Model
 
     public function designer()
     {
-        return $this->belongsTo(User::class, 'designer_tag');
+        return $this->belongsTo(User::class, 'designer_recipient_id');
     }
 
     public function createdBy()
