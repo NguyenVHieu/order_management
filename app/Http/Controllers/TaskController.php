@@ -33,6 +33,8 @@ class TaskController extends BaseController
             }
             $params = [
                 'status_id' => $status->id,
+                'user_id' => Auth::user()->id,
+                'user_type_id' => Auth::user()->user_type_id,
             ];
 
             $results = $this->taskRepository->getAllTasks($params);
@@ -84,37 +86,43 @@ class TaskController extends BaseController
         }
     }
 
-    public function update(Request $request, $id)
-    {
-        try{
-            $data = [
-                'status_id' => $request->status_id,
-                'updated_by' => Auth::user()->id,
-                'updated_at' => now()
-            ];
+    // public function update(Request $request, $id)
+    // {
+    //     try{
+    //         DB::beginTransaction();
+    //         $data = [
+    //             'status_id' => $request->status_id,
+    //             'updated_by' => Auth::user()->id,
+    //             'updated_at' => now()
+    //         ];
 
-            if ($request->status_id == 1){
-                $data['designer_process'] = Auth::user()->id;
-                $data['deadline'] = Carbon::now()->addDay();
-            } else if ($request->status == 6) {
-                $data['is_done'] = true;
-                $data['url_done'] = $request->url_done;
-                $data['done_at'] = Carbon::now();
-            }
+    //         if ($request->status_id == 1){
+    //             $data['designer_process'] = Auth::user()->id;
+    //             $data['deadline'] = Carbon::now()->addDay();
+    //         } else if ($request->status == 6) {
+    //             $data['is_done'] = true;
+    //             $data['url_done'] = $request->url_done;
+    //             $data['done_at'] = Carbon::now();
+    //         }
 
-            $data = $this->taskRepository->updateTask($id, $data);
-            return $this->sendSuccess($data);
+    //         $data = $this->taskRepository->updateTask($id, $data);
 
 
-        } catch (\Exception $e) {
-            Helper::trackingError($e->getMessage());
-            return $this->sendError($e->getMessage());
-        }
-    }
+    //         DB::commit();   
+    //         return $this->sendSuccess($data);
+
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         Helper::trackingError($e->getMessage());
+    //         return $this->sendError($e->getMessage());
+    //     }
+    // }
 
     public function changeStatus(Request $request)
     {
         try {
+            DB::beginTransaction();
             $id = $request->id;
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
             $task = $this->taskRepository->getTaskById($id);
@@ -136,13 +144,16 @@ class TaskController extends BaseController
                 $data['done_at'] = now();
             }
 
-            $this->taskRepository->updateTask($id, $data);
+            $task_new = $this->taskRepository->updateTask($id, $data);
 
-            $updatedTask = $this->taskRepository->getTaskById($id);
-            $res = new TaskResource($updatedTask);
+            $this->updateHistory($id, $task->status_id, $task_new->status_id);
+            
+            $res = new TaskResource($task_new);
+            DB::commit();   
             return $this->sendSuccess($res);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             Helper::trackingError($e->getMessage());
             return $this->sendError($e->getMessage());
         }
@@ -223,6 +234,20 @@ class TaskController extends BaseController
         $url = asset('tasks/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
 
         return $url;
-        
+    }
+
+    public function updateHistory($task_id, $status_old, $status_new)
+    {
+        $status_old = DB::table('status_tasks')->where('id', $status_old)->first();  
+        $status_new = DB::table('status_tasks')->where('id', $status_new)->first();
+
+        DB::table('task_histories')->insert([
+            'task_id' => $task_id,
+            'message' => Auth::user()->name.' Cập nhật task '.$status_old->name.' thành '.$status_new->name,
+            'action_by' => Auth::user()->id,
+            'created_at' => now(),
+        ]);
+
+        Helper::trackingInfo(Auth::user()->name.' Cập nhật task '.$status_old->name.' thành '.$status_new->name);
     }
 }

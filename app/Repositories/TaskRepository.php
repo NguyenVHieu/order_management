@@ -10,8 +10,16 @@ class TaskRepository implements TaskRepositoryInterface
     public function getAllTasks($params)
     {
         $query = Task::with(['status', 'images', 'designer', 'createdBy'])
+            // ->join('users', 'users.id', '=', 'tasks.created_by')
+            // ->join('teams', 'teams.id', '=', 'users.team_id')
             ->where('status_id', $params['status_id'])
             ->orderBy('created_at', 'DESC');
+
+        // if (!empty($params['user_id'])) {
+        //     if ($params['user_type_id'] == 4) {
+        //         $query->where('design_recipient_id', $params['user_id']);
+        //     }
+        // }
 
         if ($params['status_id'] == 7) {
             $daysAgo = Carbon::now()->subDays(6)->startOfDay();

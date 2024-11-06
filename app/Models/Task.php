@@ -37,11 +37,16 @@ class Task extends Model
 
     public function designer()
     {
-        return $this->belongsTo(User::class, 'designer_recipient_id');
+        return $this->belongsTo(User::class, 'design_recipient_id');
     }
 
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(TaskHistory::class, 'task_id');
     }
 }

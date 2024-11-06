@@ -20,10 +20,10 @@ class TaskResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status->name,
             'createdAt' => $this->created_at,
-            'price' => $this->level_task,
-            'task_creator' => $this->createdBy->name ?? '',
-            'task_recipient' => $this->designer->name ?? '',
-            'task_image' => $this->images->pluck('image_url')->all(),
+            'count_product' => $this->count_product,
+            'user' => $this->createdBy->name ?? '',
+            'design_recipient' => $this->designer->name ?? '',
+            'file' => $this->images->pluck('image_url')->all(),
         ];
     }
 }

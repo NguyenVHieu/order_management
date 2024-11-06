@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('task_histories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('task_id');
+            $table->string('message');
+            $table->unsignedBigInteger('action_by');
             $table->timestamps();
         });
     }
