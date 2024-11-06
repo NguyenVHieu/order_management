@@ -21,6 +21,8 @@ class Task extends Model
         'count_product',
         'is_done',
         'done_at',
+        'created_by',
+        'created_at'
     ];
 
     public function status()
