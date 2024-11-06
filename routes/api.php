@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', 'index'); 
             Route::post('/', 'store');
             Route::post('/change-status', 'changeStatus');
+            Route::get('/init-form', 'initForm');
         });
     });
 

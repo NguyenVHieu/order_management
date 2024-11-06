@@ -170,4 +170,24 @@ class TaskController extends BaseController
 
         return $data;
     }
+
+    public function initForm() 
+    {
+        try {
+            $templates = DB::table('templates')->get();
+            $category_designs = DB::table('category_designs')->get();    
+            $designers = DB::table('users')->where('user_type_id', 4)->select(['id', 'name'])->get();
+
+            $data = [
+                'templates' => $templates,
+                'category_designs' => $category_designs,
+                'designers' => $designers
+            ];
+
+            return $this->sendSuccess($data);
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Lỗi Server');
+        }
+    }
 }
