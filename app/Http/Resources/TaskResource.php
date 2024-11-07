@@ -24,6 +24,11 @@ class TaskResource extends JsonResource
             'user' => $this->createdBy->name ?? '',
             'design_recipient' => $this->designer->name ?? '',
             'file' => $this->images->pluck('image_url')->all(),
+            'is_done' => $this->is_done,
+            'done_at' => $this->done_at,
+            'template' => $this->template->name ?? '',
+            'category' => $this->category->name ?? '',
+            'url_done' => $this->url_done
         ];
     }
 }

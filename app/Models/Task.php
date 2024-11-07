@@ -49,4 +49,14 @@ class Task extends Model
     {
         return $this->hasMany(TaskHistory::class, 'task_id');
     }
+
+    public function template()
+    {
+        return $this->belongsTo(Template::class, 'category_design_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(CategoryDesign::class, 'category_design_id');   
+    }
 }

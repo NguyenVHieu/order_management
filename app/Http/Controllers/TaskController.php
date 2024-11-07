@@ -10,7 +10,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
 use App\Http\Requests\TaskRequest;
+use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskResource;
+use App\Models\Task;
 use App\Repositories\TaskRepository;
 use Carbon\Carbon;
 
@@ -27,7 +29,6 @@ class TaskController extends BaseController
     {
         try {
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
-
             if (!$status) {
                 return $this->sendError('Không tìm thấy status'); 
             }
@@ -35,6 +36,7 @@ class TaskController extends BaseController
                 'status_id' => $status->id,
                 'user_id' => Auth::user()->id,
                 'user_type_id' => Auth::user()->user_type_id,
+                'keyword' => $request->keyword ?? '',
             ];
 
             $results = $this->taskRepository->getAllTasks($params);
@@ -49,8 +51,8 @@ class TaskController extends BaseController
             ];
             
             return $this->sendSuccess($data);
-        } catch (\Throwable $th) {
-            Helper::trackingError($th->getMessage());   
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());   
             return $this->sendError('Lỗi Server');
         }
     }
@@ -61,6 +63,8 @@ class TaskController extends BaseController
             DB::beginTransaction();
             $data = $this->getData($request);
             $data['status_id'] = 1;
+            $data['created_by'] = $request->userId; 
+            $data['created_at'] = now();
 
             $task = $this->taskRepository->createTask($data);
             $task_images = $request->file ?? [];  
@@ -77,6 +81,7 @@ class TaskController extends BaseController
             }
 
             DB::commit();
+            Helper::trackingInfo(json_encode($request->all()));
             return $this->sendSuccess($task);
             
          } catch (\Exception $e) {
@@ -85,39 +90,53 @@ class TaskController extends BaseController
             return $this->sendError($e->getMessage());
         }
     }
+    
+    public function edit($id) 
+    {
+        try {
+            $result = $this->taskRepository->getTaskById($id);
+            $data = new TaskResource($result);
+            return $this->sendSuccess($data);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
+    }
 
-    // public function update(Request $request, $id)
-    // {
-    //     try{
-    //         DB::beginTransaction();
-    //         $data = [
-    //             'status_id' => $request->status_id,
-    //             'updated_by' => Auth::user()->id,
-    //             'updated_at' => now()
-    //         ];
+    public function update(Request $request, $id)
+    {
+        try{
+            DB::beginTransaction();
+            $data = $this->getData($request);
+            unset($data['status_id']);
 
-    //         if ($request->status_id == 1){
-    //             $data['designer_process'] = Auth::user()->id;
-    //             $data['deadline'] = Carbon::now()->addDay();
-    //         } else if ($request->status == 6) {
-    //             $data['is_done'] = true;
-    //             $data['url_done'] = $request->url_done;
-    //             $data['done_at'] = Carbon::now();
-    //         }
+            $task = $this->taskRepository->updateTask($id, $data);
+            
+            $task_images = $request->file ?? [];  
 
-    //         $data = $this->taskRepository->updateTask($id, $data);
+            if (!empty($task_images)) {
+                DB::table('task_images')->where('task_id', $task->id)->delete();
+                foreach($task_images as $image) {
+                    $url = $this->saveImageTask($image);
+                    $data_image = [
+                        'task_id' => $task->id,
+                        'image_url' => $url
+                    ];
+                    DB::table('task_images')->insert($data_image);  
+                }
+            }
 
+            DB::commit();   
+            Helper::trackingInfo(json_encode($request->all()));
+            return $this->sendSuccess($data);
 
-    //         DB::commit();   
-    //         return $this->sendSuccess($data);
-
-
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         Helper::trackingError($e->getMessage());
-    //         return $this->sendError($e->getMessage());
-    //     }
-    // }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
+    }
 
     public function changeStatus(Request $request)
     {
@@ -139,6 +158,10 @@ class TaskController extends BaseController
                 'updated_by' => Auth::user()->id,
             ];
 
+            if($status_id == 3 && empty($data['deadline'])) {
+                $data['deadline'] = now()->addDays(1);
+            }
+
             if ($status_id == 7) {
                 $data['is_done'] = 1;
                 $data['done_at'] = now();
@@ -150,6 +173,7 @@ class TaskController extends BaseController
             
             $res = new TaskResource($task_new);
             DB::commit();   
+            Helper::trackingInfo(json_encode($request->all()));
             return $this->sendSuccess($res);
 
         } catch (\Exception $e) {
@@ -158,27 +182,6 @@ class TaskController extends BaseController
             return $this->sendError($e->getMessage());
         }
     }
-
-    
-    // public function edit($id)
-    // {
-    //     try {
-    //         $data = DB::table('shops')->where('id', $id)->first();
-    //         return $this->sendSuccess($data);
-    //     } catch (\Throwable $th) {
-    //         return $this->sendError('Lỗi Server');
-    //     }
-    // }
-
-    // public function destroy($id)
-    // {
-    //     try {
-    //         DB::table('shops')->where('id', $id)->delete();
-    //         return $this->sendSuccess('Success!');
-    //     } catch (\Throwable $th) {
-    //         return $this->sendError('Lỗi Server');
-    //     }
-    // }
 
 
     public function getData($request) 
@@ -190,8 +193,6 @@ class TaskController extends BaseController
             'category_design_id' => $request->category_design_id ?? null,
             'design_recipient_id' => $request->design_recipient_id ?? null,
             'count_product' => $request->count_product,
-            'created_by' => $request->userId,
-            'created_at' => now()   
         ];
 
         return $data;
@@ -250,4 +251,44 @@ class TaskController extends BaseController
 
         Helper::trackingInfo(Auth::user()->name.' Cập nhật task '.$status_old->name.' thành '.$status_new->name);
     }
+
+    public function commentTask(Request $request)
+    {
+        try {
+            $data = [
+                'task_id' => $request->task_id,
+                'message' => $request->message,
+                'created_at' => now(),
+                'action_by' => Auth::user()->id
+            ];
+            $comment = DB::table('task_histories')->insert($data);
+            Helper::trackingInfo(json_encode($request->all()));
+            return $this->sendSuccess($comment);
+
+        } catch (\Exception $ex) {
+            dd($ex);
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError('Lỗi Server');
+        }
+    }
+
+    public function getHistory($id)
+    {
+        try {
+            $results = $this->taskRepository->getHistory($id);
+            $data = TaskHistoryResource::collection($results);
+            $paginator = $data->resource->toArray();
+            $paginator['data'] = $paginator['data'] ?? [];  
+
+            $data = [
+                'histories' => $data,
+                'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError('Lỗi Server');
+        }
+    }
+
 }

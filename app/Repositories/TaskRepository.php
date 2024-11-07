@@ -3,6 +3,7 @@ namespace App\Repositories;
 
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use App\Models\Task;
+use App\Models\TaskHistory;
 use Carbon\Carbon;
 
 class TaskRepository implements TaskRepositoryInterface
@@ -20,6 +21,11 @@ class TaskRepository implements TaskRepositoryInterface
         //         $query->where('design_recipient_id', $params['user_id']);
         //     }
         // }
+
+        if (!empty($params['keyword'])) {
+            $query->where('title', 'like', '%' . $params['keyword'] . '%')
+                ->orWhere('description', 'like', '%' . $params['keyword'] . '%');
+        }
 
         if ($params['status_id'] == 7) {
             $daysAgo = Carbon::now()->subDays(6)->startOfDay();
@@ -65,5 +71,11 @@ class TaskRepository implements TaskRepositoryInterface
     {
         $task = Task::findOrFail($id);
         $task->delete();
+    }
+
+    public function getHistory($id)
+    {
+        return TaskHistory::where('task_id', $id)->orderBy('created_at', 'DESC')->paginate(5);
+    
     }
 }
