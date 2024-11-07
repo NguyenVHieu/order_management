@@ -110,6 +110,8 @@ class TaskController extends BaseController
             DB::beginTransaction();
             $data = $this->getData($request);
             unset($data['status_id']);
+            
+            $data['url_done'] = $request->url_done ?? null;
 
             $task = $this->taskRepository->updateTask($id, $data);
             
