@@ -10,27 +10,42 @@ class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks($params)
     {
+        dd($params);
         $query = Task::with(['status', 'images', 'designer', 'createdBy'])
-            // ->join('users', 'users.id', '=', 'tasks.created_by')
-            // ->join('teams', 'teams.id', '=', 'users.team_id')
-            ->where('status_id', $params['status_id'])
-            ->orderBy('created_at', 'DESC');
+            ->where('tasks.status_id', $params['status_id'])
+            ->orderBy('tasks.created_at', 'DESC')
+            ->select('tasks.*');    
 
-        // if (!empty($params['user_id'])) {
-        //     if ($params['user_type_id'] == 4) {
-        //         $query->where('design_recipient_id', $params['user_id']);
-        //     }
-        // }
+        if (!empty($params['user_id']) && $params['user_type_id'] != -1) {
+            if ($params['user_type_id'] == 4) {
+                $query->where(function($query) use ($params) {
+                    $query->where('tasks.design_recipient_id', $params['user_id']);
+                    
+                    if (in_array($params['status_id'], [1, 2])) {
+                        $query->orWhereNull('tasks.design_recipient_id');
+                    }
+                });
+            } else {
+                $query->join('users', 'users.id', '=', 'tasks.created_by');
+                $query->join('teams', 'teams.id', '=', 'users.team_id');
+
+                $query->where('teams.id', $params['team_id']);
+
+                if ($params['user_type_id'] == 2){
+                    $query->where('tasks.created_by', $params['user_id']);
+                }
+            }
+        }
 
         if (!empty($params['keyword'])) {
-            $query->where('title', 'like', '%' . $params['keyword'] . '%')
-                ->orWhere('description', 'like', '%' . $params['keyword'] . '%');
+            $query->where('tasks.title', 'like', '%' . $params['keyword'] . '%')
+                ->orWhere('tasks.description', 'like', '%' . $params['keyword'] . '%');
         }
 
         if ($params['status_id'] == 7) {
             $daysAgo = Carbon::now()->subDays(6)->startOfDay();
             $today = Carbon::now()->endOfDay();
-            $query->whereBetween('created_at', [$daysAgo, $today]);
+            $query->whereBetween('tasks.created_at', [$daysAgo, $today]);
             return $query->get();
         }
 

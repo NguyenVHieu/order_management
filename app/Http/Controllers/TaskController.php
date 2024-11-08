@@ -35,8 +35,9 @@ class TaskController extends BaseController
             $params = [
                 'status_id' => $status->id,
                 'user_id' => Auth::user()->id,
-                'user_type_id' => Auth::user()->user_type_id,
+                'user_type_id' => Auth::user()->user_type_id ?? -1,
                 'keyword' => $request->keyword ?? '',
+                'team_id' => Auth::user()->team_id  
             ];
 
             $results = $this->taskRepository->getAllTasks($params);
@@ -52,6 +53,7 @@ class TaskController extends BaseController
             
             return $this->sendSuccess($data);
         } catch (\Exception $ex) {
+            dd($ex);
             Helper::trackingError($ex->getMessage());   
             return $this->sendError('Lỗi Server');
         }
