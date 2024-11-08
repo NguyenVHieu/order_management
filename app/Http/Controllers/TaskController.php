@@ -112,6 +112,8 @@ class TaskController extends BaseController
             unset($data['status_id']);
             
             $data['url_done'] = $request->url_done ?? null;
+            $data['updated_by'] = $request->userId;
+            $data['updated_at'] = now();
 
             $task = $this->taskRepository->updateTask($id, $data);
             
