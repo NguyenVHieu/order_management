@@ -37,8 +37,10 @@ class TaskRepository implements TaskRepositoryInterface
         }
 
         if (!empty($params['keyword'])) {
-            $query->where('tasks.title', 'like', '%' . $params['keyword'] . '%')
-                ->orWhere('tasks.description', 'like', '%' . $params['keyword'] . '%');
+            $query->where(function($q) use ($params) {
+                $q->where('tasks.title', 'like', '%' . $params['keyword'] . '%')
+                  ->orWhere('tasks.description', 'like', '%' . $params['keyword'] . '%');
+            });
         }
 
         if ($params['status_id'] == 7) {
