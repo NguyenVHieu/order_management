@@ -268,7 +268,6 @@ class TaskController extends BaseController
             return $this->sendSuccess($comment);
 
         } catch (\Exception $ex) {
-            dd($ex);
             Helper::trackingError($ex->getMessage());
             return $this->sendError('Lỗi Server');
         }
@@ -283,7 +282,7 @@ class TaskController extends BaseController
             $paginator['data'] = $paginator['data'] ?? [];  
 
             $data = [
-                'histories' => $data,
+                'comments' => $data,
                 'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
             return $this->sendSuccess($data);
