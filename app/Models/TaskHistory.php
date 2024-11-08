@@ -19,4 +19,9 @@ class TaskHistory extends Model
         return $this->belongsTo(Task::class, 'task_id');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'action_by');
+    }   
+
 }

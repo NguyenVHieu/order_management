@@ -19,7 +19,9 @@ class TaskHistoryResource extends JsonResource
             'task_id' => $this->task_id,
             'message' => $this->message,
             'userId' => $this->action_by,
+            'user' => $this->user->name,
             'createdAt' => $this->created_at,
+
         ];
     }
 }
