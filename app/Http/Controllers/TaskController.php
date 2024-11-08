@@ -116,9 +116,10 @@ class TaskController extends BaseController
             $task = $this->taskRepository->updateTask($id, $data);
             
             $task_images = $request->file ?? [];  
+            $img_url = $request->imageUrl ?? [];
 
             if (!empty($task_images)) {
-                DB::table('task_images')->where('task_id', $task->id)->delete();
+                DB::table('task_images')->where('task_id', $task->id)->whereNotIn('image_url', $img_url)->delete();
                 foreach($task_images as $image) {
                     $url = $this->saveImageTask($image);
                     $data_image = [
