@@ -10,7 +10,6 @@ class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks($params)
     {
-        dd($params);
         $query = Task::with(['status', 'images', 'designer', 'createdBy'])
             ->where('tasks.status_id', $params['status_id'])
             ->orderBy('tasks.created_at', 'DESC')
