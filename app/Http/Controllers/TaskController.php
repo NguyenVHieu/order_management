@@ -53,7 +53,6 @@ class TaskController extends BaseController
             
             return $this->sendSuccess($data);
         } catch (\Exception $ex) {
-            dd($ex);
             Helper::trackingError($ex->getMessage());   
             return $this->sendError('Lỗi Server');
         }
@@ -64,7 +63,7 @@ class TaskController extends BaseController
         try {
             DB::beginTransaction();
             $data = $this->getData($request);
-            $data['status_id'] = 1;
+            $data['status_id'] = $request->status_id ?? 1;
             $data['created_by'] = $request->userId; 
             $data['created_at'] = now();
 
@@ -109,35 +108,45 @@ class TaskController extends BaseController
     public function update(Request $request, $id)
     {
         try{
-            DB::beginTransaction();
-            $data = $this->getData($request);
-            unset($data['status_id']);
-            
-            $data['url_done'] = $request->url_done ?? null;
-            $data['updated_by'] = $request->userId;
-            $data['updated_at'] = now();
+            $task = $this->taskRepository->getTaskById($id);
+            if (in_array($task->status_id, [1, 2, 6])) {
+                DB::beginTransaction();
+                $task_images = [];
+                $img_url = [];
+                if ($task->status_id == 6) {
+                    $data['url_done'] = $request->url_done ?? null;
+                } else {
+                    $data = $this->getData($request);
+                    unset($data['status_id']);
 
-            $task = $this->taskRepository->updateTask($id, $data);
-            
-            $task_images = $request->file ?? [];  
-            $img_url = $request->imageUrl ?? [];
-
-            if (!empty($task_images)) {
-                DB::table('task_images')->where('task_id', $task->id)->whereNotIn('image_url', $img_url)->delete();
-                foreach($task_images as $image) {
-                    $url = $this->saveImageTask($image);
-                    $data_image = [
-                        'task_id' => $task->id,
-                        'image_url' => $url
-                    ];
-                    DB::table('task_images')->insert($data_image);  
+                    $task_images = $request->file ?? [];  
+                    $img_url = $request->imageUrl ?? [];
                 }
+                
+                $data['updated_by'] = $request->userId;
+                $data['updated_at'] = now();
+    
+                $task = $this->taskRepository->updateTask($id, $data);
+                
+                if (!empty($task_images)) {
+                    DB::table('task_images')->where('task_id', $task->id)->whereNotIn('image_url', $img_url)->delete();
+                    foreach($task_images as $image) {
+                        $url = $this->saveImageTask($image);
+                        $data_image = [
+                            'task_id' => $task->id,
+                            'image_url' => $url
+                        ];
+                        DB::table('task_images')->insert($data_image);  
+                    }
+                }
+    
+                DB::commit();   
+                Helper::trackingInfo(json_encode($request->all()));
+                return $this->sendSuccess($data);
             }
 
-            DB::commit();   
-            Helper::trackingInfo(json_encode($request->all()));
-            return $this->sendSuccess($data);
-
+            return $this->sendError('Không có quyền cập nhật', 403);
+            
         } catch (\Exception $e) {
             DB::rollBack();
             Helper::trackingError($e->getMessage());

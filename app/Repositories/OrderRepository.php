@@ -55,7 +55,6 @@ class OrderRepository implements OrderRepositoryInterface
                 $query->where('orders.is_push', false)->where('is_approval', true);
             } else {
                 $query->where('orders.is_push', false)->where('is_approval', false);
-                $query->orderByRaw('orders.note IS NULL');
             }
         }
 
