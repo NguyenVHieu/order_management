@@ -107,46 +107,44 @@ class TaskController extends BaseController
 
     public function update(Request $request, $id)
     {
-        try{
+        try {
+            Helper::trackingInfo('Request update task: ' .json_encode($request->all()));
             $task = $this->taskRepository->getTaskById($id);
-            if (in_array($task->status_id, [1, 2, 6])) {
-                DB::beginTransaction();
-                $task_images = [];
-                $img_url = [];
-                if ($task->status_id == 6) {
-                    $data['url_done'] = $request->url_done ?? null;
-                } else {
-                    $data = $this->getData($request);
-                    unset($data['status_id']);
-
-                    $task_images = $request->file ?? [];  
-                    $img_url = $request->imageUrl ?? [];
-                }
-                
-                $data['updated_by'] = $request->userId;
-                $data['updated_at'] = now();
-    
-                $task = $this->taskRepository->updateTask($id, $data);
-                
-                if (!empty($task_images)) {
-                    DB::table('task_images')->where('task_id', $task->id)->whereNotIn('image_url', $img_url)->delete();
-                    foreach($task_images as $image) {
-                        $url = $this->saveImageTask($image);
-                        $data_image = [
-                            'task_id' => $task->id,
-                            'image_url' => $url
-                        ];
-                        DB::table('task_images')->insert($data_image);  
-                    }
-                }
-    
-                DB::commit();   
-                Helper::trackingInfo(json_encode($request->all()));
-                return $this->sendSuccess($data);
+            $userId = Auth::user()->id;
+            
+            if (!$this->hasUpdatePermission($task, $userId)) {
+                return $this->sendError('Không có quyền cập nhật', 403);
             }
 
-            return $this->sendError('Không có quyền cập nhật', 403);
+            DB::beginTransaction();
+
+            $data = ($task->status_id == 6 && $userId == $task->design_recipient_id) ? ['url_done' => $request->url_done ?? null] : $this->getUpdateData($request, $task);
+
+            $data['updated_by'] = $userId;
+            $data['updated_at'] = now();
+
+            $this->taskRepository->updateTask($id, $data);
+
+            if (in_array($task->status_id, [1, 2])) {
+                $taskImages = $request->file ?? [];  
+                $imgUrls = $request->imageUrl ?? [];
+                
+                if (!empty($taskImages)) {
+                    DB::table('task_images')->where('task_id', $task->id)->whereNotIn('image_url', $imgUrls)->delete();
+                    foreach ($taskImages as $image) {
+                        $url = $this->saveImageTask($image);
+                        DB::table('task_images')->insert([
+                            'task_id' => $task->id,
+                            'image_url' => $url
+                        ]);
+                    }
+                }
+            }
+    
+            DB::commit();
             
+            return $this->sendSuccess($data);
+                
         } catch (\Exception $e) {
             DB::rollBack();
             Helper::trackingError($e->getMessage());
@@ -154,19 +152,32 @@ class TaskController extends BaseController
         }
     }
 
+    protected function getUpdateData(Request $request, $task)
+    {
+        $data = $this->getData($request);
+        unset($data['status_id']);
+        return $data;
+    }
+
     public function changeStatus(Request $request)
     {
         try {
             DB::beginTransaction();
             $id = $request->id;
+            $userId = Auth::user()->id; 
+            $userTypeId = Auth::user()->user_type_id;
+
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
             $task = $this->taskRepository->getTaskById($id);
+            $status_id = $status->id;
+
+            if (!$this->hasChangeStatusPermission($request->status, $task->design_recipient_id, $userId, $userTypeId)) {
+                return $this->sendError('Không có quyền cập nhật', 403);
+            }
 
             if (!$task || !$status) {
                 return $this->sendError('Không tìm thấy task hoặc status'); 
             }
-
-            $status_id = $status->id;
 
             $data = [
                 'status_id' => $status_id,
@@ -174,11 +185,12 @@ class TaskController extends BaseController
                 'updated_by' => Auth::user()->id,
             ];
 
-            if($status_id == 3 && empty($data['deadline'])) {
+            if($request->status === 'in_progress' && empty($data['deadline'])) {
+                $data['design_recipient_id'] = Auth::user()->id;
                 $data['deadline'] = now()->addDays(1);
             }
 
-            if ($status_id == 7) {
+            if ($request->status === 'done') {
                 $data['is_done'] = 1;
                 $data['done_at'] = now();
             }
@@ -305,5 +317,26 @@ class TaskController extends BaseController
             return $this->sendError('Lỗi Server');
         }
     }
+
+    protected function hasUpdatePermission($task, $userId)
+    {
+        return ($task->status_id == 6 && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2]) && $userId == $task->created_by);
+    }
+
+
+
+    protected function hasChangeStatusPermission($status, $design_recipient_id, $userId, $userTypeId)
+    {
+        if (in_array($userTypeId, [1, 3])) {
+            return in_array($status, ['resource', 'by_order']);
+        }
+
+        if ($userTypeId == 4) {
+            return !in_array($status, ['resource', 'by_order']) &&
+                ($design_recipient_id == $userId || $design_recipient_id === null);
+        }
+
+        return false;
+}
 
 }
