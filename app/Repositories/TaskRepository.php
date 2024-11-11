@@ -94,4 +94,9 @@ class TaskRepository implements TaskRepositoryInterface
         return TaskHistory::where('task_id', $id)->orderBy('created_at', 'DESC')->paginate(5);
     
     }
+
+    public function getTaskDone()
+    {
+        return Task::with(['status', 'images', 'designer', 'createdBy'])->where('status_id', 6)->paginate(12);
+    }
 }

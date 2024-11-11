@@ -341,6 +341,24 @@ class TaskController extends BaseController
         }
 
         return false;
-}
+    }
+
+    public function getTaskDone()
+    {
+        try {
+            $results = $this->taskRepository->getTaskDone();
+            $data = TaskResource::collection($results);
+            $paginator = $data->resource->toArray();
+            $paginator['data'] = $paginator['data'] ?? [];  
+            $data = [
+                'tasks' => $data,
+                'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
+        }   
+    }
 
 }

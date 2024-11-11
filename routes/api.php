@@ -67,6 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/update/{id}', 'update');   
             Route::get('/get-comment/{id}', 'getHistory');
             Route::post('/comment', 'commentTask'); 
+            Route::get('/list-done', 'getTaskDone');
         });
     });
 
