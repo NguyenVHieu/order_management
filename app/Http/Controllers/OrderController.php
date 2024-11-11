@@ -968,6 +968,7 @@ class OrderController extends BaseController
     public function pushOrder(Request $request)
     {
         try {
+            Helper::trackingInfo('Request push order: '. json_encode($request->all())); 
             $placeOrder = $request->place_order ?? null;
             $orders = $request->orders;
             $datas = [];
@@ -1087,6 +1088,7 @@ class OrderController extends BaseController
     {
         try {
             DB::beginTransaction();
+            Helper::trackingInfo('Approval: '. json_encode($request->all())); 
             $ids = $request->ids;
             $type = $request->type ?? 0;
             foreach ($ids as $id) {
