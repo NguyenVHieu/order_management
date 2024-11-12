@@ -170,9 +170,9 @@ class TaskController extends BaseController
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
             $task = $this->taskRepository->getTaskById($id);
             $status_id = $status->id;
-            if (!$this->hasChangeStatusPermission($task->status_id, $request->status, $task->design_recipient_id, $userId, $userTypeId)) {
-                return $this->sendError('Không có quyền cập nhật', 403);
-            }
+            // if (!$this->hasChangeStatusPermission($task->status_id, $request->status, $task->design_recipient_id, $userId, $userTypeId)) {
+            //     return $this->sendError('Không có quyền cập nhật', 403);
+            // }
 
             if (!$task || !$status) {
                 return $this->sendError('Không tìm thấy task hoặc status'); 
