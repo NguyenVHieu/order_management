@@ -26,6 +26,7 @@ class User extends Authenticatable
         'user_type_id',
         'team_id',
         'folder',
+        'avatar',
         'created_by',
         'updated_by'
     ];

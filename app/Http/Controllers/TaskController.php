@@ -228,9 +228,25 @@ class TaskController extends BaseController
     public function initForm() 
     {
         try {
+            $startTime = Carbon::today()->setTime(0, 0, 0);      // 0h (nửa đêm)
+            $endTime = Carbon::today()->setTime(23, 59, 59);      // 23h59 (cuối ngày)
+
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $category_designs = DB::table('category_designs')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();    
-            $designers = DB::table('users')->where('user_type_id', 4)->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
+            $designers = DB::table('users')
+                ->where('user_type_id', 4)
+                ->leftJoin('tasks', function($join) use ($startTime, $endTime) {
+                    $join->on('users.id', '=', 'tasks.design_recipient_id')
+                         ->whereBetween('tasks.created_at', [$startTime, $endTime])
+                         ->whereIn('tasks.status_id', [3, 4, 5]);
+                })
+                ->select([
+                    DB::raw('CAST(users.id AS CHAR) as value'),
+                    'users.name as label',
+                    DB::raw('SUM(CASE WHEN tasks.id IS NOT NULL THEN 1 ELSE 0 END) as task_count')
+                ])
+                ->groupBy('users.id', 'users.name')
+                ->get();
 
             $data = [
                 'templates' => $templates,

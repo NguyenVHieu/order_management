@@ -45,5 +45,24 @@ class Helper {
         return json_encode($info);
     }
 
+    public function saveImage($image)
+    {
+        $dateFolder = now()->format('Ymd');
+        $time = now()->format('his');
+
+        $directory = public_path('users/' . $dateFolder);
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        // $name = rawurlencode($image->getClientOriginalName());
+
+        $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
+
+        $url = asset('users/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
+
+        return $url;
+    }
+
 }
 

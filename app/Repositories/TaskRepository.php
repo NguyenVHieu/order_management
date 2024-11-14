@@ -43,6 +43,14 @@ class TaskRepository implements TaskRepositoryInterface
             });
         }
 
+        if (!empty($params['userId'])) {
+            $query->where('tasks.created_by', $params['userId']);
+        }
+
+        if (!empty($params['design_recipient_id'])) {
+            $query->where('tasks.design_recipient_id', $params['design_recipient_id']);
+        }
+
         if ($params['status_id'] == 7) {
             $daysAgo = Carbon::now()->subDays(6)->startOfDay();
             $today = Carbon::now()->endOfDay();
