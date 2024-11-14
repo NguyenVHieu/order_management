@@ -245,9 +245,10 @@ class TaskController extends BaseController
                 ->select([
                     DB::raw('CAST(users.id AS CHAR) as value'),
                     'users.name as label',
+                    'users.avatar',
                     DB::raw('SUM(CASE WHEN tasks.id IS NOT NULL THEN 1 ELSE 0 END) as task_count')
                 ])
-                ->groupBy('users.id', 'users.name')
+                ->groupBy('users.id', 'users.name', 'users.avatar')
                 ->get();
 
             $data = [
@@ -258,6 +259,7 @@ class TaskController extends BaseController
 
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
+            dd($th);
             Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi Server');
         } 
