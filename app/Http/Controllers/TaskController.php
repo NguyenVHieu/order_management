@@ -32,6 +32,7 @@ class TaskController extends BaseController
             if (!$status) {
                 return $this->sendError('Không tìm thấy status'); 
             }
+
             $params = [
                 'status_id' => $status->id,
                 'user_id' => Auth::user()->id,
@@ -48,8 +49,22 @@ class TaskController extends BaseController
             $paginator = $tasks->resource->toArray();
             $paginator['data'] = $paginator['data'] ?? [];  
 
+            
+
+            $columns = [
+                DB::raw('CAST(users.id AS CHAR) as value'),
+                'users.name as label',
+                'users.avatar',
+            ];
+    
+            $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
+
+            $sellers = $this->getDataUser($columns);
+
             $data = [
                 'tasks' => $tasks,
+                'designers' => $designers,   
+                'sellers' => $sellers,  
                 'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
             
@@ -259,7 +274,6 @@ class TaskController extends BaseController
 
             return $this->sendSuccess($data);
         } catch (\Throwable $th) {
-            dd($th);
             Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi Server');
         } 
@@ -378,6 +392,22 @@ class TaskController extends BaseController
             Helper::trackingError($ex->getMessage());
             return $this->sendError($ex->getMessage());
         }   
+    }
+
+    public function getDataUser($columns)
+    {
+        $userTypeId = Auth::user()->user_type_id ?? -1; 
+        $teamId = Auth::user()->team_id;    
+
+        $seller = [];   
+
+        if ($userTypeId == -1) {
+            $seller = DB::table('users')->where('user_type_id', 1)->select($columns)->get(); 
+        } else if ($userTypeId == 3) {
+            $seller = DB::table('users')->where('user_type_id', 1)->where('team_id', $teamId)->select($columns)->get();
+        } 
+
+        return $seller;
     }
 
 }
