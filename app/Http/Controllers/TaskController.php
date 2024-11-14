@@ -135,7 +135,7 @@ class TaskController extends BaseController
 
             DB::beginTransaction();
 
-            $data = ($task->status_id == 6 && $userId == $task->design_recipient_id) ? ['url_done' => $request->url_done ?? null] : $this->getUpdateData($request, $task);
+            $data = $this->getUpdateData($request);
 
             $data['updated_by'] = $userId;
             $data['updated_at'] = now();
@@ -169,9 +169,10 @@ class TaskController extends BaseController
         }
     }
 
-    protected function getUpdateData(Request $request, $task)
+    protected function getUpdateData(Request $request)
     {
         $data = $this->getData($request);
+        $data['url_done'] = $request->url_done ?? null; 
         unset($data['status_id']);
         return $data;
     }
@@ -353,7 +354,7 @@ class TaskController extends BaseController
 
     protected function hasUpdatePermission($task, $userId)
     {
-        return ($task->status_id == 6 && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2]) && $userId == $task->created_by);
+        return (in_array($task->status_id, [3, 4, 5]) && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2]) && $userId == $task->created_by);
     }
 
 
