@@ -848,6 +848,7 @@ class OrderController extends BaseController
                         "first_name" => $order->first_name,
                         "last_name" => $order->last_name,
                         "country_code" => $country->iso_alpha_2,
+                        "province" => $order->state,    
                         "city" => $order->city,
                         "zip" => $order->zip,
                         "address_1" => $order->address,
