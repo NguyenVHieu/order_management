@@ -416,4 +416,37 @@ class TaskController extends BaseController
         return $seller;
     }
 
+    public function reportTask(Request $request)
+    {
+        try {
+            $userTypeId = Auth::user()->user_type_id ?? -1;
+            if ($userTypeId == -1 || $userTypeId == 3) {
+                $startOfMonth = Carbon::createFromFormat('m-Y', $request->date)->startOfMonth();
+                $endOfMonth = Carbon::createFromFormat('m-Y', $request->date)->endOfMonth();
+                $params = [
+                    'startDate' => $startOfMonth,
+                    'endDate' => $endOfMonth,
+                    'userTypeId' => $userTypeId,    
+                    'teamId' => Auth::user()->team_id ?? -1
+                ];
+                $seller = $this->taskRepository->reportTaskBySeller($params);
+                $designer = $this->taskRepository->reportTaskByDesigner($params);
+                $total = $this->taskRepository->totalCountTask($params);
+                $data = [
+                    'seller' => $seller,
+                    'designer' => $designer,
+                    'total' => $total
+                ];
+                return $this->sendSuccess($data);
+                
+            } else {
+                return $this->sendError('Không có quyền truy cập', 403);
+            }
+        } catch (\Exception $ex) {
+            dd($ex);
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
+        }
+    }
+
 }
