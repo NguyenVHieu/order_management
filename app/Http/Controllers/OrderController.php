@@ -776,7 +776,7 @@ class OrderController extends BaseController
                             ]
                         ],
 
-                        "shippings" => [$order->is_shipping == true ? 2 : 0]
+                        "shippings" => [$order->is_shipping == true ? 3 : 0]
                     ];
                     if (!empty($order->img_2)) {
                         $item["designs"][] = [
