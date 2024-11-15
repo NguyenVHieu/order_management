@@ -1156,17 +1156,21 @@ class OrderController extends BaseController
                 $size = str_replace('x', '" × ', $size). '"';
             }
 
-            $size = str_replace('″', '"', $size);
-            $size = str_replace('x', '×', $size);
-            $color = str_replace('″', '"', $color);
+            if (strpos($variant['options']['size'],'"') === false && strpos($size, '×') !== false) {
+                $variant['options']['size'] = str_replace("''", '"', $variant['options']['size']);
+                
+            }
+            // $size = str_replace('″', '"', $size);
+            // $size = str_replace('x', '×', $size);
+            // $color = str_replace('″', '"', $color);
             $resultColor = true;
             $resultSize = true;
 
-            if ($color != null) {
+            if (!empty($variant['options']['color'])) {
                 $resultColor = in_array($color, $variant['options']);
             }
 
-            if ($size != null) {
+            if (!empty($variant['options']['size'])) {
                 // $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
                 $resultSize = in_array($size, $variant['options']);
             }
