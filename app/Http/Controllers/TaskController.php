@@ -56,11 +56,16 @@ class TaskController extends BaseController
                 'users.name as label',
                 'users.avatar',
             ];
+            
+
+            if (Auth::user()->user_type_id == 4) {
+                $designers = [];
+                $sellers = [];
+            } else {
+                $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
+                $sellers = $this->getDataUser($columns);
+            }
     
-            $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
-
-            $sellers = $this->getDataUser($columns);
-
             $data = [
                 'tasks' => $tasks,
                 'designers' => $designers,   
