@@ -330,7 +330,7 @@ class WebhookController extends BaseController
                     $order = Order::where('order_id', $data['id'])->first();
                     if ($order) {
                         $order->cost = (float)$data['total_price'];
-                        $order->status = $data['status'];
+                        $order->status_order = $data['status'];
                         $order->save();
                     }
                 }
