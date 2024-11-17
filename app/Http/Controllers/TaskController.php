@@ -253,6 +253,8 @@ class TaskController extends BaseController
         try {
             $startTime = Carbon::today()->setTime(0, 0, 0);      // 0h (nửa đêm)
             $endTime = Carbon::today()->setTime(23, 59, 59);      // 23h59 (cuối ngày)
+            $product = config('constants.productTasks');
+            $platform_size = config('constants.platformSizeTasks');
 
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $category_designs = DB::table('category_designs')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();    
@@ -275,7 +277,9 @@ class TaskController extends BaseController
             $data = [
                 'templates' => $templates,
                 'category_designs' => $category_designs,
-                'designers' => $designers
+                'designers' => $designers,
+                'product' => $product,
+                'platform_size' => $platform_size
             ];
 
             return $this->sendSuccess($data);
