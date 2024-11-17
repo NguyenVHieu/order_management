@@ -443,7 +443,31 @@ class TaskController extends BaseController
                 return $this->sendError('Không có quyền truy cập', 403);
             }
         } catch (\Exception $ex) {
-            dd($ex);
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
+        }
+    }
+
+    public function getTemplate(Request $request)
+    {
+        try{
+            $product = $request->product ?? null;
+            $platform_size = $request->platform_size ?? null;
+
+            $template = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label']);
+
+            if (!empty($product)) {
+                $template->where('product', $product);
+            }
+            
+            if (!empty($platform_size)) {
+                $template->where('platform_size', $platform_size);
+            }
+                
+            $data = $template->get();
+            return $this->sendSuccess($data);
+
+        } catch (\Exception $ex) {
             Helper::trackingError($ex->getMessage());
             return $this->sendError($ex->getMessage());
         }
