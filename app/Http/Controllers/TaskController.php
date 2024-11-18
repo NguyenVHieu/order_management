@@ -261,9 +261,8 @@ class TaskController extends BaseController
         try {
             $startTime = Carbon::today()->setTime(0, 0, 0);      // 0h (nửa đêm)
             $endTime = Carbon::today()->setTime(23, 59, 59);      // 23h59 (cuối ngày)
-            $product = config('constants.productTasks');
-            $platform_size = config('constants.platformSizeTasks');
-
+            $product = DB::table('product_tasks')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
+            $platform_size = DB::table('platform_size_tasks')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $category_designs = DB::table('category_designs')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();    
             $designers = DB::table('users')
@@ -463,17 +462,17 @@ class TaskController extends BaseController
     public function getTemplate(Request $request)
     {
         try{
-            $product = $request->product ?? null;
-            $platform_size = $request->platform_size ?? null;
+            $product_id = $request->product_id ?? null;
+            $platform_size_id = $request->platform_size_id ?? null;
 
             $template = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label']);
 
-            if (!empty($product)) {
-                $template->where('product', $product);
+            if (!empty($product_id)) {
+                $template->where('product_task_id', $product_id);
             }
             
-            if (!empty($platform_size)) {
-                $template->where('platform_size', $platform_size);
+            if (!empty($platform_size_id)) {
+                $template->where('platform_size_task_id', $platform_size_id);
             }
                 
             $data = $template->get();
@@ -483,6 +482,17 @@ class TaskController extends BaseController
             Helper::trackingError($ex->getMessage());
             return $this->sendError($ex->getMessage());
         }
+    }
+
+    public function getSizeByProductId($id)
+    {
+        try {
+            $sizes = DB::table('platform_size_tasks')->where('product_task_id', $id)->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
+            return $this->sendSuccess($sizes);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
+        }   
     }
 
 }

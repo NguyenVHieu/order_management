@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/report', 'reportTask');   
             Route::get('/get-template', 'getTemplate');
             Route::get('/init-index', 'initIndex'); 
+            Route::get('/get-platform-size/{id}', 'getSizeByProductId');
         });
     });
 
