@@ -78,8 +78,11 @@ class UserController extends BaseController
                 'created_by' => Auth::user()->id,
                 'created_at' => date('Y-m-d H:i:s'),
                 'folder' => implode(', ', $request->folder),
-                'avatar' => (new Helper())->saveImage($request->avatar)
             ];
+
+            if (!empty($request->avatar)) {
+                $columns['avatar'] = (new Helper())->saveImage($request->avatar);
+            }
 
             if ($id > 0) {
                 $data = User::find($id);
