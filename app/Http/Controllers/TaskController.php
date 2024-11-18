@@ -25,6 +25,33 @@ class TaskController extends BaseController
         $this->taskRepository = $taskRepository;
     }
 
+    public function initIndex()
+    {
+        try {
+            $columns = [
+                DB::raw('CAST(users.id AS CHAR) as value'),
+                'users.name as label',
+                'users.avatar',
+            ];
+
+            if (Auth::user()->user_type_id == 4) {
+                $designers = [];
+                $sellers = [];
+            } else {
+                $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
+                $sellers = $this->getDataUser($columns);
+            }
+            $data = [
+                'designers' => $designers,
+                'sellers' => $sellers,
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError('Lỗi Server');
+        }
+    }
+
     public function index(Request $request)
     {
         try {
@@ -47,29 +74,10 @@ class TaskController extends BaseController
 
             $tasks = TaskResource::collection($results);
             $paginator = $tasks->resource->toArray();
-            $paginator['data'] = $paginator['data'] ?? [];  
-
-            
-
-            $columns = [
-                DB::raw('CAST(users.id AS CHAR) as value'),
-                'users.name as label',
-                'users.avatar',
-            ];
-            
-
-            if (Auth::user()->user_type_id == 4) {
-                $designers = [];
-                $sellers = [];
-            } else {
-                $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
-                $sellers = $this->getDataUser($columns);
-            }
+            $paginator['data'] = $paginator['data'] ?? [];     
     
             $data = [
                 'tasks' => $tasks,
-                'designers' => $designers,   
-                'sellers' => $sellers,  
                 'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
             
