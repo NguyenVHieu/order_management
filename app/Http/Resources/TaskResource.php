@@ -29,6 +29,10 @@ class TaskResource extends JsonResource
             'done_at' => $this->done_at,
             'template' => $this->template->name ?? '',
             'template_id' => $this->template->id ?? null,
+            'product_id' => $this->template->product->id ?? null,
+            'product' => $this->template->product->name ?? '',
+            'platform_size' => $this->template->platformSize->name ?? '',    
+            'platform_size_id' => $this->template->platformSize->id ?? null,
             'category' => $this->category->name ?? '',
             'category_design_id' => $this->category->id ?? null,
             'url_done' => $this->url_done

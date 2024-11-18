@@ -64,7 +64,7 @@ class TaskRepository implements TaskRepositoryInterface
 
     public function getTaskById($id)
     {
-        return Task::with(['images', 'status'])->findOrFail($id);
+        return Task::with(['images', 'status', 'template.product', 'template.platformSize'])->findOrFail($id);
     }
 
     public function createTask(array $data)

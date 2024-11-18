@@ -26,17 +26,17 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('isAdmin')->group(function () {
-        Route::prefix('users')->group(function () {
-            Route::controller(UserController::class)->group(function(){
-                Route::get('/', 'index');
-                Route::post('/', 'store');
-                Route::get('/create', 'create');
-                Route::get('/{id}', 'edit');
-                Route::delete('/{id}', 'destroy');
-            });
-            
-        });
         Route::delete('/delete-orders/{id}', [OrderController::class, 'deleteOrder']);
+    });
+
+    Route::prefix('users')->group(function () {
+        Route::controller(UserController::class)->group(function(){
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::get('/create', 'create');
+            Route::get('/{id}', 'edit');
+            Route::delete('/{id}', 'destroy');
+        });
     });
 
     Route::prefix('orders')->group(function () {
