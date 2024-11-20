@@ -250,6 +250,7 @@ class TaskController extends BaseController
             'status_id' => $request->status_id,
             'category_design_id' => $request->category_design_id ?? null,
             'design_recipient_id' => $request->design_recipient_id ?? null,
+            'template_id' => $request->template_id ?? null,
             'count_product' => $request->count_product,
         ];
 
