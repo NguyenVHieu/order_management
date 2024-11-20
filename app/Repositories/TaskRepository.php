@@ -162,4 +162,20 @@ class TaskRepository implements TaskRepositoryInterface
 
         return $result ? (float)$result->total_count : 0;
     }   
+
+
+    public function reportTaskByTeam($params)
+    {
+        $query = Task::select(
+            DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
+            'teams.name AS team_name'
+        )
+        ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
+        ->leftJoin('teams', 'teams.id', '=', 'users.team_id') // Join với bảng teams
+        ->where('tasks.status_id', 6)
+        ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']])
+        ->groupBy('teams.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
+
+        return $query->get();
+    }
 }

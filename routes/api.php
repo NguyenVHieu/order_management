@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/get-template', 'getTemplate');
             Route::get('/init-index', 'initIndex'); 
             Route::get('/get-platform-size/{id}', 'getSizeByProductId');
+            Route::post('/notification-lark', 'notificationLark');
         });
     });
 

@@ -19,9 +19,12 @@ use Carbon\Carbon;
 class TaskController extends BaseController
 {
     protected $taskRepository;
+    private $baseUrl = 'https://open.feishu.cn/open-apis/';
+    private $client;
 
     public function __construct(TaskRepository $taskRepository)
     {
+        $this->client = new Client();
         $this->taskRepository = $taskRepository;
     }
 
@@ -449,6 +452,11 @@ class TaskController extends BaseController
                     'designer' => $designer,
                     'total' => $total
                 ];
+
+                if ($userTypeId == -1) {
+                    $data['team'] = $this->taskRepository->reportTaskByTeam($params);
+                }
+
                 return $this->sendSuccess($data);
                 
             } else {
@@ -494,6 +502,99 @@ class TaskController extends BaseController
             Helper::trackingError($ex->getMessage());
             return $this->sendError($ex->getMessage());
         }   
+    }
+
+    public function notificationLark(Request $request)
+    {
+    try {
+            // 1. Đăng nhập (Lấy tenant_access_token)
+            $tenantAccessToken = $this->getTenantAccessToken();
+
+            $user = User::find($request->userId);
+            $text = $request->text;
+            //2. Tìm OpenID
+            $openId = $this->findOpenId($tenantAccessToken, $user->email); // Thay email cần tìm
+
+            // // 3. Gửi tin nhắn
+            $this->sendMessage($tenantAccessToken, $openId, $text);
+
+            return $this->sendSuccess('ok');
+        } catch (\Exception $e) {
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
+
+    }
+
+    private function getTenantAccessToken()
+    {
+        $url = $this->baseUrl . 'auth/v3/tenant_access_token/internal';
+
+        $response = $this->client->post($url, [
+            'json' => [
+                'app_id' => env('APP_ID_LARK'),
+                'app_secret' => env('APP_SECRET_LARK'), // Thay bằng app_secret của bạn
+            ],
+        ]);
+
+        $body = json_decode($response->getBody(), true);
+
+        if (!isset($body['tenant_access_token'])) {
+            throw new \Exception('Failed to retrieve tenant_access_token');
+        }
+
+        return $body['tenant_access_token'];
+    }
+
+    private function findOpenId($tenantAccessToken, $email)
+    {
+        $url = 'https://open.larksuite.com/open-apis/contact/v3/users/batch_get_id';
+
+        $response = $this->client->post($url, [
+            'query' => [
+                'user_id_type' => 'open_id'
+            ],
+            'json' => [
+                'emails' => [$email],
+            ],
+            'headers' => [
+                'Authorization' => 'Bearer ' . $tenantAccessToken,
+            ],
+        ]);
+
+        $body = json_decode($response->getBody(), true);
+
+        if (!isset($body['data']['user_list'][0]['user_id'])) {
+            throw new \Exception('Failed to find OpenID for email: ' . $email);
+        }
+
+        return $body['data']['user_list'][0]['user_id'];
+    }
+
+    private function sendMessage($tenantAccessToken, $openId, $message)
+    {
+        $url = $this->baseUrl . 'message/v4/send/';
+
+        $response = $this->client->post($url, [
+            'json' => [
+                'open_id' => $openId,
+                'msg_type' => 'text',
+                'content' => [
+                    'text' => $message,
+                ],
+            ],
+            'headers' => [
+                'Authorization' => 'Bearer ' . $tenantAccessToken,
+            ],
+        ]);
+
+        $body = json_decode($response->getBody(), true);
+
+        if ($body['code'] !== 0) {
+            throw new \Exception('Failed to send message: ' . $body['msg']);
+        }
+
+        return $body;
     }
 
 }
