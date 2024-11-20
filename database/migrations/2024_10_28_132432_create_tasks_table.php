@@ -20,6 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by');
             $table->unsignedBigInteger('category_design_id');
             $table->unsignedBigInteger('designer_recipient_id')->nullable();
+            $table->unsignedBigInteger('template_id')->nullable();
             $table->timestamps();
             $table->timestamp('deadline')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

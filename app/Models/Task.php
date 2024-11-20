@@ -22,7 +22,8 @@ class Task extends Model
         'is_done',
         'done_at',
         'created_by',
-        'created_at'
+        'created_at',
+        'template_id',  
     ];
 
     public function status()
@@ -52,7 +53,7 @@ class Task extends Model
 
     public function template()
     {
-        return $this->belongsTo(Template::class, 'category_design_id');
+        return $this->belongsTo(Template::class, 'template_id');
     }
 
     public function category()
