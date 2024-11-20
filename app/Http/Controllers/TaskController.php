@@ -436,11 +436,9 @@ class TaskController extends BaseController
         try {
             $userTypeId = Auth::user()->user_type_id ?? -1;
             if ($userTypeId == -1 || $userTypeId == 3) {
-                $startOfMonth = Carbon::createFromFormat('m-Y', $request->date)->startOfMonth();
-                $endOfMonth = Carbon::createFromFormat('m-Y', $request->date)->endOfMonth();
                 $params = [
-                    'startDate' => $startOfMonth,
-                    'endDate' => $endOfMonth,
+                    'startDate' => $request->start_date,
+                    'endDate' => $request->end_date,
                     'userTypeId' => $userTypeId,    
                     'teamId' => Auth::user()->team_id ?? -1
                 ];
