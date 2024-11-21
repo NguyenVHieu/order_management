@@ -383,6 +383,8 @@ class TaskController extends BaseController
     {
         if (!in_array($status_old, [1, 2]) && in_array($status, ['resource', 'by_order'])) {
             return false;
+        } else if (in_array($status_old, [1, 2]) && $status === 'done') {
+            return false;
         }
 
         if (in_array($userTypeId, [1, 3])) {
