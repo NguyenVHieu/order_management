@@ -104,10 +104,59 @@ class TaskRepository implements TaskRepositoryInterface
     
     }
 
-    public function getTaskDone()
-    {
-        return Task::with(['status', 'images', 'designer', 'createdBy'])->where('status_id', 6)->paginate(12);
-    }
+        public function getTaskDone($params)
+        {
+            $query = Task::with(['status', 'images', 'designer', 'createdBy']);
+
+            if (!empty($params['userTypeId']) && $params['userTypeId'] != -1) {
+                
+                if (!empty($params['userTypeId']) && $params['userTypeId'] != -1) {
+                    if ($params['userTypeId'] == 3) {
+                        $query->whereHas('createdBy.team', function ($q) use ($params) {
+                            $q->where('id', $params['teamId']);
+                        });
+                    } elseif ($params['userTypeId'] == 1) {
+                        $query->where('created_by', $params['userId']);
+                    } elseif ($params['userTypeId'] == 4) {
+                        $query->where('design_recipient_id', $params['userId']);
+                    }
+                }
+            }
+
+            if (!empty($params['keyword'])) {
+                $query->where(function($q) use ($params) {
+                    $q->where('tasks.title', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('tasks.description', 'like', '%' . $params['keyword'] . '%');
+                });
+            }
+            
+            $query->where('status_id', 6);
+
+               // Xử lý tham số sort
+        if (!empty($params['sort'])) {
+            switch ($params['sort']) {
+                case 1:
+                    $query->orderBy('done_at', 'ASC'); // Sắp xếp theo time_done tăng dần
+                    break;
+                case 2:
+                    $query->orderBy('done_at', 'DESC'); // Sắp xếp theo time_done giảm dần
+                    break;
+                case 3:
+                    $query->orderBy('created_at', 'ASC'); // Sắp xếp theo created_at tăng dần
+                    break;
+                case 4:
+                    $query->orderBy('created_at', 'DESC'); // Sắp xếp theo created_at giảm dần
+                    break;
+                default:
+                    $query->orderBy('created_at', 'DESC'); // Mặc định
+            }
+        } else {
+            // Sắp xếp mặc định nếu không có sort
+            $query->orderBy('created_at', 'DESC');
+        }
+
+            return $query->paginate(32);
+        }
 
     public function reportTaskByDesigner($params)
     {

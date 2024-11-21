@@ -145,9 +145,9 @@ class TaskController extends BaseController
             $task = $this->taskRepository->getTaskById($id);
             $userId = Auth::user()->id;
             
-            if (!$this->hasUpdatePermission($task, $userId)) {
-                return $this->sendError('Không có quyền cập nhật', 403);
-            }
+            // if (!$this->hasUpdatePermission($task, $userId)) {
+            //     return $this->sendError('Không có quyền cập nhật', 403);
+            // }
 
             DB::beginTransaction();
 
@@ -204,9 +204,9 @@ class TaskController extends BaseController
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
             $task = $this->taskRepository->getTaskById($id);
             $status_id = $status->id;
-            if (!$this->hasChangeStatusPermission($task->status_id, $request->status, $task->design_recipient_id, $userId, $userTypeId)) {
-                return $this->sendError('Không có quyền cập nhật', 403);
-            }
+            // if (!$this->hasChangeStatusPermission($task->status_id, $request->status, $task->design_recipient_id, $userId, $userTypeId)) {
+            //     return $this->sendError('Không có quyền cập nhật', 403);
+            // }
 
             if (!$task || !$status) {
                 return $this->sendError('Không tìm thấy task hoặc status'); 
@@ -399,10 +399,18 @@ class TaskController extends BaseController
         return false;
     }
 
-    public function getTaskDone()
+    public function getTaskDone(Request $request)
     {
         try {
-            $results = $this->taskRepository->getTaskDone();
+            $params = [
+                'userId' => Auth::user()->id,
+                'userTypeId' => Auth::user()->user_type_id ?? -1,
+                'teamId' => Auth::user()->team_id ?? -1,
+                'keyword' => $request->keyword ?? '',
+                'sort' => $request->sort ?? 1,
+            ];
+            $results = $this->taskRepository->getTaskDone($params);
+
             $data = TaskResource::collection($results);
             $paginator = $data->resource->toArray();
             $paginator['data'] = $paginator['data'] ?? [];  

@@ -58,4 +58,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(Shop::class, 'id', 'shop_id');
     }
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class, 'team_id');
+    }
 }
