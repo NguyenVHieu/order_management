@@ -1,6 +1,7 @@
 <?php
 namespace App\Repositories;
 
+use App\Models\KpiUser;
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use App\Models\Task;
 use App\Models\TaskHistory;
@@ -52,8 +53,8 @@ class TaskRepository implements TaskRepositoryInterface
             $query->where('tasks.design_recipient_id', $params['design_recipient_id']);
         }
 
-        if ($params['status_id'] == 7) {
-            $daysAgo = Carbon::now()->subDays(6)->startOfDay();
+        if ($params['status_id'] == 6) {
+            $daysAgo = Carbon::now()->subDays(13)->startOfDay();
             $today = Carbon::now()->endOfDay();
             $query->whereBetween('tasks.created_at', [$daysAgo, $today]);
             return $query->get();
@@ -160,15 +161,22 @@ class TaskRepository implements TaskRepositoryInterface
 
     public function reportTaskByDesigner($params)
     {
+        $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+
         $query = Task::select(
             DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
-            'users2.name AS recipient_name'
+            'users2.name AS recipient_name',
+            'kpi_users.kpi AS kpi'
         )
         ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
         ->leftJoin('users as users2', 'users2.id', '=', 'tasks.design_recipient_id') // Join với bảng users2
+        ->leftJoin('kpi_users', function($join) use ($year_month) {
+            $join->on('kpi_users.user_id', '=', 'users2.id')
+            ->where('kpi_users.year_month', $year_month);
+        })
         ->where('tasks.status_id', 6)
         ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']])
-        ->groupBy('users2.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
+        ->groupBy('users2.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
         if ($params['userTypeId'] != -1) {
             $query->where('users.team_id', $params['teamId']);
         }
@@ -178,14 +186,21 @@ class TaskRepository implements TaskRepositoryInterface
 
     public function reportTaskBySeller($params)
     {
+        $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+
         $query = Task::select(
             DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
-            'users.name AS seller_name'
+            'users.name AS seller_name',
+            'kpi_users.kpi AS kpi'
         )
         ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
+        ->leftJoin('kpi_users', function($join) use ($year_month) {
+            $join->on('kpi_users.user_id', '=', 'users.id')
+            ->where('kpi_users.year_month', $year_month);
+        })
         ->where('tasks.status_id', 6)
         ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']])
-        ->groupBy('users.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
+        ->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
 
         if (!empty($params['userTypeId'] != -1)) {
             $query->where('users.team_id', $params['teamId']);
@@ -227,4 +242,33 @@ class TaskRepository implements TaskRepositoryInterface
 
         return $query->get();
     }
+
+    public function getScoreBySeller($params)
+    {
+        $start_date = Carbon::parse($params['year_month'])->startOfMonth();
+        $end_date = Carbon::parse($params['year_month'])->endOfMonth();
+
+        $query = Task::select(
+            DB::raw('SUM(tasks.count_product) AS total_count'))
+        ->whereBetween('created_at', [$start_date, $end_date])  
+        ->where('tasks.created_by', $params['seller_id'])
+        ->pluck('total_count')
+        ->first();
+
+        return $query;
+    }
+
+    public function getKpiSeller($params)
+    {
+        $query = KpiUser::where('user_id', $params['seller_id'])
+            ->where('year_month', $params['year_month'])
+            ->pluck('kpi')  
+            ->first();
+
+        return $query;  
+
+            
+    }
+
+    
 }
