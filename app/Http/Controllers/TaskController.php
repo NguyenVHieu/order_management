@@ -558,16 +558,22 @@ class TaskController extends BaseController
     public function addKpiUser(Request $request)    
     {
         try {
-            $data = [
-                'year_month' => date('Y-m', strtotime($request->year_month)),   
-                'user_id' => $request->user_id, 
-                'kpi' => $request->kpi,
-            ];
+            $users = $request->users ?? [];
 
-            KpiUser::updateOrCreate(
-                ['year_month' => $data['year_month'], 'user_id' => $data['user_id']],
-                $data
-            );  
+            if (count($users) > 0) {
+                foreach($users as $user) {
+                    $data = [
+                        'year_month' => date('Y-m', strtotime($user['year_month'])),   
+                        'user_id' => $user['user_id'], 
+                        'kpi' => $user['kpi'],
+                    ];
+    
+                    KpiUser::updateOrCreate(
+                        ['year_month' => $data['year_month'], 'user_id' => $data['user_id']],
+                        $data
+                    );  
+                }
+            }
 
             return $this->sendSuccess('ok');
         } catch (\Exception $e) {
