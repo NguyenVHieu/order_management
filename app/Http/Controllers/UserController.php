@@ -190,4 +190,38 @@ class UserController extends BaseController
             return $this->sendError($th->getMessage());
         }
     }
+
+    public function getUserByType($userTypeId)
+    {
+        try {
+            $columns = [
+                DB::raw('CAST(users.id AS CHAR) as value'),
+                'users.name as label',
+                'users.avatar',
+            ];
+
+            $users = DB::table('users')->where('user_type_id', $userTypeId)->select($columns)->get();
+            return $this->sendSuccess($users);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
+        }
+    }
+
+    public function getTypeSellerDesigner()
+    {
+        try {
+            $columns = [
+                DB::raw('CAST(user_types.id AS CHAR) as value'),
+                'user_types.name as label',
+            ];
+
+            $data = DB::table('user_types')->whereIn('name', ['seller', 'designer'])->select($columns)->get();
+
+            return $this->sendSuccess($data);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
+        }
+    }
 }
