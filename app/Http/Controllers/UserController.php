@@ -199,8 +199,14 @@ class UserController extends BaseController
                 'users.name as label',
                 'users.avatar',
             ];
+            $userLogin = Auth::user();
 
-            $users = DB::table('users')->where('user_type_id', $userTypeId)->select($columns)->get();
+            if ($userLogin->user_type_id != null && $userTypeId == 1) {
+                $users = DB::table('users')->where('user_type_id', $userTypeId)->where('team_id', $userLogin->team_id)->select($columns)->get();
+            } else {
+                $users = DB::table('users')->where('user_type_id', $userTypeId)->select($columns)->get();
+            }
+
             return $this->sendSuccess($users);
         } catch (\Exception $ex) {
             Helper::trackingError($ex->getMessage());
