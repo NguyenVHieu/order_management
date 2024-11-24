@@ -36,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/create', 'create');
             Route::get('/{id}', 'edit');
             Route::delete('/{id}', 'destroy');
+            Route::get('/get-user-by-type/{userTypeId}', 'getUserByType');
+            Route::get('/type-seller-designer/get', 'getTypeSellerDesigner');
         });
     });
 
