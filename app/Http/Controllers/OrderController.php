@@ -1143,7 +1143,7 @@ class OrderController extends BaseController
         $size = $params['size'];
         $color = $params['color'];
         $client = new Client();
-        $resVariant = $client->get($this->baseUrlPrintify. "/catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
+        $resVariant = $client->get($this->baseUrlPrintify. "catalog/blueprints/{$blueprint_id}/print_providers/{$provider_id}/variants.json", [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->tokenPrintify,
                 'Content-Type'  => 'application/json',
