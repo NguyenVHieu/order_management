@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use App\Http\Requests\TaskRequest;
 use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskResource;
+use App\Models\KpiUser;
 use App\Models\Task;
 use App\Repositories\TaskRepository;
 use Carbon\Carbon;
@@ -100,6 +101,17 @@ class TaskController extends BaseController
             $data['created_by'] = $request->userId; 
             $data['created_at'] = now();
 
+            $paramScore = [
+                'seller_id' => $data['created_by'],
+                'score_old' => 0,
+                'score_new' => $data['count_product'],
+                'year_month' => now()->format('Y-m')    
+            ];
+
+            if (!$this->checkScoreSeller($paramScore)) {
+                return $this->sendError('Quá số hạng ngạch', 422);
+            }
+
             $task = $this->taskRepository->createTask($data);
             $task_images = $request->file ?? [];  
 
@@ -155,6 +167,17 @@ class TaskController extends BaseController
 
             $data['updated_by'] = $userId;
             $data['updated_at'] = now();
+
+            $params = [
+                'seller_id' => $task->created_by,
+                'score_old' => $task->count_product,
+                'score_new' => $data['count_product'],
+                'year_month' => now()->format('Y-m')
+            ];
+
+            if (!$this->checkScoreSeller($params)) {
+                return $this->sendError('Quá số hạng ngạch', 422);
+            }
 
             $this->taskRepository->updateTask($id, $data);
 
@@ -263,17 +286,14 @@ class TaskController extends BaseController
     public function initForm() 
     {
         try {
-            $startTime = Carbon::today()->setTime(0, 0, 0);      // 0h (nửa đêm)
-            $endTime = Carbon::today()->setTime(23, 59, 59);      // 23h59 (cuối ngày)
             $product = DB::table('product_tasks')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $platform_size = DB::table('platform_size_tasks')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $category_designs = DB::table('category_designs')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();    
             $designers = DB::table('users')
                 ->where('user_type_id', 4)
-                ->leftJoin('tasks', function($join) use ($startTime, $endTime) {
+                ->leftJoin('tasks', function($join) {
                     $join->on('users.id', '=', 'tasks.design_recipient_id')
-                         ->whereBetween('tasks.created_at', [$startTime, $endTime])
                          ->whereIn('tasks.status_id', [3, 4, 5]);
                 })
                 ->select([
@@ -381,18 +401,18 @@ class TaskController extends BaseController
 
     protected function hasChangeStatusPermission($status_old, $status, $design_recipient_id, $userId, $userTypeId)
     {
-        if (!in_array($status_old, [1, 2]) && in_array($status, ['resource', 'by_order'])) {
+        if (!in_array($status_old, [1, 2]) && in_array($status, ['new_design', 'new_order'])) {
             return false;
         } else if (in_array($status_old, [1, 2]) && $status === 'done') {
             return false;
         }
 
         if (in_array($userTypeId, [1, 3])) {
-            return in_array($status, ['resource', 'by_order']);
+            return in_array($status, ['new_design', 'new_order']);
         }
 
         if ($userTypeId == 4) {
-            return !in_array($status, ['resource', 'by_order']) &&
+            return !in_array($status, ['new_design', 'new_order']) &&
                 ($design_recipient_id == $userId || $design_recipient_id === null);
         }
 
@@ -514,7 +534,7 @@ class TaskController extends BaseController
 
     public function notificationLark(Request $request)
     {
-    try {
+        try {
             // 1. Đăng nhập (Lấy tenant_access_token)
             $tenantAccessToken = $this->getTenantAccessToken();
 
@@ -532,6 +552,34 @@ class TaskController extends BaseController
             return $this->sendError($e->getMessage());
         }
 
+    }
+
+
+    public function addKpiUser(Request $request)    
+    {
+        try {
+            $users = $request->users ?? [];
+
+            if (count($users) > 0) {
+                foreach($users as $user) {
+                    $data = [
+                        'year_month' => date('Y-m', strtotime($user['year_month'])),   
+                        'user_id' => $user['user_id'], 
+                        'kpi' => $user['kpi'],
+                    ];
+    
+                    KpiUser::updateOrCreate(
+                        ['year_month' => $data['year_month'], 'user_id' => $data['user_id']],
+                        $data
+                    );  
+                }
+            }
+
+            return $this->sendSuccess('ok');
+        } catch (\Exception $e) {
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
     }
 
     private function getTenantAccessToken()
@@ -603,6 +651,19 @@ class TaskController extends BaseController
         }
 
         return $body;
+    }
+
+    private function checkScoreSeller($params)
+    {
+        
+        $score_current = $this->taskRepository->getScoreBySeller($params) ?? 0;
+        $kpi_seller = $this->taskRepository->getKpiSeller($params) ?? 0;
+        if ($score_current - $params['score_old'] + $params['score_new'] > $kpi_seller) {
+            return false;
+        }
+
+        return true;
+        
     }
 
 }

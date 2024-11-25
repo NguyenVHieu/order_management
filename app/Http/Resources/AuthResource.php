@@ -19,7 +19,7 @@ class AuthResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'email_verified_at' => $this->email_verified_at,
-            'user_type_id' => $this->user_type_id,
+            'user_type_id' => $this->user_type_id ?? 0,
             'is_admin' => $this->is_admin,
             'team_id' => $this->team_id,
             'created_by' => $this->created_by,
