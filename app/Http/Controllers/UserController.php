@@ -98,20 +98,24 @@ class UserController extends BaseController
                 }
                 $data->update($columns);
                 DB::table('user_shops')->where('user_id', $id)->delete();
-                foreach ($shop_ids as $shop_id) {
-                    DB::table('user_shops')->insert([
-                        'user_id' => $id,
-                        'shop_id' => $shop_id
-                    ]);
+                if (count($shop_ids) > 0) {
+                    foreach ($shop_ids as $shop_id) {
+                        DB::table('user_shops')->insert([
+                            'user_id' => $id,
+                            'shop_id' => $shop_id
+                        ]);
+                    }
                 }
             } else {
                 $data = User::create($columns);
                 $user_id = $data->id;
-                foreach ($shop_ids as $shop_id) {
-                    DB::table('user_shops')->insert([
-                        'user_id' => $user_id,
-                        'shop_id' => $shop_id
-                    ]);
+                if (count($shop_ids) > 0) {
+                    foreach ($shop_ids as $shop_id) {
+                        DB::table('user_shops')->insert([
+                            'user_id' => $user_id,
+                            'shop_id' => $shop_id
+                        ]);
+                    }
                 }
             }
             DB::commit();
