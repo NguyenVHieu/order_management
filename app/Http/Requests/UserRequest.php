@@ -22,8 +22,6 @@ class UserRequest extends BaseFormRequest
                 'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users,email,' . $id,
                 'user_type_id' => 'required',
-                'shop_ids' => 'required', 
-                'folder' => 'required',
             ];
         } else {
             return [
@@ -31,8 +29,6 @@ class UserRequest extends BaseFormRequest
                 'email' => 'required|email|max:255|unique:users,email',
                 'password' => 'required|max:255',
                 'user_type_id' => 'required',
-                'shop_ids' => 'required',  
-                'folder' => 'required',  
             ];
         }
     }
