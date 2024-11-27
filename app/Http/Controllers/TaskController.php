@@ -394,7 +394,7 @@ class TaskController extends BaseController
 
     protected function hasUpdatePermission($task, $userId)
     {
-        return (in_array($task->status_id, [3, 4, 5]) && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2]) && $userId == $task->created_by);
+        return (in_array($task->status_id, [3, 4]) && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2, 5]) && $userId == $task->created_by);
     }
 
 
@@ -408,11 +408,11 @@ class TaskController extends BaseController
         }
 
         if (in_array($userTypeId, [1, 3])) {
-            return in_array($status, ['new_design', 'new_order']);
+            return in_array($status, ['new_design', 'new_order']) || ($status_old == 4 && in_array($status, ['fix', 'done']));
         }
 
         if ($userTypeId == 4) {
-            return !in_array($status, ['new_design', 'new_order']) &&
+            return !in_array($status, ['new_design', 'new_order', 'done', 'fix']) &&
                 ($design_recipient_id == $userId || $design_recipient_id === null);
         }
 
@@ -558,6 +558,12 @@ class TaskController extends BaseController
     public function addKpiUser(Request $request)    
     {
         try {
+            $userTypeId = Auth::user()->user_type_id ?? -1;
+
+            if (!in_array($userTypeId, [-1, 3])) {
+                return $this->sendError('Không có quyền cập nhật', 403);
+            }
+
             $users = $request->users ?? [];
 
             if (count($users) > 0) {
