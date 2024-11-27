@@ -32,7 +32,7 @@ class TaskRepository implements TaskRepositoryInterface
 
                 $query->where('teams.id', $params['team_id']);
 
-                if ($params['user_type_id'] == 2){
+                if ($params['user_type_id'] == 1){
                     $query->where('tasks.created_by', $params['user_id']);
                 }
             }
