@@ -394,7 +394,7 @@ class TaskController extends BaseController
 
     protected function hasUpdatePermission($task, $userId)
     {
-        return (in_array($task->status_id, [3, 4]) && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2, 5]) && $userId == $task->created_by);
+        return (in_array($task->status_id, [3, 4, 5]) && $userId == $task->design_recipient_id) || (in_array($task->status_id, [1, 2]) && $userId == $task->created_by);
     }
 
 
