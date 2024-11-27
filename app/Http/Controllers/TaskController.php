@@ -247,6 +247,10 @@ class TaskController extends BaseController
             }
 
             if ($request->status === 'done') {
+                if ($task->created_by != $userId) {
+                    return $this->sendError('Không có quyền cập nhật', 403);
+                }
+                
                 $data['is_done'] = 1;
                 $data['done_at'] = now();
             }
