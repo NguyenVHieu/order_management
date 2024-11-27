@@ -77,7 +77,7 @@ class UserController extends BaseController
                 'team_id' => $request->team_id,
                 'created_by' => Auth::user()->id,
                 'created_at' => date('Y-m-d H:i:s'),
-                'folder' => implode(', ', $request->folder),
+                'folder' => !empty($request->folder) ? implode(', ', $request->folder) : null,
             ];
 
             if (!empty($request->avatar)) {
