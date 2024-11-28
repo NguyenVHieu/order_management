@@ -168,15 +168,17 @@ class TaskController extends BaseController
             $data['updated_by'] = $userId;
             $data['updated_at'] = now();
 
-            $params = [
-                'seller_id' => $task->created_by,
-                'score_old' => $task->count_product,
-                'score_new' => $data['count_product'],
-                'year_month' => now()->format('Y-m')
-            ];
-
-            if (!$this->checkScoreSeller($params)) {
-                return $this->sendError('Quá số hạng ngạch', 422);
+            if (Auth::user()->user_type_id == 1) {
+                $params = [
+                    'seller_id' => $task->created_by,
+                    'score_old' => $task->count_product,
+                    'score_new' => $data['count_product'],
+                    'year_month' => now()->format('Y-m')
+                ];
+    
+                if (!$this->checkScoreSeller($params)) {
+                    return $this->sendError('Quá số hạng ngạch', 422);
+                }
             }
 
             $this->taskRepository->updateTask($id, $data);
