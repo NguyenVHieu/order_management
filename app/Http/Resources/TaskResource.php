@@ -37,7 +37,7 @@ class TaskResource extends JsonResource
             'platform_size_id' => $this->template->platformSize->id ?? null,
             'category' => $this->category->name ?? '',
             'category_design_id' => $this->category->id ?? null,
-            'url_done' => $this->url_done
+            'url_done' => $this->taskDoneImages->pluck('image_url')->all() ?? []
         ];
     }
 }

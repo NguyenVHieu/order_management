@@ -14,7 +14,7 @@ class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks($params)
     {
-        $query = Task::with(['status', 'images', 'designer', 'createdBy'])
+        $query = Task::with(['status', 'images', 'designer', 'createdBy', 'taskDoneImages'])
             ->where('tasks.status_id', $params['status_id'])
             ->orderBy('tasks.created_at', 'DESC')
             ->select('tasks.*');    
@@ -289,6 +289,15 @@ class TaskRepository implements TaskRepositoryInterface
         return $query;  
 
             
+    }
+
+    public function getTaskByCondition($id, $status)
+    {
+        $query = Task::where('id', $id)
+            ->where('status_id', $status)
+            ->first();
+
+        return $query;
     }
 
     

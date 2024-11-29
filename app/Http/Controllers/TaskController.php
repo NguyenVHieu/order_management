@@ -181,7 +181,7 @@ class TaskController extends BaseController
                 }
             }
 
-            $this->taskRepository->updateTask($id, $data);
+            $result = $this->taskRepository->updateTask($id, $data);
 
             if (in_array($task->status_id, [1, 2])) {
                 $taskImages = $request->file ?? [];  
@@ -198,10 +198,26 @@ class TaskController extends BaseController
                     }
                 }
             }
+
+            if (!empty($request->url_done) && !empty($request->file_done))
+            {
+                $url = $request->url_done;
+                $file_name = $request->file_done;
+                DB::table('task_done_images')->where('task_id', $task->id)->delete();
+                foreach($file_name as $file)
+                {
+                    $data = [
+                        'task_id' => $task->id,
+                        'image_url' => $url.'/'. $file,
+                    ];
+
+                    DB::table('task_done_images')->insert($data);
+                }
+            }
     
             DB::commit();
             
-            return $this->sendSuccess($data);
+            return $this->sendSuccess($result);
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -213,7 +229,7 @@ class TaskController extends BaseController
     protected function getUpdateData(Request $request)
     {
         $data = $this->getData($request);
-        $data['url_done'] = $request->url_done ?? null; 
+        // $data['url_done'] = $request->url_done ?? null; 
         unset($data['status_id']);
         return $data;
     }
@@ -227,8 +243,15 @@ class TaskController extends BaseController
             $userTypeId = Auth::user()->user_type_id;
 
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
-            $task = $this->taskRepository->getTaskById($id);
+            $status_old = DB::table('status_tasks')->where('name', $request->status_old)->first();
+            
             $status_id = $status->id;
+            $task = $this->taskRepository->getTaskByCondition($id, $status_old->id);
+
+            if (empty($task)) {
+                return $this->sendError('Không tìm thấy task hoặc đã cập nhật trạng thái', 404);
+            }
+
             if (!$this->hasChangeStatusPermission($task->status_id, $request->status, $task->design_recipient_id, $userId, $userTypeId)) {
                 return $this->sendError('Không có quyền cập nhật', 403);
             }
