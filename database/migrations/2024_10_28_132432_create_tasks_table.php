@@ -24,7 +24,6 @@ return new class extends Migration
             $table->timestamps();
             $table->timestamp('deadline')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
-            $table->string('url_done', 255)->nullable();
             $table->unsignedBigInteger('count_product')->default(1);
         });
     }

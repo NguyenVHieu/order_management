@@ -17,7 +17,6 @@ class Task extends Model
         'design_recipient_id',
         'deadline',
         'updated_by',
-        'url_done',
         'count_product',
         'is_done',
         'done_at',
@@ -59,5 +58,10 @@ class Task extends Model
     public function category()
     {
         return $this->belongsTo(CategoryDesign::class, 'category_design_id');   
+    }
+
+    public function taskDoneImages()
+    {
+        return $this->hasMany(TaskDoneImage::class, 'task_id');
     }
 }

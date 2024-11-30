@@ -168,18 +168,20 @@ class TaskController extends BaseController
             $data['updated_by'] = $userId;
             $data['updated_at'] = now();
 
-            $params = [
-                'seller_id' => $task->created_by,
-                'score_old' => $task->count_product,
-                'score_new' => $data['count_product'],
-                'year_month' => now()->format('Y-m')
-            ];
-
-            if (!$this->checkScoreSeller($params)) {
-                return $this->sendError('Quá số hạng ngạch', 422);
+            if (Auth::user()->user_type_id == 1) {
+                $params = [
+                    'seller_id' => $task->created_by,
+                    'score_old' => $task->count_product,
+                    'score_new' => $data['count_product'],
+                    'year_month' => now()->format('Y-m')
+                ];
+    
+                if (!$this->checkScoreSeller($params)) {
+                    return $this->sendError('Quá số hạng ngạch', 422);
+                }
             }
 
-            $this->taskRepository->updateTask($id, $data);
+            $result = $this->taskRepository->updateTask($id, $data);
 
             if (in_array($task->status_id, [1, 2])) {
                 $taskImages = $request->file ?? [];  
@@ -196,10 +198,26 @@ class TaskController extends BaseController
                     }
                 }
             }
+
+            if (!empty($request->url_done) && !empty($request->file_done))
+            {
+                $url = $request->url_done;
+                $file_name = $request->file_done;
+                DB::table('task_done_images')->where('task_id', $task->id)->delete();
+                foreach($file_name as $file)
+                {
+                    $data = [
+                        'task_id' => $task->id,
+                        'image_url' => $url.'/'. $file,
+                    ];
+
+                    DB::table('task_done_images')->insert($data);
+                }
+            }
     
             DB::commit();
             
-            return $this->sendSuccess($data);
+            return $this->sendSuccess($result);
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -211,7 +229,7 @@ class TaskController extends BaseController
     protected function getUpdateData(Request $request)
     {
         $data = $this->getData($request);
-        $data['url_done'] = $request->url_done ?? null; 
+        // $data['url_done'] = $request->url_done ?? null; 
         unset($data['status_id']);
         return $data;
     }
@@ -225,8 +243,15 @@ class TaskController extends BaseController
             $userTypeId = Auth::user()->user_type_id;
 
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
-            $task = $this->taskRepository->getTaskById($id);
+            $status_old = DB::table('status_tasks')->where('name', $request->status_old)->first();
+            
             $status_id = $status->id;
+            $task = $this->taskRepository->getTaskByCondition($id, $status_old->id);
+
+            if (empty($task)) {
+                return $this->sendError('Không tìm thấy task hoặc đã cập nhật trạng thái', 404);
+            }
+
             if (!$this->hasChangeStatusPermission($task->status_id, $request->status, $task->design_recipient_id, $userId, $userTypeId)) {
                 return $this->sendError('Không có quyền cập nhật', 403);
             }
@@ -247,6 +272,10 @@ class TaskController extends BaseController
             }
 
             if ($request->status === 'done') {
+                if ($task->created_by != $userId) {
+                    return $this->sendError('Không có quyền cập nhật', 403);
+                }
+                
                 $data['is_done'] = 1;
                 $data['done_at'] = now();
             }
@@ -408,11 +437,11 @@ class TaskController extends BaseController
         }
 
         if (in_array($userTypeId, [1, 3])) {
-            return in_array($status, ['new_design', 'new_order']);
+            return in_array($status, ['new_design', 'new_order']) || ($status_old == 4 && in_array($status, ['fix', 'done']));
         }
 
         if ($userTypeId == 4) {
-            return !in_array($status, ['new_design', 'new_order']) &&
+            return !in_array($status, ['new_design', 'new_order', 'done', 'fix']) &&
                 ($design_recipient_id == $userId || $design_recipient_id === null);
         }
 
@@ -558,6 +587,12 @@ class TaskController extends BaseController
     public function addKpiUser(Request $request)    
     {
         try {
+            $userTypeId = Auth::user()->user_type_id ?? -1;
+
+            if (!in_array($userTypeId, [-1, 3])) {
+                return $this->sendError('Không có quyền cập nhật', 403);
+            }
+
             $users = $request->users ?? [];
 
             if (count($users) > 0) {

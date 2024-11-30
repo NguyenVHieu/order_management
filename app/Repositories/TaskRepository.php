@@ -5,6 +5,8 @@ use App\Models\KpiUser;
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use App\Models\Task;
 use App\Models\TaskHistory;
+use App\Models\Team;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -12,7 +14,7 @@ class TaskRepository implements TaskRepositoryInterface
 {
     public function getAllTasks($params)
     {
-        $query = Task::with(['status', 'images', 'designer', 'createdBy'])
+        $query = Task::with(['status', 'images', 'designer', 'createdBy', 'taskDoneImages'])
             ->where('tasks.status_id', $params['status_id'])
             ->orderBy('tasks.created_at', 'DESC')
             ->select('tasks.*');    
@@ -32,7 +34,7 @@ class TaskRepository implements TaskRepositoryInterface
 
                 $query->where('teams.id', $params['team_id']);
 
-                if ($params['user_type_id'] == 2){
+                if ($params['user_type_id'] == 1){
                     $query->where('tasks.created_by', $params['user_id']);
                 }
             }
@@ -162,25 +164,29 @@ class TaskRepository implements TaskRepositoryInterface
     public function reportTaskByDesigner($params)
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
-
-        $query = Task::select(
-            DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
-            'users2.name AS recipient_name',
+        $query = User::select(
+            DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
+            'users.name AS recipient_name',
             'kpi_users.kpi AS kpi'
         )
-        ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
-        ->leftJoin('users as users2', 'users2.id', '=', 'tasks.design_recipient_id') // Join với bảng users2
+        ->leftJoin('tasks', function ($join) use($params){
+            $join->on('tasks.design_recipient_id', '=', 'users.id')
+            ->where('tasks.status_id', 6)
+            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+        }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
-            $join->on('kpi_users.user_id', '=', 'users2.id')
+            $join->on('kpi_users.user_id', '=', 'users.id')
             ->where('kpi_users.year_month', $year_month);
-        })
-        ->where('tasks.status_id', 6)
-        ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']])
-        ->groupBy('users2.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
+        });
+        
         if ($params['userTypeId'] != -1) {
-            $query->where('users.team_id', $params['teamId']);
+            $query->leftjoin('users as user_2', function ($join) use ($params) {
+                $join->on('user_2.id', '=', 'tasks.created_by');
+            });
         }
 
+        $query->where('users.user_type_id', 4)
+        ->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
         return $query->get();
     }
 
@@ -188,23 +194,32 @@ class TaskRepository implements TaskRepositoryInterface
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
 
-        $query = Task::select(
-            DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
+        $query = User::select(
+            DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
             'users.name AS seller_name',
             'kpi_users.kpi AS kpi'
         )
-        ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
+
+        ->leftJoin('tasks', function ($join) use($params){
+            $join->on('tasks.created_by', '=', 'users.id')
+            ->where('tasks.status_id', 6)
+            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+        }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
             ->where('kpi_users.year_month', $year_month);
-        })
-        ->where('tasks.status_id', 6)
-        ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']])
-        ->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
+        });
+        
+        if ($params['userTypeId'] != -1) {
+            $query->leftjoin('users as user_2', function ($join) use ($params) {
+                $join->on('user_2.id', '=', 'tasks.created_by');
+            });
 
-        if (!empty($params['userTypeId'] != -1)) {
             $query->where('users.team_id', $params['teamId']);
         }
+
+        $query->where('users.user_type_id', 1);
+        $query->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
 
         return $query->get();
     }
@@ -230,14 +245,20 @@ class TaskRepository implements TaskRepositoryInterface
 
     public function reportTaskByTeam($params)
     {
-        $query = Task::select(
+        $query = Team::select(
             DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
             'teams.name AS team_name'
         )
-        ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
-        ->leftJoin('teams', 'teams.id', '=', 'users.team_id') // Join với bảng teams
-        ->where('tasks.status_id', 6)
-        ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']])
+        ->leftJoin('users', function ($join) use ($params){
+            $join->on('users.team_id', '=', 'teams.id');
+        })
+
+        ->leftJoin('tasks', function ($join) use($params){
+            $join->on('tasks.created_by', '=', 'users.id')
+            ->where('tasks.status_id', 6)
+            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+        })
+        
         ->groupBy('teams.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
 
         return $query->get();
@@ -268,6 +289,15 @@ class TaskRepository implements TaskRepositoryInterface
         return $query;  
 
             
+    }
+
+    public function getTaskByCondition($id, $status)
+    {
+        $query = Task::where('id', $id)
+            ->where('status_id', $status)
+            ->first();
+
+        return $query;
     }
 
     
