@@ -19,65 +19,71 @@ class MailController extends BaseController
 
     public function getInformationProduct($params)
     {
-        foreach($params as $param) {
-            Helper::trackingInfo('start order number: ' . $param['orderNumber']);
-            $parts = explode(" ", $param['name']);
-
-            $firstName = $parts[0];
-            $lastName = implode(" ", array_slice($parts, 1));
-            $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
-            if (empty($shop)) {
-                $shop = Shop::create(['name' => $param['shop']])->fresh();  
-            }
-            if ($param['shipping'] != '' && $param['shipping'] != '0.00'){
-                $shipping = $param['shipping'];
-            }else {
-                $shipping = 0;
-            }
-            
-            $data = [
-                'order_number' => $param['orderNumber'] != '' ? $param['orderNumber'] : time(),
-                'product_name' => $param['product'],
-                'shop_id' => $shop->id ?? null,
-                'size' => $param['size'] ?? null,
-                'blueprint_id' => $param['blueprint_id'] ?? null,
-                'style' => $param['style'] != '' ? $param['style'] : null,
-                'color' => $param['color'] != '' ? $param['color'] : null,
-                'personalization' => $param['personalization'] != '' ? html_entity_decode($param['personalization']) : null,
-                'personalization_2' => $param['personalization_2'] != '' ? $param['personalization_2'] : null,
-                'thumbnail' => str_replace('75x75', '1000x1000', $param['thumb']),
-                'quantity' =>  $param['quantity'],
-                'sale_tax' => $param['salesTax'] != '' ? $param['salesTax'] : null,
-                'shipping' => $shipping,
-                'is_shipping' => $param['is_shipping'],
-                'order_total' => $param['orderTotal'] != '' ? $param['orderTotal'] : null,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'address' => html_entity_decode($param['address']),
-                'country' => $param['country'],
-                'state' => $param['state'] != '' ? $param['state'] : null,
-                'apartment' => $param['apartment'] != '' ? $param['apartment'] : null,
-                'recieved_mail_at' => $param['recieved_mail_at'],
-                'zip' => $param['zip'],
-                'city' => $param['city'],
-                'is_push' => false,
-                'is_approval' => false,
-                'multi' => $param['multi'], 
-                'order_number_group' => $param['orderNumberGroup'] ?? null,
-                'category_id' => $param['category_id'] ?? null,
-                'im_code' => $param['im'] != '' ? $param['im'] : null
-            ];
-
-            $order = DB::table('orders')->where('order_number', $data['order_number'])
-                                        ->where('style', $data['style'])
-                                        ->where('color', $data['color'])
-                                        ->first();
-            if (empty($order)) {
-                DB::table('orders')->insert($data);
-            }
-
-            Helper::trackingInfo('end order number: ' . $param['orderNumber']);
-        }
+        
+            foreach($params as $param) {
+                try {
+                    Helper::trackingInfo('start order number: ' . $param['orderNumber']);
+                    $parts = explode(" ", $param['name']);
+        
+                    $firstName = $parts[0];
+                    $lastName = implode(" ", array_slice($parts, 1));
+                    $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
+                    if (empty($shop)) {
+                        $shop = Shop::create(['name' => $param['shop']])->fresh();  
+                    }
+                    if ($param['shipping'] != '' && $param['shipping'] != '0.00'){
+                        $shipping = $param['shipping'];
+                    }else {
+                        $shipping = 0;
+                    }
+                    
+                    $data = [
+                        'order_number' => $param['orderNumber'] != '' ? $param['orderNumber'] : time(),
+                        'product_name' => $param['product'],
+                        'shop_id' => $shop->id ?? null,
+                        'size' => $param['size'] ?? null,
+                        'blueprint_id' => $param['blueprint_id'] ?? null,
+                        'style' => $param['style'] != '' ? $param['style'] : null,
+                        'color' => $param['color'] != '' ? $param['color'] : null,
+                        'personalization' => $param['personalization'] != '' ? html_entity_decode($param['personalization']) : null,
+                        'personalization_2' => $param['personalization_2'] != '' ? $param['personalization_2'] : null,
+                        'thumbnail' => str_replace('75x75', '1000x1000', $param['thumb']),
+                        'quantity' =>  $param['quantity'],
+                        'sale_tax' => $param['salesTax'] != '' ? $param['salesTax'] : null,
+                        'shipping' => $shipping,
+                        'is_shipping' => $param['is_shipping'],
+                        'order_total' => $param['orderTotal'] != '' ? $param['orderTotal'] : null,
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                        'address' => html_entity_decode($param['address']),
+                        'country' => $param['country'],
+                        'state' => $param['state'] != '' ? $param['state'] : null,
+                        'apartment' => $param['apartment'] != '' ? $param['apartment'] : null,
+                        'recieved_mail_at' => $param['recieved_mail_at'],
+                        'zip' => $param['zip'],
+                        'city' => $param['city'],
+                        'is_push' => false,
+                        'is_approval' => false,
+                        'multi' => $param['multi'], 
+                        'order_number_group' => $param['orderNumberGroup'] ?? null,
+                        'category_id' => $param['category_id'] ?? null,
+                        'im_code' => $param['im'] != '' ? $param['im'] : null
+                    ];
+        
+                    $order = DB::table('orders')->where('order_number', $data['order_number'])
+                                                ->where('style', $data['style'])
+                                                ->where('color', $data['color'])
+                                                ->first();
+                    if (empty($order)) {
+                        DB::table('orders')->insert($data);
+                    }
+        
+                    Helper::trackingInfo('end order number: ' . $param['orderNumber']);
+                } catch (\Throwable $th) {
+                    Helper::trackingError('getInformationProduct error' . $th->getMessage());
+                    continue;   
+                } 
+            }   
     }
 
     public function fetchMailOrder()
@@ -96,7 +102,7 @@ class MailController extends BaseController
             $messages = $inbox->query()->subject('You made a sale on Etsy')->unseen()->get();
             $list_data = [];
             if (count($messages) > 0) {
-                foreach ($messages as $message) {
+                foreach ($messages as $keyMes => $message) {
                     try {
                         // Trích xuất thông tin từ email
                         $subject = $message->getSubject();
@@ -261,6 +267,7 @@ class MailController extends BaseController
                         // $client->expunge();
                         Helper::trackingInfo('end order number: ' . $data['orderNumber']);
                     } catch (\Throwable $th) {
+                        unset($messages[$keyMes]);
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                         continue;
                     }
@@ -268,6 +275,7 @@ class MailController extends BaseController
                 }
                 
                 $this->getInformationProduct($list_data);
+                
                 // Ngắt kết nối sau khi xong
                 foreach($messages as $message) {
                     $message->setFlag('SEEN');
