@@ -503,10 +503,12 @@ class TaskController extends BaseController
                 ];
                 $seller = $this->taskRepository->reportTaskBySeller($params);
                 $designer = $this->taskRepository->reportTaskByDesigner($params);
+                $leader = $this->taskRepository->reportTaskByLeader($params);
                 $total = $this->taskRepository->totalCountTask($params);
                 $data = [
                     'seller' => $seller,
                     'designer' => $designer,
+                    'leader' => $leader,
                     'total' => $total
                 ];
 

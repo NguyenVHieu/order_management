@@ -224,6 +224,40 @@ class TaskRepository implements TaskRepositoryInterface
         return $query->get();
     }
 
+    public function reportTaskByLeader($params)
+    {
+        $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+
+        $query = User::select(
+            DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
+            'users.name AS leader_name',
+            'kpi_users.kpi AS kpi'
+        )
+        ->leftJoin('tasks', function ($join) use($params){
+            $join->on('tasks.created_by', '=', 'users.id')
+            ->where('tasks.status_id', 6)
+            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+        }) // Join với bảng tasks
+        ->leftJoin('kpi_users', function($join) use ($year_month) {
+            $join->on('kpi_users.user_id', '=', 'users.id')
+            ->where('kpi_users.year_month', $year_month);
+        });
+
+        if ($params['userTypeId'] != -1) {
+            $query->leftjoin('users as user_2', function ($join) use ($params) {
+                $join->on('user_2.id', '=', 'tasks.created_by');
+            });
+
+            $query->where('users.team_id', $params['teamId']);
+        }
+
+        $query->where('users.user_type_id', 3);
+        $query->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
+
+        return $query->get();
+
+    }
+
     public function totalCountTask($params)
     {
         $query = Task::select(
