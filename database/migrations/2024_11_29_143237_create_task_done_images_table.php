@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('task_done_images', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('task_id');
-            $table->string('imgage_url');
+            $table->string('image_url');
             $table->timestamps();
         });
     }
