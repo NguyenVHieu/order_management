@@ -229,7 +229,7 @@ class TaskController extends BaseController
     protected function getUpdateData(Request $request)
     {
         $data = $this->getData($request);
-        // $data['url_done'] = $request->url_done ?? null; 
+        $data['url_done'] = $request->url_done ?? null; 
         unset($data['status_id']);
         return $data;
     }

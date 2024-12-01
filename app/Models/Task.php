@@ -19,6 +19,7 @@ class Task extends Model
         'updated_by',
         'count_product',
         'is_done',
+        'url_done',
         'done_at',
         'created_by',
         'created_at',
