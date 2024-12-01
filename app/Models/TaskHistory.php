@@ -24,4 +24,9 @@ class TaskHistory extends Model
         return $this->belongsTo(User::class, 'action_by');
     }   
 
+    public function images()
+    {
+        return $this->hasMany(TaskHistoryImage::class, 'task_history_id');
+    }
+
 }

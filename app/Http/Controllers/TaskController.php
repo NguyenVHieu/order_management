@@ -14,6 +14,7 @@ use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskResource;
 use App\Models\KpiUser;
 use App\Models\Task;
+use App\Models\TaskHistory;
 use App\Repositories\TaskRepository;
 use Carbon\Carbon;
 
@@ -386,17 +387,35 @@ class TaskController extends BaseController
     public function commentTask(Request $request)
     {
         try {
+            DB::beginTransaction();
             $data = [
                 'task_id' => $request->task_id,
                 'message' => $request->message,
                 'created_at' => now(),
                 'action_by' => Auth::user()->id
             ];
-            $comment = DB::table('task_histories')->insert($data);
+
+            $comment = TaskHistory::create($data)->fresh();
+
+            if (!empty($request->images)) {
+                $images = $request->images ?? [];
+                if (!empty($images)) {
+                    foreach($images as $image) {
+                        $url = $this->saveImageTask($image);
+                        $data_image = [
+                            'task_history_id' => $comment->id,
+                            'image_url' => $url
+                        ];
+                        DB::table('task_history_images')->insert($data_image);  
+                    }
+                }
+            }
             Helper::trackingInfo(json_encode($request->all()));
+            DB::commit();   
             return $this->sendSuccess($comment);
 
         } catch (\Exception $ex) {
+            DB::rollBack();
             Helper::trackingError($ex->getMessage());
             return $this->sendError('Lỗi Server');
         }

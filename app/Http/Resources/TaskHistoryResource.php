@@ -21,7 +21,8 @@ class TaskHistoryResource extends JsonResource
             'userId' => $this->action_by,
             'user' => $this->user->name ?? '',
             'createdAt' => $this->created_at,
-            'avatar_src' => $this->user->avatar ?? ''
+            'avatar_src' => $this->user->avatar ?? '',
+            'images' => $this->images->pluck('image_url')->all() ?? []
 
         ];
     }
