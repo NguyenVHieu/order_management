@@ -169,7 +169,7 @@ class TaskController extends BaseController
             $data['updated_by'] = $userId;
             $data['updated_at'] = now();
 
-            if (Auth::user()->user_type_id == 1) {
+            if (in_array(Auth::user()->user_type_id, [1, 3])) {
                 $params = [
                     'seller_id' => $task->created_by,
                     'score_old' => $task->count_product,
@@ -204,7 +204,6 @@ class TaskController extends BaseController
             {
                 $url = $request->url_done;
                 $file_name = $request->file_done;
-                DB::table('task_done_images')->where('task_id', $task->id)->delete();
                 foreach($file_name as $file)
                 {
                     $data = [
