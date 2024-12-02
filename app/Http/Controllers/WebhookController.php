@@ -161,17 +161,17 @@ class WebhookController extends BaseController
     public function orderPaymentMerchize(Request $request){
         try {
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
-            $cost = $request['resource']['fulfillment_cost'];
+            $cost = $request['resource']['price'];
             $order_id = $request['resource']['order_code'];
-            $order =  Order::where('order_id', $order_id)->first();
-                if ($order) {
-                    $order->cost = $cost;
-                    $order->save();
-                    Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
-                }else {
-                    Helper::trackingInfo('Không timg thấy order');
-                }
-            DB::table('orders')->where('order_id', $order_id)->update(['cost' => $cost]);
+            $order = Order::where('order_id', $order_id)->first();
+
+            if ($order) {
+                $order->cost = $cost;
+                $order->save();
+                Helper::trackingInfo('Cập nhật cost Order Merchize thành công');
+            }else {
+                Helper::trackingInfo('Không timg thấy order');
+            }
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
         }
