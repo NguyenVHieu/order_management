@@ -198,23 +198,23 @@ class TaskController extends BaseController
                         ]);
                     }
                 }
-            }
+            } else {
+                $file_reviews = $request->file_review ?? [];
+                $image_src_reviews = $request->image_src_review ?? [];
 
-            if (!empty($request->url_done) && !empty($request->file_done))
-            {
-                $url = $request->url_done;
-                $file_name = $request->file_done;
-                foreach($file_name as $file)
+                DB::table('task_done_images')->where('task_id', $task->id)->whereNotIn('image_url', $image_src_reviews)->delete();
+                foreach($file_reviews as $file)
                 {
+                    $url = $this->saveImageTask($file);
                     $data = [
                         'task_id' => $task->id,
-                        'image_url' => $url.'/'. $file,
+                        'image_url' => $url,
                     ];
 
                     DB::table('task_done_images')->insert($data);
                 }
             }
-    
+
             DB::commit();
             
             return $this->sendSuccess($result);
@@ -229,7 +229,6 @@ class TaskController extends BaseController
     protected function getUpdateData(Request $request)
     {
         $data = $this->getData($request);
-        $data['url_done'] = $request->url_done ?? null; 
         unset($data['status_id']);
         return $data;
     }
@@ -396,8 +395,8 @@ class TaskController extends BaseController
 
             $comment = TaskHistory::create($data)->fresh();
 
-            if (!empty($request->images)) {
-                $images = $request->images ?? [];
+            if (!empty($request->files_comment)) {
+                $images = $request->files_comment ?? [];
                 if (!empty($images)) {
                     foreach($images as $image) {
                         $url = $this->saveImageTask($image);
@@ -512,7 +511,7 @@ class TaskController extends BaseController
     {
         try {
             $userTypeId = Auth::user()->user_type_id ?? -1;
-            if ($userTypeId == -1 || $userTypeId == 3) {
+            if ($userTypeId == -1 || $userTypeId == 3 || $userTypeId == 5) {
                 $params = [
                     'startDate' => $request->start_date,
                     'endDate' => $request->end_date,
@@ -530,7 +529,7 @@ class TaskController extends BaseController
                     'total' => $total
                 ];
 
-                if ($userTypeId == -1) {
+                if ($userTypeId == -1 || $userTypeId == 5) {
                     $data['team'] = $this->taskRepository->reportTaskByTeam($params);
                 }
 
@@ -719,6 +718,30 @@ class TaskController extends BaseController
 
         return true;
         
+    }
+
+    public function deleteTask($id)
+    {
+        try {
+            $task = $this->taskRepository->getTaskById($id);
+            $userId = Auth::user()->id;
+
+            if ($userId != $task->created_by || !in_array($task->status_id, [1, 2])) {
+                return $this->sendError('Không có quyền xóa', 403);
+            }
+            DB::table('task_images')->where('task_id', $id)->delete();
+            DB::table('task_histories')->where('task_id', $id)->delete();
+            DB::table('task_done_images')->where('task_id', $id)->delete();
+
+            DB::beginTransaction();
+            $this->taskRepository->deleteTask($id);
+            DB::commit();
+            return $this->sendSuccess('ok');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
     }
 
 }

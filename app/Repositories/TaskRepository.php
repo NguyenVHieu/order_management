@@ -19,7 +19,7 @@ class TaskRepository implements TaskRepositoryInterface
             ->orderBy('tasks.created_at', 'DESC')
             ->select('tasks.*');    
 
-        if (!empty($params['user_id']) && $params['user_type_id'] != -1) {
+        if (!empty($params['user_id']) && $params['user_type_id'] != -1 && $params['user_type_id'] != 5) {
             if ($params['user_type_id'] == 4) {
                 $query->where(function($query) use ($params) {
                     $query->where('tasks.design_recipient_id', $params['user_id']);
@@ -111,20 +111,18 @@ class TaskRepository implements TaskRepositoryInterface
         {
             $query = Task::with(['status', 'images', 'designer', 'createdBy']);
 
-            if (!empty($params['userTypeId']) && $params['userTypeId'] != -1) {
-                
-                if (!empty($params['userTypeId']) && $params['userTypeId'] != -1) {
-                    if ($params['userTypeId'] == 3) {
-                        $query->whereHas('createdBy.team', function ($q) use ($params) {
-                            $q->where('id', $params['teamId']);
-                        });
-                    } elseif ($params['userTypeId'] == 1) {
-                        $query->where('created_by', $params['userId']);
-                    } elseif ($params['userTypeId'] == 4) {
-                        $query->where('design_recipient_id', $params['userId']);
-                    }
+            if (!empty($params['userTypeId']) && $params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
+                if ($params['userTypeId'] == 3) {
+                    $query->whereHas('createdBy.team', function ($q) use ($params) {
+                        $q->where('id', $params['teamId']);
+                    });
+                } elseif ($params['userTypeId'] == 1) {
+                    $query->where('created_by', $params['userId']);
+                } elseif ($params['userTypeId'] == 4) {
+                    $query->where('design_recipient_id', $params['userId']);
                 }
             }
+            
 
             if (!empty($params['keyword'])) {
                 $query->where(function($q) use ($params) {
@@ -165,7 +163,7 @@ class TaskRepository implements TaskRepositoryInterface
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
         $query = User::select(
-            DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
+            DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 && $params['userTypeId'] != 5 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
             'users.name AS recipient_name',
             'kpi_users.kpi AS kpi'
         )
@@ -195,7 +193,7 @@ class TaskRepository implements TaskRepositoryInterface
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
 
         $query = User::select(
-            DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
+            DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 && $params['userTypeId'] != 5 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
             'users.name AS seller_name',
             'kpi_users.kpi AS kpi'
         )
@@ -243,7 +241,7 @@ class TaskRepository implements TaskRepositoryInterface
             ->where('kpi_users.year_month', $year_month);
         });
 
-        if ($params['userTypeId'] != -1) {
+        if ($params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
             $query->leftjoin('users as user_2', function ($join) use ($params) {
                 $join->on('user_2.id', '=', 'tasks.created_by');
             });
@@ -251,7 +249,7 @@ class TaskRepository implements TaskRepositoryInterface
             $query->where('users.team_id', $params['teamId']);
         }
 
-        $query->where('users.user_type_id', 3);
+        $query->where('users.user_type_id', 3)->orWhere('users.user_type_id', 5);
         $query->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
 
         return $query->get();
@@ -267,7 +265,7 @@ class TaskRepository implements TaskRepositoryInterface
         ->where('tasks.status_id', 6)
         ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
 
-        if ($params['userTypeId'] != -1) {
+        if ($params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
             $query->where('users.team_id', $params['teamId']);
         }
 
