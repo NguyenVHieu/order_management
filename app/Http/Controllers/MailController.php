@@ -100,6 +100,10 @@ class MailController extends BaseController
             $inbox = $client->getFolder('INBOX');
 
             $messages = $inbox->query()->subject('You made a sale on Etsy')->unseen()->get();
+            $messages1 = $inbox->query()->subject('Etsy Order confirmation for:')->unseen()->get();
+
+            $messages = $messages->merge($messages1);
+
             $list_data = [];
             if (count($messages) > 0) {
                 foreach ($messages as $keyMes => $message) {

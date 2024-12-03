@@ -907,6 +907,7 @@ class OrderController extends BaseController
                 'userId' => Auth::user()->id,
                 'dateOrderFrom' => $req->date_order_from,
                 'dateOrderTo' => $req->date_order_to,
+                'page' => $req->page ?? 25
             ];
             $columns = [
                 'orders.*',
@@ -920,11 +921,15 @@ class OrderController extends BaseController
                         ->whereNotNull('product_printify_name')
                         ->get();
 
-            $orders = $this->orderRepository->index($params, $columns);
+            $results = $this->orderRepository->index($params, $columns);
+            $orders = OrderResource::collection($results);
+            $paginator = $orders->resource->toArray();
+            $paginator['data'] = $paginator['data'] ?? [];
 
             $data = [
                 'orders' => $orders,
-                'blueprints' => $blueprints
+                'blueprints' => $blueprints,
+                'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
 
             return $this->sendSuccess($data);

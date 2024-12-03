@@ -58,8 +58,21 @@ class OrderRepository implements OrderRepositoryInterface
             }
         }
 
+        if (!empty($params['order_number'])) {
+            $query->where('orders.order_number_group', $params['order_number']);
+        }
+
+        if (!empty($params['keyword'])) {
+            $query->where('orders.product_name', 'ILIKE', '%' . $params['keyword'] . '%')
+                ->orWhere('orders.first_name', 'ILIKE', '%' . $params['keyword'] . '%')
+                ->orWhere('orders.last_name', 'ILIKE', '%' . $params['keyword'] . '%')
+                ->orWhere('orders.address', 'ILIKE', '%' . $params['keyword'] . '%')
+                ->orWhere('orders.personalization', 'ILIKE', '%' . $params['keyword'] . '%')
+                ->orWhere('orders.personalization_2', 'ILIKE', '%' . $params['keyword'] . '%');
+        }
+
         $query->orderBy('id', 'DESC');
-        return $query->get();
+        return $query->paginate($params['page_size']);
     }
 
     public function listOrder($order_number) 
