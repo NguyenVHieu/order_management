@@ -1166,10 +1166,10 @@ class OrderController extends BaseController
             $resultColor = true;
             $resultSize = true;
 
-            if (!empty($variant['options']['color'])) {
+            if (!empty($variant['options']['color']) || !empty($variant['options']['finish'])) {
                 $resultColor = in_array($color, $variant['options']);
             }
-
+            
             if (!empty($variant['options']['size'])) {
                 // $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
                 $resultSize = in_array($size, $variant['options']);
