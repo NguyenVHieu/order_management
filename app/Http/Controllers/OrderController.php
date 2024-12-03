@@ -916,9 +916,8 @@ class OrderController extends BaseController
                 'categories.name as category'
             ];
             $blueprints = DB::table('key_blueprints')
-                        ->join('blueprints', 'key_blueprints.product_printify_name', '=', 'blueprints.name')
-                        ->select('blueprints.blueprint_id as value', 'key_blueprints.product_printify_name as label')->distinct()
-                        ->whereNotNull('key_blueprints.product_printify_name')
+                        ->select('product_printify_id as value', 'key_blueprints.product_printify_name as label')->distinct()
+                        ->whereNotNull('product_printify_name')
                         ->get();
 
             $orders = $this->orderRepository->index($params, $columns);
