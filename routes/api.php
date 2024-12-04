@@ -113,6 +113,7 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/order-payment-merchize', 'orderPaymentMerchize');
     Route::post('/update-order-lenful', 'updateOrderLenful');
     Route::post('/update-order-hubfulfill', 'updateOrderHubfulfill');
+    Route::post('/update-order-private', 'updateOrderPrivate');
     Route::post('/backupdb', 'backupDB');
 });
 
