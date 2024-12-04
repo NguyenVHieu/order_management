@@ -60,7 +60,7 @@ class OrderRepository implements OrderRepositoryInterface
 
         if (!empty($params['keyword'])) {
                 $query->where(function ($subQuery) use ($params) {
-                    $subQuery->orWhere('orders.product_name', 'like', '%' . $params['keyword'] . '%')
+                    $subQuery->where('orders.product_name', 'like', '%' . $params['keyword'] . '%')
                         ->orWhere('orders.first_name', 'like', '%' . $params['keyword'] . '%')
                         ->orWhere('orders.order_number', 'like', '%' . $params['keyword'] . '%')
                         ->orWhere('orders.tracking_order', 'like', '%' . $params['keyword'] . '%')
@@ -73,7 +73,8 @@ class OrderRepository implements OrderRepositoryInterface
 
 
         $query->orderBy('id', 'DESC');
-        return $query->paginate($params['per_page']);
+        return $query;
+        // return $query->paginate($params['per_page']);
     }
 
     public function listOrder($order_number) 
