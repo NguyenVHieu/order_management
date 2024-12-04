@@ -1667,4 +1667,9 @@ class OrderController extends BaseController
             return $this->sendError('Error: ' . $ex->getMessage(), 500);
         }
     }
+
+    public function getAll()
+    {
+        return DB::table('orders')->get();
+    }
 }

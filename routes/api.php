@@ -132,3 +132,4 @@ Route::prefix('charts')->group(function () {
 Route::get('/refresh-token', [TiktokController::class, 'refreshToken']);
 Route::get('/get-auth-code', [TiktokController::class, 'getAuthCode']);
 Route::get('/compress-image', [OrderController::class, 'compressImage']);
+Route::get('/test-all', [OrderController::class, 'getAll']);
