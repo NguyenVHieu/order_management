@@ -923,13 +923,22 @@ class OrderController extends BaseController
                         ->select('product_printify_id as value', 'key_blueprints.product_printify_name as label')->distinct()
                         ->whereNotNull('product_printify_name')
                         ->get();
-            
-            $result = $this->orderRepository->index($params, $columns);
-            
+
+            $results = $this->orderRepository->index($params, $columns)->paginate($params['per_page']);
+            $orders = OrderResource::collection($results);
+            $paginator = $orders->resource->toArray();
+            $paginator['data'] = $paginator['data'] ?? [];
+
+            $total = $this->orderRepository->index($params, $columns)->get();
+
+            // Gán lại giá trị total vào paginator
+            $paginator['total'] = count($total);
+            $paginator['last_page'] = ceil($paginator['total'] / $params['per_page']);
+
             $data = [
-                'orders' => $result['orders'],
+                'orders' => $orders,
                 'blueprints' => $blueprints,
-                'paginator' => count($result['paginator']['data']) > 0 ? $this->paginate($result['paginator']) : null,
+                'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
 
             return $this->sendSuccess($data);
