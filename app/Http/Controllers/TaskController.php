@@ -457,7 +457,7 @@ class TaskController extends BaseController
             return in_array($status, ['new_design', 'new_order']) || ($status_old == 4 && in_array($status, ['fix', 'done']));
         }
 
-        if ($userTypeId == 4) {
+        if (in_array($userTypeId, [4, 5])) {
             return !in_array($status, ['new_design', 'new_order', 'done', 'fix']) &&
                 ($design_recipient_id == $userId || $design_recipient_id === null);
         }
