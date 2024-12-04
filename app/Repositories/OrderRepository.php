@@ -58,21 +58,22 @@ class OrderRepository implements OrderRepositoryInterface
             }
         }
 
-        if (!empty($params['order_number'])) {
-            $query->where('orders.order_number_group', $params['order_number']);
+        if (!empty($params['keyword'])) {
+                $query->where(function ($subQuery) use ($params) {
+                    $subQuery->orWhere('orders.product_name', 'like', '%' . $params['keyword'] . '%')
+                        ->orWhere('orders.first_name', 'like', '%' . $params['keyword'] . '%')
+                        ->orWhere('orders.order_number', 'like', '%' . $params['keyword'] . '%')
+                        ->orWhere('orders.tracking_order', 'like', '%' . $params['keyword'] . '%')
+                        ->orWhere('orders.last_name', 'like', '%' . $params['keyword'] . '%')
+                        ->orWhere('orders.address', 'like', '%' . $params['keyword'] . '%')
+                        ->orWhere('orders.personalization', 'like', '%' . $params['keyword'] . '%');
+                });
+                
         }
 
-        if (!empty($params['keyword'])) {
-            $query->where('orders.product_name', 'ILIKE', '%' . $params['keyword'] . '%')
-                ->orWhere('orders.first_name', 'ILIKE', '%' . $params['keyword'] . '%')
-                ->orWhere('orders.last_name', 'ILIKE', '%' . $params['keyword'] . '%')
-                ->orWhere('orders.address', 'ILIKE', '%' . $params['keyword'] . '%')
-                ->orWhere('orders.personalization', 'ILIKE', '%' . $params['keyword'] . '%')
-                ->orWhere('orders.personalization_2', 'ILIKE', '%' . $params['keyword'] . '%');
-        }
 
         $query->orderBy('id', 'DESC');
-        return $query->paginate($params['page']);
+        return $query->paginate($params['per_page']);
     }
 
     public function listOrder($order_number) 

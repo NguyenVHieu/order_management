@@ -908,7 +908,9 @@ class OrderController extends BaseController
                 'userId' => Auth::user()->id,
                 'dateOrderFrom' => $req->date_order_from,
                 'dateOrderTo' => $req->date_order_to,
-                'page' => $req->page ?? 25
+                'per_page' => $req->per_page ?? 25,
+                'page' => $req->page ?? 1,
+                'keyword' => $req->keyword, 
             ];
             $columns = [
                 'orders.*',
