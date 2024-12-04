@@ -83,7 +83,7 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Body Webhook Lenful:' . json_encode($request->all()));
             $order_id = $request->lenful_order_short_id;
             $tracking_number = $request->tracking_numbers;
-            DB::table('orders')->where('order_id', $order_id)->update(['tracking_number' => $tracking_number]);
+            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking_number]);
             Helper::trackingInfo('Webhook cập nhật tracking number lenful thành công');
 
         } catch (\Throwable $th) {
