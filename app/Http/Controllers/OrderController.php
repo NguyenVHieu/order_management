@@ -924,12 +924,13 @@ class OrderController extends BaseController
                         ->whereNotNull('product_printify_name')
                         ->get();
 
-            $results = $this->orderRepository->index($params, $columns)->paginate($params['per_page']);
+            $query = $this->orderRepository->index($params, $columns);
+            $results = $query->paginate($params['per_page']);
             $orders = OrderResource::collection($results);
             $paginator = $orders->resource->toArray();
             $paginator['data'] = $paginator['data'] ?? [];
 
-            $total = $this->orderRepository->index($params, $columns)->get();
+            $total = $query->get();
 
             // Gán lại giá trị total vào paginator
             $paginator['total'] = count($total);
