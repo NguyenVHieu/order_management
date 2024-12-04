@@ -329,7 +329,7 @@ class OrderController extends BaseController
                 'json' => [
                     'email' => $this->uPrivate,
                     'password' => $this->pPrivate
-                ] // Gửi dữ liệu đơn hàng
+                ] 
             ]);
 
             $resLoginConvert = json_decode($resLogin->getBody()->getContents(), true);
@@ -346,9 +346,10 @@ class OrderController extends BaseController
         $results = [];
         foreach($data as $key => $orders) {
             $lineItems = [];   
+            $result = [];
             try {
                 $check = true;
-                foreach($orders as $order) {
+                foreach($orders as $key => $order) {
                     if (!empty($order->img_1) && !empty($order->img_2)) {
                         $prodNum = 2;
                     }else {
@@ -362,7 +363,7 @@ class OrderController extends BaseController
                         ],
                         'query' => [
                             'prodType' => $product->private,
-                            'prodSize' => str_replace("\r", "", trim($order->size)),
+                            'prodSize' => $order->size,
                             'prodNum' => $prodNum,
                             'prodColor' => $order->color,
                         ],
@@ -371,35 +372,69 @@ class OrderController extends BaseController
                     $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
     
                     if (empty($resSkuConvert['data'])) {
-                        $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $result[$order->order_number .' '. $order->color .' '. $order->size] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
-                        $results[$order->order_number .' '. $order->color .' '. $order->size] = 'Success!';
+                        $result[$order->order_number .' '. $order->color .' '. $order->size] = 'Success!';
                     }
         
                     $variantId = $resSkuConvert['data'][0]['variantId'] ?? 0;
                     $lineItems[] = [
                         "variantId" => $variantId,
-                        "quantity" => 1,
+                        "quantity" => $order->quantity,
                         "printAreaFront" => $order->img_1,
-                        "printAreaBack" => $order->img_2,
                         "mockupFront" => $order->img_6,
-                        "mockupBack" => $order->img_7, 
-                        "printAreaLeft" => $order->img_3 ?? '',
-                        "printAreaRight" => $order->img_4 ?? '',
-                        "printAreaNeck" => $order->img_5 ?? '',
                     ];
+
+                    if (!empty($order->img_2)) {
+                        $lineItems[$key]["printAreaBack"] = $order->img_2;
+                    }
+                    
+                    if (!empty($order->img_3)) {
+                        $lineItems[$key]["printAreaLeft"] = $order->img_3;
+                    }
+
+                    if (!empty($order->img_4)) {
+                        $lineItems[$key]["printAreaRight"] = $order->img_4;
+                    }
+
+                    if (!empty($order->img_5)) {
+                        $lineItems[$key]["printAreaNeck"] = $order->img_5;
+                    }
+
+                    if (!empty($order->img_7)) {
+                        $lineItems[$key]["mockupBack"] = $order->img_7;
+                    }
+
+                    $info[$order->id] = [
+                        'variant_id' => $variantId,
+                        'place_order' => 'private',
+                        'date_push' => date('Y-m-d'),
+                        'is_push' => true,
+                        'push_by' => Auth::user()->id,
+                    ];
+
+                    $items[] = $order->order_number;
     
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    if (count($items) > 1) {
+                        $base = strstr($items[0], '#', true); // Lấy phần trước dấu #
+                        $numbers = [];
+                        foreach ($items as $item) {
+                            $numbers[] = substr($item, strpos($item, '#') + 1); // Lấy phần sau dấu #
+                        }
+                        $identifier = $base . "#" . implode('_', $numbers);
+                    }
+                    $country = DB::table('countries')->where('name', $order->country)->first();
                     $orderData = [
                         "order" => [
-                            "orderId" => $order->order_number. time(),
-                            "shippingMethod" => "STANDARD",
+                            "orderId" => $identifier. '_'. time(),
+                            "shippingMethod" => $order->is_shipping == true ? "EXPRESS" : "STANDARD",
                             "firstName" => $order->first_name,
                             "lastName" => $order->last_name,
-                            "countryCode" => "US",
+                            "countryCode" => $country->iso_alpha_2,
                             "provinceCode" => $order->state,
                             "addressLine1" => $order->address,
                             "city" => $order->city,
@@ -407,35 +442,42 @@ class OrderController extends BaseController
                         ],
                         "product" => array_values($lineItems)
                     ];
-                }
-    
-                $resOrder = $client->post($this->baseUrlPrivate. '/order', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $token,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    'json' => $orderData // Gửi dữ liệu đơn hàng
-                ]);
-    
-                if ($resOrder->getStatusCode() === 201) {
-                    $data = [
-                        'is_push' => 1, 
-                        'place_order' => 'private',
-                        'date_push' => date('Y-m-d'),
-                        'push_by' => Auth::user()->id 
-                    ];
+                    $resOrder = $client->post($this->baseUrlPrivate. '/order', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $token,
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => $orderData // Gửi dữ liệu đơn hàng
+                    ]);
 
-                    DB::table('orders')->where('id', $order->id)->update($data);
-                } else {
-                    $results[$key] = 'Failed';
-                }
+                    $resOrderFormat = json_decode($resOrder->getBody()->getContents(), true);
+        
+                    if ($resOrder->getStatusCode() === 201) {
+                        $first = true;
+                        foreach($info as $id => $value) {
+                            
+                            $value['order_id'] = $resOrderFormat['id'];
+                            if ($first) {
+                                $value['cost'] = $resOrderFormat['price'];
+                                $first = false;
+                            }
+                            
+                            DB::table('orders')->where('id', $id)->update($value);
+                        }
+    
+                    } else {
+                        $result[$key] = 'Failed';
+                    }
+                } 
             } catch (\Throwable $th) {
                 Helper::trackingError($th->getMessage());
-                $results[$key] = 'Lỗi khi tạo order';
+                $result = [];
+                $result[$key] = 'Lỗi khi tạo order';
             }    
+            $results[] = $result; 
         }
         
-        return $results;    
+        return array_merge(...$results);
     }
 
     function pushOrderToOtb($data) 
