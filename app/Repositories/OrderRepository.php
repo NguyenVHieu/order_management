@@ -72,7 +72,7 @@ class OrderRepository implements OrderRepositoryInterface
         }
 
 
-        $query->orderBy('id', 'DESC');
+        $query->orderBy('orders.id', 'DESC');
         return $query;
         // return $query->paginate($params['per_page']);
     }
