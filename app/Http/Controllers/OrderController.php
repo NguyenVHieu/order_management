@@ -935,9 +935,11 @@ class OrderController extends BaseController
                 $result = [];
                 $result[$key.' '] = 'Lỗi khi tạo order';
             }
+
+            $results[] = $result;
         }
 
-        $results[] = $result;
+        
 
         return array_merge(...$results);
     }
