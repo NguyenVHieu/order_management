@@ -446,11 +446,19 @@ class WebhookController extends BaseController
     public function updateOrderPrivate(Request $request)
     {
         try {
+            $requests = $request->all();
+            
             Helper::trackingInfo('Body Webhook Tracking Private:' . json_encode($request->all()));
-            $tracking = $request['tracking'] ?? null;
-            $status = $request['orderStatus'] ?? null;
-            $order_id = $request['id'];
-            DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking, 'status_order' => $status]);  
+            if (!empty($requests))
+            {
+                foreach($requests as $request) {
+                    $tracking = $request['tracking'] ?? null;
+                    $status = $request['orderStatus'] ?? null;
+                    $order_id = $request['id'];
+                    DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking, 'status_order' => $status]);  
+                }
+            }
+            
             Helper::trackingInfo('Webhook cập nhật tracking number Private này');
         } catch (\Throwable $th) {
             Helper::trackingInfo('Lỗi Webhook Tracking Private' . json_encode($th->getMessage()));
