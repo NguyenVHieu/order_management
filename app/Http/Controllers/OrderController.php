@@ -347,6 +347,7 @@ class OrderController extends BaseController
             $lineItems = [];   
             $result = [];
             $info = [];
+            $items = [];
             
             try {
                 $check = true;
@@ -419,7 +420,7 @@ class OrderController extends BaseController
     
                 }
 
-                $identifier = $key;
+                $identifier = $keyParent;
 
                 if (count($lineItems) > 0 && $check == true) {
                     if (count($items) > 1) {
