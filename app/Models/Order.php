@@ -49,4 +49,24 @@ class Order extends Model
     protected $casts = [
         'is_shipping' => 'boolean',
     ];
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
+    }
+
+    public function userShop()
+    {
+        return $this->belongsTo(UserShop::class, 'shop_id', 'shop_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approval_by');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }

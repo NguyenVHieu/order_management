@@ -12,70 +12,54 @@ use Illuminate\Support\Facades\DB;
 class OrderRepository implements OrderRepositoryInterface
 {
 
-    public function index($params, $columns = ['*'])
+    public function index($params)
     {
-        $query = Order::query()->select($columns)->distinct();
-
-        $query->leftJoin('user_shops', function($join) {  
-            $join->on('orders.shop_id', '=', 'user_shops.shop_id');
-        });
-
-        $query->leftJoin('shops', function($join) {
-            $join->on('shops.id', '=', 'user_shops.shop_id');
-        });
-
-        $query->leftJoin('users', function($join){
-            $join->on('orders.approval_by', '=', 'users.id');
-        });
-
-        $query->leftJoin('categories', function($join){
-            $join->on('orders.category_id', '=', 'categories.id');
-        });
+        $query = Order::query()->with([
+            'approver:id,name',
+            'category:id,name',
+        ]);
 
         if ($params['userType'] != -1) {
-            $query->where('user_shops.user_id',  $params['userId']);
+            $query->whereHas('userShop', function ($subQuery) use ($params) {
+                $subQuery->where('user_id', $params['userId']);
+            });
         }
 
         if (!empty($params['type'])) {
             if ($params['type'] == 1) {
-
                 if (!empty($params['dateOrderFrom'] || $params['dateOrderTo'])) {
                     if (!empty($params['dateOrderFrom'])) {
-                        $query->whereDate('orders.date_push', '>=', $params['dateOrderFrom']);
+                        $query->whereDate('date_push', '>=', $params['dateOrderFrom']);
                     }
-            
                     if (!empty($params['dateOrderTo'])) {
-                        $query->whereDate('orders.date_push', '<=', $params['dateOrderTo']);
+                        $query->whereDate('date_push', '<=', $params['dateOrderTo']);
                     }
-
                 }
-
-                $query->where('orders.is_push', true);
-            } else if ($params['type'] == 2) {
-                $query->where('orders.is_push', false)->where('is_approval', true);
+                $query->where('is_push', true);
+            } elseif ($params['type'] == 2) {
+                $query->where('is_push', false)->where('is_approval', true);
             } else {
-                $query->where('orders.is_push', false)->where('is_approval', false);
+                $query->where('is_push', false)->where('is_approval', false);
             }
         }
 
         if (!empty($params['keyword'])) {
-                $query->where(function ($subQuery) use ($params) {
-                    $subQuery->where('orders.product_name', 'like', '%' . $params['keyword'] . '%')
-                        ->orWhere('orders.first_name', 'like', '%' . $params['keyword'] . '%')
-                        ->orWhere('orders.order_number', 'like', '%' . $params['keyword'] . '%')
-                        ->orWhere('orders.tracking_order', 'like', '%' . $params['keyword'] . '%')
-                        ->orWhere('orders.last_name', 'like', '%' . $params['keyword'] . '%')
-                        ->orWhere('orders.address', 'like', '%' . $params['keyword'] . '%')
-                        ->orWhere('orders.personalization', 'like', '%' . $params['keyword'] . '%');
-                });
-                
+            $query->where(function ($subQuery) use ($params) {
+                $subQuery->where('product_name', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('first_name', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('order_number', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('tracking_order', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('last_name', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('address', 'like', '%' . $params['keyword'] . '%')
+                    ->orWhere('personalization', 'like', '%' . $params['keyword'] . '%');
+            });
         }
 
+        $query->orderBy('id', 'DESC');
 
-        $query->orderBy('orders.id', 'DESC');
-        return $query;
-        // return $query->paginate($params['per_page']);
+        return $query->paginate($params['per_page']); // Hoặc paginate nếu cần
     }
+
 
     public function listOrder($order_number) 
     {

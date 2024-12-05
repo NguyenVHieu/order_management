@@ -342,7 +342,6 @@ class OrderController extends BaseController
             return ['401' => 'Đăng nhập Private fullfillment không thành công'];
         }
         
-        
         $results = [];
         foreach($data as $keyParent => $orders) {
             $lineItems = [];   
@@ -969,17 +968,10 @@ class OrderController extends BaseController
                         ->get();
 
             $query = $this->orderRepository->index($params, $columns);
-            $total = $query->get()->count();
-
-            $results = $query->paginate($params['per_page']);
             
-            $orders = OrderResource::collection($results);
+            $orders = OrderResource::collection($query);
             $paginator = $orders->resource->toArray();
             $paginator['data'] = $paginator['data'] ?? [];
-
-            // Gán lại giá trị total vào paginator
-            $paginator['total'] = $total;
-            $paginator['last_page'] = ceil($paginator['total'] / $params['per_page']);
 
             $data = [
                 'orders' => $orders,

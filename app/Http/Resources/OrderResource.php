@@ -14,6 +14,13 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return array_merge(
+            parent::toArray($request), // Trả về tất cả các cột của bảng orders
+            [
+                'shop_name' => $this->shop->name ?? null,
+                'seller' => $this->approver->name ?? null,
+                'category' => $this->category->name ?? null,
+            ]
+        );
     }
 }
