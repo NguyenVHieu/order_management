@@ -758,7 +758,8 @@ class TaskController extends BaseController
             $cover->is_cover = true;
             $cover->save();
             DB::commit();
-            return $this->sendSuccess('ok');
+            $data = DB::table('task_done_images')->where('task_id', $request->task_id)->pluck('image_url')->toArray();
+            return $this->sendSuccess($data);
         } catch (\Exception $e) {
             DB::rollBack();
             Helper::trackingError($e->getMessage());
