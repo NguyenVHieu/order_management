@@ -346,6 +346,8 @@ class OrderController extends BaseController
         foreach($data as $keyParent => $orders) {
             $lineItems = [];   
             $result = [];
+            $info = [];
+            
             try {
                 $check = true;
                 foreach($orders as $key => $order) {
