@@ -458,6 +458,7 @@ class OrderController extends BaseController
                         foreach($info as $id => $value) {
                             
                             $value['order_id'] = $resOrderFormat['id'];
+                            $value['status_order'] = $resOrderFormat['orderStatus'];
                             if ($first) {
                                 $value['cost'] = $resOrderFormat['price'];
                                 $first = false;
