@@ -10,6 +10,7 @@ class TaskDoneImage extends Model
 
     protected $fillable = [
         'task_id',
+        'is_cover',
         'image_url'
     ];
 

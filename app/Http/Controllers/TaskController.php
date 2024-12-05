@@ -14,6 +14,7 @@ use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskResource;
 use App\Models\KpiUser;
 use App\Models\Task;
+use App\Models\TaskDoneImage;
 use App\Models\TaskHistory;
 use App\Repositories\TaskRepository;
 use Carbon\Carbon;
@@ -735,6 +736,27 @@ class TaskController extends BaseController
 
             DB::beginTransaction();
             $this->taskRepository->deleteTask($id);
+            DB::commit();
+            Helper::trackingInfo('Xóa task: ' . json_encode($task));
+            return $this->sendSuccess('ok');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Helper::trackingError($e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    public function updateCover(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            TaskDoneImage::where('task_id', $request->task_id)->update(['is_cover' => false]);
+            $cover = TaskDoneImage::where('task_id', $request->task_id)->where('image_url', $request->image_url)->first();
+            if (!$cover) {
+                return $this->sendError('Không tìm thấy ảnh', 404);
+            }
+            $cover->is_cover = true;
+            $cover->save();
             DB::commit();
             return $this->sendSuccess('ok');
         } catch (\Exception $e) {

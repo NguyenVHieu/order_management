@@ -76,7 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/get-platform-size/{id}', 'getSizeByProductId');
             Route::post('/notification-lark', 'notificationLark');
             Route::post('/add-kpi-user', 'addKpiUser');  
-            Route::delete('/delete/{id}', 'deleteTask');    
+            Route::delete('/delete/{id}', 'deleteTask');  
+            Route::post('/update-cover', 'updateCover');  
         });
     });
 

@@ -14,6 +14,13 @@ class TaskResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $coverImages = $this->taskDoneImages->where('is_cover', 1)->pluck('image_url')->first();
+        $imageUrls = $this->images->pluck('image_url')->all() ?? [];
+        $imageUrlFirst = $imageUrls[0] ?? '';
+        if ($coverImages && $imageUrlFirst !== $coverImages) {
+            array_unshift($imageUrls, $coverImages);
+        }
+        
         return [
             'id' => (string)$this->id,
             'title' => $this->title,
@@ -26,7 +33,7 @@ class TaskResource extends JsonResource
             'design_recipient' => $this->designer->name ?? '',
             'design_recipient_id' => $this->designer->id ?? null,
             'design_recipient_avatar' => $this->designer->avatar ?? '',
-            'imageUrl' => $this->images->pluck('image_url')->all(),
+            'imageUrl' => $imageUrls,
             'is_done' => $this->is_done,
             'done_at' => $this->done_at,
             'template' => $this->template->name ?? '',
