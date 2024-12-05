@@ -218,7 +218,7 @@ class TaskController extends BaseController
 
             DB::commit();
             
-            return $this->sendSuccess($result);
+            return $this->sendSuccess(new TaskResource($task));
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -758,8 +758,8 @@ class TaskController extends BaseController
             $cover->is_cover = true;
             $cover->save();
             DB::commit();
-            $data = DB::table('task_done_images')->where('task_id', $request->task_id)->pluck('image_url')->toArray();
-            return $this->sendSuccess($data);
+        
+            return $this->sendSuccess('ok');
         } catch (\Exception $e) {
             DB::rollBack();
             Helper::trackingError($e->getMessage());
