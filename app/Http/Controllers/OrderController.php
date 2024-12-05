@@ -344,7 +344,7 @@ class OrderController extends BaseController
         
         
         $results = [];
-        foreach($data as $key => $orders) {
+        foreach($data as $keyParent => $orders) {
             $lineItems = [];   
             $result = [];
             try {
@@ -418,6 +418,8 @@ class OrderController extends BaseController
     
                 }
 
+                $identifier = $key;
+
                 if (count($lineItems) > 0 && $check == true) {
                     if (count($items) > 1) {
                         $base = strstr($items[0], '#', true); // Lấy phần trước dấu #
@@ -472,7 +474,7 @@ class OrderController extends BaseController
             } catch (\Throwable $th) {
                 Helper::trackingError($th->getMessage());
                 $result = [];
-                $result[$key] = 'Lỗi khi tạo order';
+                $result[$keyParent. ' '] = 'Lỗi khi tạo order';
             }    
             $results[] = $result; 
         }
