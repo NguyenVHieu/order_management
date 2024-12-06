@@ -57,7 +57,7 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Webhook cập nhật status thành công');
 
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi updateStatusOrderPrintify ' . json_encode($th->getMessage()));
         }
     }
 
@@ -73,7 +73,7 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Webhook cập nhật tracking number thành công');
 
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi updateTrackingNumberPrintify ' . json_encode($th->getMessage()));
         }
     }
 
@@ -82,13 +82,13 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Lenful:' . json_encode($request->all()));
             $order_id = $request->lenful_order_short_id;
-            $tracking_number = $request->tracking_numbers;
+            $tracking_number = $request->tracking_numbers[0];
             DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' => $tracking_number]);
             Helper::trackingInfo('Webhook cập nhật tracking number lenful thành công');
 
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
-        }
+            Helper::trackingError('Lỗi updateTrackingNumberLenful' . json_encode($th->getMessage()));
+    }
     }
 
     public function updateTrackingNumberMerchize(Request $request)
@@ -101,7 +101,7 @@ class WebhookController extends BaseController
             DB::table('orders')->where('order_id', $order_id)->update(['tracking_order' =>$code_tracking.'.'.$tracking_order]);
             Helper::trackingInfo('Webhook cập nhật tracking number merchize này');
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi updateTrackingNumberMerchize ' . json_encode($th->getMessage()));
         }
     }
 
@@ -130,7 +130,7 @@ class WebhookController extends BaseController
             DB::table('orders')->whereIn('order_number', $result)->update($data);
             Helper::trackingInfo('Webhook Created Order Merchize thành công');
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi createOrderMerchize' . json_encode($th->getMessage()));
         }
     }
 
@@ -154,7 +154,7 @@ class WebhookController extends BaseController
             DB::table('orders')->where('order_id', $order_id)->update(['status_order' => $lastDoneEvent]);
             Helper::trackingInfo('Cập nhật order_status Order Merchize thành công');
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi progressOrderMerchize' . json_encode($th->getMessage()));
         }
     }
 
@@ -173,7 +173,7 @@ class WebhookController extends BaseController
                 Helper::trackingInfo('Không timg thấy order');
             }
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi orderPaymentMerchize' . json_encode($th->getMessage()));
         }
     }
 
@@ -276,8 +276,7 @@ class WebhookController extends BaseController
 
             Helper::trackingInfo('Cập nhật order OTB thành công');
         } catch (\Throwable $th) {
-            Helper::trackingError($th->getMessage());
-            Helper::trackingInfo('Cập nhật order OTB thất bại');
+            Helper::trackingError('Cập nhật order OTB thất bại: '. $th->getMessage());
         }
     }
 
@@ -339,8 +338,7 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật order lenful thành công!');
 
         } catch (\Throwable $th) {
-            Helper::trackingError($th->getMessage());
-            Helper::trackingError('Cập nhật order lenful thất bại');
+            Helper::trackingError('Cập nhật order lenful thất bại' . $th->getMessage());
         }
     }
 
@@ -384,8 +382,8 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
 
         } catch (\Throwable $th) {
-            Helper::trackingError($th->getMessage());
-            Helper::trackingError('Cập nhật order hubfulfill thất bại');
+            Helper::trackingError();
+            Helper::trackingError('Cập nhật order hubfulfill thất bại:'. $th->getMessage());
         }
     }
 
@@ -438,7 +436,6 @@ class WebhookController extends BaseController
     
             Helper::trackingInfo('Backup DB thành công');
         } catch (\Exception $e) {
-            dd($e);
             Helper::trackingError('loi khi backup db');
         }
     }
@@ -461,7 +458,7 @@ class WebhookController extends BaseController
             
             Helper::trackingInfo('Webhook cập nhật tracking number Private này');
         } catch (\Throwable $th) {
-            Helper::trackingInfo('Lỗi Webhook Tracking Private' . json_encode($th->getMessage()));
+            Helper::trackingError('Lỗi Webhook Tracking Private' . json_encode($th->getMessage()));
         }
     }
 
