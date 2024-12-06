@@ -462,6 +462,7 @@ class OrderController extends BaseController
                             
                             $value['order_id'] = $resOrderFormat['id'];
                             $value['status_order'] = $resOrderFormat['orderStatus'];
+                            $value['cost'] = 0.00;
                             if ($first) {
                                 $value['cost'] = $resOrderFormat['price'];
                                 $first = false;
