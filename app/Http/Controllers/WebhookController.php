@@ -382,7 +382,6 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
 
         } catch (\Throwable $th) {
-            Helper::trackingError();
             Helper::trackingError('Cập nhật order hubfulfill thất bại:'. $th->getMessage());
         }
     }
