@@ -1673,4 +1673,47 @@ class OrderController extends BaseController
     {
         return DB::table('orders')->get();
     }
+
+    public function splitOrder($id)
+    {
+        try {
+            DB::beginTransaction();
+            Helper::trackingInfo(Auth::user()->id . 'Clone order: '. $id);
+            $order = Order::find($id);
+            $quantity = $order->quantity ?? 0;
+
+            if($quantity <= 1 && $order->is_push == true) {
+                return $this->sendError('Số lượng đơn hàng phải lớn hơn 1 và chưa được push');
+            }
+
+            $maxNumber = 1;
+            if (strpos($order->order_number, '#') !== false) {
+                foreach (Order::where('order_number_group', $order->order_number_group)->get() as $orderCheck) {
+                    $currentNumber = (int)substr($orderCheck->order_number, strpos($orderCheck->order_number, '#') + 1);
+                    if ($currentNumber > $maxNumber) {
+                        $maxNumber = $currentNumber;
+                    }
+                }
+            }else{
+                $order->order_number = $order->order_number_group . '#1';
+            }
+            
+            $clone = $order->replicate();
+            $clone->quantity = 1;
+            $clone->multi = true;
+            $clone->order_number = $order->order_number_group . '#' . ($maxNumber + 1);
+            $clone->save();
+
+            $order->quantity = $quantity - 1;
+            $order->multi = true;
+            $order->save(); 
+            DB::commit();
+            return $this->sendSuccess('Split order thành công!');
+
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Split order thất bại');
+        }
+    }
 }

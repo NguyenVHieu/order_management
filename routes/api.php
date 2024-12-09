@@ -55,7 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/server/get-list-images', 'getListImage');
             Route::post('/import-order-flag', 'importOrderFlag');
             Route::get('/info/get', 'getInfoOrder');
-            
+            Route::post('/split-order/{id}', 'splitOrder');
         });
     });
 
