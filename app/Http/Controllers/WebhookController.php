@@ -439,27 +439,28 @@ class WebhookController extends BaseController
             Helper::trackingError('loi khi backup db');
         }
 
-        // $this->uploadToGoogleDrive($backupFile);
+        $this->uploadToGoogleDrive($backupFile);
     }
 
-    function uploadToGoogleDrive()
+    function uploadToGoogleDrive($backupFile)
     {
         try {
             // Tạo client Google
             $client = new \Google\Client();
             $client->setAuthConfig(public_path('credentials.json'));
             $client->addScope(\Google\Service\Drive::DRIVE_FILE);
+            $folderId = '1ojs1PnTUMQNBzaORiR8UdtBcpmRDVVIE';
 
             // Khởi tạo service Google Drive
             $service = new \Google\Service\Drive($client);
-            $filePath = storage_path('backups') . '/' . 'test.sql'; 
             // Metadata của file
             $fileMetadata = new \Google\Service\Drive\DriveFile([
-                'name' => basename($filePath), // Tên file trên Google Drive
+                'name' => basename($backupFile), // Tên file trên Google Drive
+                'parents' => [$folderId],
             ]);
 
             // Nội dung file
-            $content = file_get_contents($filePath);
+            $content = file_get_contents($backupFile);
 
             // Upload file lên Google Drive
             $file = $service->files->create($fileMetadata, [
@@ -470,10 +471,8 @@ class WebhookController extends BaseController
             ]);
 
             // Log thành công
-            dd('ok');
             Helper::trackingInfo('File đã được upload lên Google Drive. File ID: ' . $file->id);
         } catch (\Exception $e) {
-            dd($e);
             Helper::trackingError('Lỗi khi upload file lên Google Drive: ' . $e->getMessage());
         }
     }
