@@ -1263,7 +1263,7 @@ class OrderController extends BaseController
             'query' => [
                 'page' => 1,
                 'limit' => 10,
-                'fields' => 'variants',
+                'fields' => 'variants,name',
                 'keyword' => $product_name
             ],
         ]);
@@ -1273,9 +1273,15 @@ class OrderController extends BaseController
             return 0;
         }
 
-        $matchedVariant = array_filter($resFormat['data'][0]['variants'], function($variant) use ($size, $color, $product_name) {
-            
-            
+        
+        $variants = [];
+        foreach($resFormat['data'] as $key => $value) {
+            if ($value['name'] === $product_name) {
+                $variants = $resFormat['data'][$key]['variants'];
+            }
+        }
+
+        $matchedVariant = array_filter($variants, function($variant) use ($size, $color, $product_name) {
             $option = $variant['option_values'];
             $resultColor = true;
             $resultSize = true;
