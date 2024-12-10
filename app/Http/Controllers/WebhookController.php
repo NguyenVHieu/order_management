@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController;
 use App\Models\Order;
 use Carbon\Carbon;
+use Google\Service\Drive\Drive;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\File;
@@ -436,6 +437,44 @@ class WebhookController extends BaseController
             Helper::trackingInfo('Backup DB thành công');
         } catch (\Exception $e) {
             Helper::trackingError('loi khi backup db');
+        }
+
+        // $this->uploadToGoogleDrive($backupFile);
+    }
+
+    function uploadToGoogleDrive()
+    {
+        try {
+            // Tạo client Google
+            $client = new \Google\Client();
+            $client->setAuthConfig(public_path('credentials.json'));
+            $client->addScope(\Google\Service\Drive::DRIVE_FILE);
+
+            // Khởi tạo service Google Drive
+            $service = new \Google\Service\Drive($client);
+            $filePath = storage_path('backups') . '/' . 'test.sql'; 
+            // Metadata của file
+            $fileMetadata = new \Google\Service\Drive\DriveFile([
+                'name' => basename($filePath), // Tên file trên Google Drive
+            ]);
+
+            // Nội dung file
+            $content = file_get_contents($filePath);
+
+            // Upload file lên Google Drive
+            $file = $service->files->create($fileMetadata, [
+                'data' => $content,
+                'mimeType' => 'application/sql', // Định dạng file
+                'uploadType' => 'multipart',
+                'fields' => 'id' // Lấy ID của file sau khi upload
+            ]);
+
+            // Log thành công
+            dd('ok');
+            Helper::trackingInfo('File đã được upload lên Google Drive. File ID: ' . $file->id);
+        } catch (\Exception $e) {
+            dd($e);
+            Helper::trackingError('Lỗi khi upload file lên Google Drive: ' . $e->getMessage());
         }
     }
 
