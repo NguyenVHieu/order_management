@@ -1354,28 +1354,49 @@ class OrderController extends BaseController
     {
         try {
             $data = [];
-
-            if (isset($request->r_img_1)) {
+            if ($request->hasFile('r_img_1')) {
                 $data['img_1'] = $this->saveImgeSku($request->r_img_1);
+            }else {
+                $data['img_1'] = $request->r_img_1 ?? null;
             }
-            if (isset($request->r_img_2)) {
+
+            if ($request->hasFile('r_img_2')) {
                 $data['img_2'] = $this->saveImgeSku($request->r_img_2);
+            }else {
+                $data['img_2'] = $request->r_img_2 ?? null;
             }
-            if (isset($request->r_img_3)) {
+
+            if ($request->hasFile('r_img_3')) {
                 $data['img_3'] = $this->saveImgeSku($request->r_img_3);
+            }else {
+                $data['img_3'] = $request->r_img_3 ?? null;
             }
-            if (isset($request->r_img_4)) {
+
+            if ($request->hasFile('r_img_4')) {
                 $data['img_4'] = $this->saveImgeSku($request->r_img_4);
+            }else {
+                $data['img_4'] = $request->r_img_4 ?? null;
             }
-            if (isset($request->r_img_5)) {
+
+            if ($request->hasFile('r_img_5')) {
                 $data['img_5'] = $this->saveImgeSku($request->r_img_5);
+            }else {
+                $data['img_5'] = $request->r_img_5 ?? null;
             }
-            if (isset($request->r_img_6)) {
+
+            if ($request->hasFile('r_img_6')) {
                 $data['img_6'] = $this->saveImgeSku($request->r_img_6);
+            }else {
+                $data['img_6'] = $request->r_img_6 ?? null;
             }
-            if (isset($request->r_img_7)) {
+
+            if ($request->hasFile('r_img_7')) {
                 $data['img_7'] = $this->saveImgeSku($request->r_img_7);
+            }else {
+                $data['img_7'] = $request->r_img_7 ?? null;
             }
+            
+            
 
             $data['place_order'] = $request->place_order;
 
