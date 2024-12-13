@@ -10,9 +10,11 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Helper;
 use App\Http\Requests\TaskRequest;
+
 use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskResource;
 use App\Models\KpiUser;
+use App\Models\TaskRequest as TaskRequestModel;
 use App\Models\Task;
 use App\Models\TaskDoneImage;
 use App\Models\TaskHistory;
@@ -764,6 +766,108 @@ class TaskController extends BaseController
             DB::rollBack();
             Helper::trackingError($e->getMessage());
             return $this->sendError($e->getMessage());
+        }
+    }
+
+    public function requestUpdateScore(Request $request)
+    {
+            try {
+            $task = Task::find($request->task_id);
+            $paramScore = [
+                'score_old' => $task->count_product,
+                'score_new' => $request->score_request,
+                'year_month' => $task->created_at->format('Y-m')    
+            ];
+            if (Auth::user()->user_type_id == 1) {
+                $paramScore['seller_id'] =  Auth::user()->id;
+            }else {
+                $paramScore['seller_id'] =  $request->request_to; 
+            }
+
+
+            if (!$this->checkScoreSeller($paramScore)) {
+                return $this->sendError('Quá số hạng ngạch của seller', 422);
+            }
+            
+            $data = [
+                'task_id' => $request->task_id,
+                'request_from' => $request->request_from,
+                'request_to' => $request->request_to,
+                'description' => $request->description,
+                'score_request' => $request->score_request,
+                'score_task' => $task->count_product,
+                'approval' => null,
+                'created_at' => now(),  
+            ];
+            $requestTask = TaskRequestModel::where('task_id', $request->task_id)
+                                      ->whereNull('approval')
+                                      ->first();
+
+            if ($requestTask) {
+                return $this->sendError('Task đã có yêu cầu chỉnh sửa', 422);
+            }       
+
+            $res = TaskRequestModel::insert($data); 
+            return $this->sendSuccess($res);
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Lỗi Server');
+        }
+    }
+
+
+    public function updateScore(Request $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $requestTask = TaskRequestModel::find($id);
+                if (Auth::user()->id != $requestTask->request_to) {
+                return $this->sendError('Không có quyền cập nhật', 403);
+            }
+
+            if ($requestTask->approval != null) {
+                return $this->sendError('Yêu cầu đã được duyệt', 422);
+            }
+
+            $data = [
+                'approval' => $request->approval ?? false,
+                'approved_at' => now(),
+                'approved_by' => Auth::user()->id,
+            ];
+
+            if ($data['approval']) {
+                $task = Task::find($request->task_id);
+                $paramScore = [
+                    'score_old' => $task->count_product,
+                    'score_new' => $request->score_approval,
+                    'year_month' => now()->format('Y-m')    
+                ];
+
+                if (Auth::user()->user_type_id == 1) {
+                    $paramScore['seller_id'] =  Auth::user()->id;
+                }else {
+                    $paramScore['seller_id'] =  $request->request_from; 
+                }
+
+                if (!$this->checkScoreSeller($paramScore)) {
+                    return $this->sendError('Quá số hạng ngạch của seller', 422);
+                }
+                
+                $data['score_approval'] = $request->score_approval;
+                $task->count_product = $request->score_approval;
+                $task->save();
+            }
+
+            $res = TaskRequestModel::where('id', $id)->update($data);
+            
+            DB::commit();
+
+            return $this->sendSuccess($res);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Lỗi Server');
         }
     }
 

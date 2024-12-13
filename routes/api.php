@@ -78,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/add-kpi-user', 'addKpiUser');  
             Route::delete('/delete/{id}', 'deleteTask');  
             Route::post('/update-cover', 'updateCover');  
+            Route::post('/request-update-score', 'requestUpdateScore');
+            Route::post('/update-score/{id} ', 'updateScore');
         });
     });
 
