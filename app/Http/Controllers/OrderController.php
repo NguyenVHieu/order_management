@@ -1481,7 +1481,7 @@ class OrderController extends BaseController
                     'phone' => $request->phone,
                     'updated_at' => now(),
                     'updated_by' => Auth::user()->id,
-                    'method_shipping' => $request->method_shipping ?? null, 
+                    'shipping_method' => $request->shipping_method ?? null, 
                 ];
     
                 if ($order->multi == true) {
