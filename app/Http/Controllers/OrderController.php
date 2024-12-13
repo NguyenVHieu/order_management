@@ -1483,6 +1483,10 @@ class OrderController extends BaseController
                     'updated_by' => Auth::user()->id,
                     'shipping_method' => $request->shipping_method ?? null, 
                 ];
+
+                if (isset($request->place_order) && !empty($request->place_order)) {
+                    $data['place_order'] = $request->place_order;
+                }
     
                 if ($order->multi == true) {
                     DB::table('orders')->where('order_number', $order->order_number)->update($data);
