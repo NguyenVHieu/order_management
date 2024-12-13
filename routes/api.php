@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/update-cover', 'updateCover');  
             Route::post('/request-update-score', 'requestUpdateScore');
             Route::post('/update-score/{id} ', 'updateScore');
+            Route::get('/list-request', 'getRequestTask');
         });
     });
 

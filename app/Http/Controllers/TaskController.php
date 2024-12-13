@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use App\Http\Requests\TaskRequest;
 
 use App\Http\Resources\TaskHistoryResource;
+use App\Http\Resources\TaskRequestResource;
 use App\Http\Resources\TaskResource;
 use App\Models\KpiUser;
 use App\Models\TaskRequest as TaskRequestModel;
@@ -837,7 +838,7 @@ class TaskController extends BaseController
             ];
 
             if ($data['approval']) {
-                $task = Task::find($request->task_id);
+                $task = Task::find($requestTask->task_id);
                 $paramScore = [
                     'score_old' => $task->count_product,
                     'score_new' => $request->score_approval,
@@ -847,7 +848,7 @@ class TaskController extends BaseController
                 if (Auth::user()->user_type_id == 1) {
                     $paramScore['seller_id'] =  Auth::user()->id;
                 }else {
-                    $paramScore['seller_id'] =  $request->request_from; 
+                    $paramScore['seller_id'] =  $requestTask->request_from; 
                 }
 
                 if (!$this->checkScoreSeller($paramScore)) {
@@ -868,6 +869,30 @@ class TaskController extends BaseController
             DB::rollBack();
             Helper::trackingError($th->getMessage());
             return $this->sendError('Lỗi Server');
+        }
+    }
+
+    public function getRequestTask(Request $request)    
+    {
+        try {
+            $userId = Auth::user()->id;
+            $params = [
+                'userId' => $userId,
+                'type' => $request->type ?? 1,
+            ];
+
+            $results = $this->taskRepository->getRequestTask($params);
+            $data = TaskRequestResource::collection($results);
+            $paginator = $data->resource->toArray();
+            $paginator['data'] = $paginator['data'] ?? [];  
+            $data = [
+                'request' => $data,
+                'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Exception $ex) {
+            Helper::trackingError($ex->getMessage());
+            return $this->sendError($ex->getMessage());
         }
     }
 

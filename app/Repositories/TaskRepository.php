@@ -5,6 +5,7 @@ use App\Models\KpiUser;
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use App\Models\Task;
 use App\Models\TaskHistory;
+use App\Models\TaskRequest;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
@@ -332,5 +333,15 @@ class TaskRepository implements TaskRepositoryInterface
         return $query;
     }
 
-    
+    public function getRequestTask($params)
+    {
+        $query = TaskRequest::with(['task', 'requestFrom', 'requestTo', 'approvedBy']);
+        if ($params['type'] == 0) {
+            $query->where('request_from', $params['userId']);
+        } else {
+            $query->where('request_to', $params['userId']);
+        }
+
+        return $query->paginate(12);
+    }
 }

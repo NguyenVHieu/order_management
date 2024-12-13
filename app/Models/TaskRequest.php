@@ -21,4 +21,24 @@ class TaskRequest extends Model
         'score_approval',
     ];
 
+    public function task()
+    {
+        return $this->belongsTo(Task::class);
+    }
+
+    public function requestFrom()
+    {
+        return $this->belongsTo(User::class, 'request_from');
+    }
+
+    public function requestTo()
+    {
+        return $this->belongsTo(User::class, 'request_to');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
 }
