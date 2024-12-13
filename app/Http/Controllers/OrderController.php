@@ -71,7 +71,7 @@ class OrderController extends BaseController
         $this->orderRepository = $orderRepository;
     }
 
-    function pushOrderToPrintify($data) {
+    function pushOrderToPrintify($data) {   
         $results = [];
         foreach($data as $key => $orders) {
             try {
@@ -80,6 +80,7 @@ class OrderController extends BaseController
                 $info = [];
                 $check = true;
                 $result = [];
+                $shipping_method = null;
                 foreach($orders as $order) {
                     $params = [
                         'blueprint_id' => $order->blueprint_id,
@@ -87,7 +88,7 @@ class OrderController extends BaseController
                         'size' => $order->size, 
                         'color' => $order->color
                     ];
-                    $variant_id = $this->getVariantId($params);
+                    $variant_id = 12;
                     if ($variant_id == 0) {
                         $check = false;
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
@@ -125,15 +126,26 @@ class OrderController extends BaseController
                     }
 
                     $lineItems[] = $item;
+                    if (!empty($order->shipping_method)) {
+                        $shipping_method = $order->shipping_method;
+                    }
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
                     $country = DB::table('countries')->where('name', $order->country)->first();
+                    if (empty($shipping_method)) {
+                        $shipping_method = $order->is_shipping == true ? 2 : 1;
+                    } else {
+                        if (!in_array($shipping_method, [1, 2, 3, 4])) {
+                            $results[][$order->order_number. ' '] = 'Phương thức vận chuyển không hợp lệ';
+                            continue;   
+                        }
+                    }
                     $orderData = [
                         "external_id" => "order_sku_" . $key_order_number,
                         "label" => "order_sku_" . $key_order_number,
                         "line_items" => array_values($lineItems),
-                        "shipping_method" => $order->is_shipping == true ? 2 : 1,
+                        "shipping_method" => (int)$shipping_method,
                         "is_printify_express" => false,
                         "is_economy_shipping" => false,
                         "send_shipping_notification" => false,
@@ -348,6 +360,7 @@ class OrderController extends BaseController
             $result = [];
             $info = [];
             $items = [];
+            $shipping_method = null;    
             
             try {
                 $check = true;
@@ -417,6 +430,10 @@ class OrderController extends BaseController
                     ];
 
                     $items[] = $order->order_number;
+
+                    if (!empty($order->shipping_method)) {
+                        $shipping_method = $order->shipping_method;
+                    }
     
                 }
 
@@ -432,10 +449,19 @@ class OrderController extends BaseController
                         $identifier = $base . "#" . implode('_', $numbers);
                     }
                     $country = DB::table('countries')->where('name', $order->country)->first();
+
+                    if (empty($shipping_method)) {
+                        $shipping_method = $order->is_shipping == true ? "EXPRESS" : "STANDARD";
+                    } else {
+                        if (!in_array($shipping_method, ['STANDARD', 'EXPRESS', 'TWODAYS', 'PRIORITY', 'OVERNIGHT'])) {
+                            $results[][$identifier. ' '] = 'Phương thức vận chuyển không hợp lệ';
+                            continue;   
+                        }
+                    }
                     $orderData = [
                         "order" => [
                             "orderId" => $identifier. '_'. time(),
-                            "shippingMethod" => $order->is_shipping == true ? "EXPRESS" : "STANDARD",
+                            "shippingMethod" => $shipping_method,
                             "firstName" => $order->first_name,
                             "lastName" => $order->last_name,
                             "countryCode" => $country->iso_alpha_2,
@@ -792,7 +818,21 @@ class OrderController extends BaseController
                 $items = [];
                 $info = [];
                 $result = [];
+                $shipping_method = null;
                 foreach ($orders as $order) {
+
+                    if (empty($order->shipping_method)) {
+                        $shipping_method = $order->is_shipping == true ? 3 : 0;
+                    } else {
+                        if (!in_array($order->shipping_method, [1, 2, 3, 4, 5, 6, 7, 8])) {
+                            $results[][$order->order_number. ' '] = 'Phương thức vận chuyển không hợp lệ';
+                            $check = false;
+                            continue;   
+                        }
+
+                        $shipping_method = $order->shipping_method;
+                    }
+
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     $name_prod = $product->lenfull ?? '';
                     $sku = $this->getSkuLenful($name_prod, $order->size, $order->color);
@@ -825,7 +865,7 @@ class OrderController extends BaseController
                             ]
                         ],
 
-                        "shippings" => [$order->is_shipping == true ? 3 : 0]
+                        "shippings" => [(int)$shipping_method]
                     ];
                     if (!empty($order->img_2)) {
                         $item["designs"][] = [
@@ -892,6 +932,7 @@ class OrderController extends BaseController
                         $identifier = $base . "#" . implode('_', $numbers);
                     }
                     $country = DB::table('countries')->where('name', $order->country)->first();
+
                     $orderData = [
                         "order_number" => (string)$identifier,
                         "first_name" => $order->first_name,
@@ -1439,7 +1480,8 @@ class OrderController extends BaseController
                     'email' => $request->email,
                     'phone' => $request->phone,
                     'updated_at' => now(),
-                    'updated_by' => Auth::user()->id
+                    'updated_by' => Auth::user()->id,
+                    'method_shipping' => $request->method_shipping ?? null, 
                 ];
     
                 if ($order->multi == true) {
