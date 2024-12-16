@@ -83,25 +83,21 @@ class OrderRepository implements OrderRepositoryInterface
         }
 
         $columns = [
-            DB::raw("DATE_FORMAT(recieved_mail_at, '$format') AS time"),
-            DB::raw("COUNT(DISTINCT CONCAT(order_number_group, '-', is_push, IF(is_push = 1, place_order, ''))) AS amount_order"),
+            DB::raw("DATE_FORMAT(date_push, '$format') AS time"),
             DB::raw("COUNT(DISTINCT CASE WHEN is_push = true THEN CONCAT(order_number_group, '-', place_order) END) AS amount_order_push"),
-            DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"),
             DB::raw("SUM(CASE WHEN is_push = true THEN cost ELSE 0 END) AS total_cost")
         ];
         
-        $query = DB::table('orders')
+        $query = Order::query()
             ->select($columns)
-            ->whereBetween('recieved_mail_at', [$start_date, $end_date])
-            ->groupBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')")) 
-            ->orderBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')"))
+            ->whereBetween('date_push', [$start_date, $end_date])
+            ->groupBy(DB::raw("DATE_FORMAT(date_push, '$format')")) 
+            ->orderBy(DB::raw("DATE_FORMAT(date_push, '$format')"))
             ->get()
             ->keyBy('time')
             ->map(function ($row) {
                 return [
-                    'amount_order' => $row->amount_order,
                     'amount_order_push' => $row->amount_order_push,
-                    'amount_order_not_push' => $row->amount_order_not_push,
                     'total_cost' => $row->total_cost,
                 ];
             });

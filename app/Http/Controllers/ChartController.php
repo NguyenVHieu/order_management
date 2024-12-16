@@ -63,30 +63,32 @@ class ChartController extends BaseController
             }
         
             $results = [];
-            $total_order = 0;
             $total_cost = 0.00;
             $total_order_push = 0;
-            $total_order_not_push = 0;
 
             $data = $this->orderRepository->filterOrderByTime($request->all());
             foreach ($dates as $date) {
-                $results['orders'][] = $data[$date]['amount_order'] ?? 0;
+                
                 $results['cost'][] = isset($data[$date]['total_cost']) ? (float) $data[$date]['total_cost'] : 0.00;
             }
             if ($data) {
                 foreach($data as $value) {
-                    $total_order += $value["amount_order"];
                     $total_cost += $value["total_cost"];
                     $total_order_push += $value["amount_order_push"];
-                    $total_order_not_push += $value["amount_order_not_push"];
                 }
             }
+
+            $orders = DB::table('orders')
+                ->select(DB::raw("COUNT(DISTINCT CONCAT(order_number_group, '-', is_push, IF(is_push = 1, place_order, ''))) AS total_order"),
+                DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"))
+                ->first();
             
+            $results['orders'][] = $orders->total_order ?? 0;
             $results['labels'] = $dates;
-            $results['total_order'] = $total_order;
-            $results['total_cost'] = $total_cost;
-            $results['total_order_push'] = $total_order_push;
-            $results['total_order_not_push'] = $total_order_not_push;
+            $results['total_order'] = $orders->total_order ?? 0;
+            $results['total_cost'] = $total_cost ?? 0;
+            $results['total_order_push'] = $total_order_push ?? 0;
+            $results['total_order_not_push'] = $orders->amount_order_not_push ?? 0;
 
             return $this->sendSuccess($results);
         } catch (\Throwable $th) {

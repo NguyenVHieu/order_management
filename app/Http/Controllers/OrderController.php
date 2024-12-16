@@ -548,8 +548,7 @@ class OrderController extends BaseController
                         $key_order_otb = $orders[0]->order_number;
                     }
                     $writtenRows = [];
-                    foreach ($orders as $index => $order) {
-                        $ids[] = $order->id;
+                    foreach ($orders as $index => $order) {   
                         $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                         if (!$product || empty($product->otb)) {
                             $results[$order->order_number. ' '. $order->size. ' '. $order->color] = 'Không tìm thấy product';
@@ -562,6 +561,8 @@ class OrderController extends BaseController
                             }
                             break;
                         }
+                        
+                        $ids[] = $order->id;
 
                         if (array_key_exists($product->otb, $arr_type)) {
                             $felix_size = $arr_type[$product->otb];
