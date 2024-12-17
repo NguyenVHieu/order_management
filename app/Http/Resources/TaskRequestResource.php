@@ -20,7 +20,7 @@ class TaskRequestResource extends JsonResource
             'task_name' => $this->task->title ?? '',
             'request_from' => $this->requestFrom->name ?? '',
             'request_to' => $this->requestTo->name ?? '',
-            'approval' => !empty($this->approval) ? (boolean)$this->approval : null,
+            'approval' => $this->approval !== null ? (bool)$this->approval : null,
             'description' => $this->description,
             'score_request' => $this->score_request,
             'score_task' => $this->score_task,
