@@ -187,7 +187,7 @@ class TaskRepository implements TaskRepositoryInterface
             });
         }
 
-        $query->where('users.user_type_id', 4)
+        $query->whereIn('users.user_type_id', [4, 5])
         ->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
         return $query->get();
     }
