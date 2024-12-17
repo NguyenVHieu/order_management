@@ -323,7 +323,7 @@ class TaskController extends BaseController
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $category_designs = DB::table('category_designs')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();    
             $designers = DB::table('users')
-                ->where('user_type_id', 4)
+                ->whereIn('user_type_id', [4, 5])
                 ->leftJoin('tasks', function($join) {
                     $join->on('users.id', '=', 'tasks.design_recipient_id')
                          ->whereIn('tasks.status_id', [3, 4, 5]);

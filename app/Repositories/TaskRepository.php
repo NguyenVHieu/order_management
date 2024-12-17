@@ -163,15 +163,18 @@ class TaskRepository implements TaskRepositoryInterface
     public function reportTaskByDesigner($params)
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+        $start_date = Carbon::parse($params['startDate'])->startOfDay();
+        $end_date = Carbon::parse($params['endDate'])->endOfDay();
+
         $query = User::select(
             DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 && $params['userTypeId'] != 5 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
             'users.name AS recipient_name',
             'kpi_users.kpi AS kpi'
         )
-        ->leftJoin('tasks', function ($join) use($params){
+        ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.design_recipient_id', '=', 'users.id')
             ->where('tasks.status_id', 6)
-            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -192,6 +195,8 @@ class TaskRepository implements TaskRepositoryInterface
     public function reportTaskBySeller($params)
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+        $start_date = Carbon::parse($params['startDate'])->startOfDay();
+        $end_date = Carbon::parse($params['endDate'])->endOfDay();
 
         $query = User::select(
             DB::raw('CAST(SUM(CASE WHEN (' . ($params['userTypeId'] != -1 && $params['userTypeId'] != 5 ? 'user_2.team_id = ' . $params['teamId'] : '1=1') . ') THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
@@ -199,10 +204,10 @@ class TaskRepository implements TaskRepositoryInterface
             'kpi_users.kpi AS kpi'
         )
 
-        ->leftJoin('tasks', function ($join) use($params){
+        ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
-            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -226,16 +231,18 @@ class TaskRepository implements TaskRepositoryInterface
     public function reportTaskByLeader($params)
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+        $start_date = Carbon::parse($params['startDate'])->startOfDay();
+        $end_date = Carbon::parse($params['endDate'])->endOfDay();
 
         $query = User::select(
             DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
             'users.name AS leader_name',
             'kpi_users.kpi AS kpi'
         )
-        ->leftJoin('tasks', function ($join) use($params){
+        ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
-            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -259,12 +266,15 @@ class TaskRepository implements TaskRepositoryInterface
 
     public function totalCountTask($params)
     {
+        $start_date = Carbon::parse($params['startDate'])->startOfDay();
+        $end_date = Carbon::parse($params['endDate'])->endOfDay();
+
         $query = Task::select(
             DB::raw('SUM(tasks.count_product) AS total_count')
         )
         ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
         ->where('tasks.status_id', 6)
-        ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+        ->whereBetween('tasks.created_at', [$start_date, $end_date]);
 
         if ($params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
             $query->where('users.team_id', $params['teamId']);
@@ -278,6 +288,9 @@ class TaskRepository implements TaskRepositoryInterface
 
     public function reportTaskByTeam($params)
     {
+        $start_date = Carbon::parse($params['startDate'])->startOfDay();
+        $end_date = Carbon::parse($params['endDate'])->endOfDay();
+
         $query = Team::select(
             DB::raw('CAST(SUM(tasks.count_product) AS FLOAT) AS count'),
             'teams.name AS team_name'
@@ -286,10 +299,10 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('users.team_id', '=', 'teams.id');
         })
 
-        ->leftJoin('tasks', function ($join) use($params){
+        ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
-            ->whereBetween('tasks.created_at', [$params['startDate'], $params['endDate']]);
+            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         })
         
         ->groupBy('teams.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
