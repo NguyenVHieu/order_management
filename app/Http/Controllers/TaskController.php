@@ -879,6 +879,7 @@ class TaskController extends BaseController
             $params = [
                 'userId' => $userId,
                 'type' => $request->type ?? 1,
+                'keyword' => $request->keyword ?? '',
             ];
 
             $results = $this->taskRepository->getRequestTask($params);
