@@ -342,6 +342,16 @@ class TaskRepository implements TaskRepositoryInterface
             $query->where('request_to', $params['userId']);
         }
 
+        if (!empty($params['keyword'])) {
+            $query->where(function($q) use ($params) {
+                $q->where('description', 'like', '%' . $params['keyword'] . '%');
+                $q->orWhereHas('task', function($q) use ($params) {
+                    $q->where('title', 'like', '%' . $params['keyword'] . '%');
+                });
+            });
+        }
+
+        $query->orderBy('approval', 'ASC');
         return $query->paginate(12);
     }
 }
