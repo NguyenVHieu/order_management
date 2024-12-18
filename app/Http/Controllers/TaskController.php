@@ -106,6 +106,12 @@ class TaskController extends BaseController
             $data['created_by'] = $request->userId; 
             $data['created_at'] = now();
 
+            if ( $data['status_id'] == 1) {
+                $data['type'] = 'new_design';
+            } else {
+                $data['type'] = 'new_order';
+            }
+
             $paramScore = [
                 'seller_id' => $data['created_by'],
                 'score_old' => 0,
@@ -113,7 +119,7 @@ class TaskController extends BaseController
                 'year_month' => now()->format('Y-m')    
             ];
 
-            if (!$this->checkScoreSeller($paramScore)) {
+            if ($data['type'] !== 'new_design' && !$this->checkScoreSeller($paramScore)) {
                 return $this->sendError('Quá số hạng ngạch', 422);
             }
 
@@ -180,8 +186,8 @@ class TaskController extends BaseController
                     'score_new' => $data['count_product'],
                     'year_month' => now()->format('Y-m')
                 ];
-    
-                if (!$this->checkScoreSeller($params)) {
+
+                if ($task->type !== 'new_design' && !$this->checkScoreSeller($params)) {
                     return $this->sendError('Quá số hạng ngạch', 422);
                 }
             }
@@ -785,10 +791,10 @@ class TaskController extends BaseController
                 $paramScore['seller_id'] =  $request->request_to; 
             }
 
-
-            if (!$this->checkScoreSeller($paramScore)) {
+            if ($task->type !== 'new_design' && !$this->checkScoreSeller($paramScore)) {
                 return $this->sendError('Quá số hạng ngạch của seller', 422);
             }
+            
             
             $data = [
                 'task_id' => $request->task_id,
@@ -851,7 +857,7 @@ class TaskController extends BaseController
                     $paramScore['seller_id'] =  $requestTask->request_from; 
                 }
 
-                if (!$this->checkScoreSeller($paramScore)) {
+                if ($task->type != 'new_design' && !$this->checkScoreSeller($paramScore)) {
                     return $this->sendError('Quá số hạng ngạch của seller', 422);
                 }
                 

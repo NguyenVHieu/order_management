@@ -207,6 +207,7 @@ class TaskRepository implements TaskRepositoryInterface
         ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
+            ->where('tasks.type', 'new_design')
             ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
@@ -242,6 +243,7 @@ class TaskRepository implements TaskRepositoryInterface
         ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
+            ->where('tasks.type', 'new_design')
             ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
@@ -302,6 +304,7 @@ class TaskRepository implements TaskRepositoryInterface
         ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
+            ->where('tasks.type', 'new_design')
             ->whereBetween('tasks.created_at', [$start_date, $end_date]);
         })
         
@@ -319,6 +322,7 @@ class TaskRepository implements TaskRepositoryInterface
             DB::raw('SUM(tasks.count_product) AS total_count'))
         ->whereBetween('created_at', [$start_date, $end_date])  
         ->where('tasks.created_by', $params['seller_id'])
+        ->where('type', 'new_design')
         ->pluck('total_count')
         ->first();
 

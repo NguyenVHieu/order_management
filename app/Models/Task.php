@@ -24,6 +24,7 @@ class Task extends Model
         'created_by',
         'created_at',
         'template_id',  
+        'type'
     ];
 
     public function status()
