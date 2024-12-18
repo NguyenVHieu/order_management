@@ -134,7 +134,7 @@ class MailController extends BaseController
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
                             'shipping' => '/Shipping:\s*\$?(\d+(\.\d{2})?|US)/',
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
-                            'size' => '/(?:Finish|Sizes|Options):\s*(.*)/',
+                            'size' => '/(?:Finish|Sizes):\s*(.*)/',
                             'size_blanket' => '/Size:\s*(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*([\s\S]*?)(?=\r?\nQuantity:|$)/', 
                         ];
@@ -193,8 +193,7 @@ class MailController extends BaseController
                                     $item['style'] = $data['style'][$i] . ' ' . $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
-                                    $style = $this->extractInfo('/(?:Style|Sizes):\s*(.*)/', $emailBody);
-                                    $item['style'] = str_replace("\r", "", $style[$i]);
+                                    $item['style'] = str_replace("\r", "", $data['style'][$i]);
                                     $sizeOther = $this->getSize($item['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
@@ -234,12 +233,10 @@ class MailController extends BaseController
                                 $data['style'] = $data['style'] . ' '. $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }else if ( stripos($data['product'], 'Flag') !== false){
-                                $data['style'] = is_array($data['style']) ? $data['style'][0] : $data['style'];
                                 $data['style'] = $data['style']. ' '. $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             } else {
-                                $style = $this->extractInfo('/(?:Style|Sizes):\s*(.*)/', $emailBody);
-                                $data['style'] = str_replace("\r", "", $style);
+                                $data['style'] = str_replace("\r", "", $data['style']);
                                 $sizeOther = $this->getSize($data['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
