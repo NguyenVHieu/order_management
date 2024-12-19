@@ -1530,6 +1530,7 @@ class OrderController extends BaseController
     }
 
     public function appendSheetFlag($data){
+        set_time_limit(-1);
         try{
             $orders = collect($data)->flatten(1);
             $spreadsheetId = '1tTXxP2JKEojJAe3DX5vWD2mVDhP1TjoBy_cZ6nK7D9M';
