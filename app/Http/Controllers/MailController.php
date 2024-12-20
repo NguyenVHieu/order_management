@@ -135,7 +135,7 @@ class MailController extends BaseController
                             'shipping' => '/Shipping:\s*\$?(\d+(\.\d{2})?|US)/',
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
                             'size' => '/(?:Finish|Sizes):\s*(.*)/',
-                            'size_blanket' => '/Size:\s*(\d+x\d+)/',
+                            'size_blanket' => '/Sizes:\s*(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*([\s\S]*?)(?=\r?\nQuantity:|$)/', 
                         ];
 
