@@ -745,7 +745,7 @@ class OrderController extends BaseController
                         ],
                     ]);   
                     $resCountry = json_decode($resCountry->getBody()->getContents(), true);
-                    $state = $resCountry['places'][0]['state'];
+                    $state = $resCountry['places'][0]['state abbreviation'] === $order->state ? $resCountry['places'][0]['state'] : $order->state;
                         
                     $orderData = [
                         "order_id" => (string)$key. time(),
