@@ -737,22 +737,15 @@ class OrderController extends BaseController
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    $country = DB::table('countries')->where('name', $order->country)->first();
                     $client = new Client();
-                    $resCountry = $client->post('https://countriesnow.space/api/v0.1/countries/states', [
+                    $resCountry = $client->get("http://api.zippopotam.us/{$country->iso_alpha_2}/{$order->zip}", [
                         'headers' => [
                             'Content-Type'  => 'application/json',
                         ],
-                        'json' => [
-                            'country' => $order->country
-                        ]
                     ]);   
                     $resCountry = json_decode($resCountry->getBody()->getContents(), true);
-                    if ($resCountry['error'] == false && count($resCountry['data']['states']) > 0) {
-                        $state = $order->state;
-                        $state = collect($resCountry['data']['states'])->first(function ($item) use ($state) {
-                            return strtoupper($item['state_code']) === strtoupper($state);
-                        });
-                    }
+                    $state = $resCountry['places'][0]['state'];
                         
                     $orderData = [
                         "order_id" => (string)$key. time(),
@@ -763,7 +756,7 @@ class OrderController extends BaseController
                             "shipping_address_2" => $order->apartment ?? '',
                             "shipping_city" => $order->city,
                             "shipping_zip" => $order->zip,
-                            "shipping_state" => $state['name'],
+                            "shipping_state" => $state,
                             "shipping_country" => $order->country,
                         ],
                         "shipping_method" => $shipping_method
