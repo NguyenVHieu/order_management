@@ -160,7 +160,7 @@ class TaskRepository implements TaskRepositoryInterface
             return $query->paginate(32);
         }
 
-    public function reportTaskByDesigner($params)
+    public function reportTaskByDesigners($params)
     {
         $year_month = Carbon::parse($params['startDate'])->format('Y-m');
         $start_date = Carbon::parse($params['startDate'])->startOfDay();
@@ -188,6 +188,33 @@ class TaskRepository implements TaskRepositoryInterface
         }
 
         $query->whereIn('users.user_type_id', [4, 5])
+        ->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
+        return $query->get();
+    }
+
+    public function reportTaskByDesigner($params)
+    {
+        $year_month = Carbon::parse($params['startDate'])->format('Y-m');
+        $start_date = Carbon::parse($params['startDate'])->startOfDay();
+        $end_date = Carbon::parse($params['endDate'])->endOfDay();
+
+        $query = User::select(
+            DB::raw('CAST(SUM(CASE WHEN (1=1) THEN tasks.count_product ELSE 0 END) AS FLOAT) AS count'),
+            'users.name AS recipient_name',
+            'kpi_users.kpi AS kpi'
+        )
+        ->leftJoin('tasks', function ($join) use($start_date, $end_date, $params){
+            $join->on('tasks.design_recipient_id', '=', 'users.id')
+            ->where('tasks.status_id', 6)
+            ->where('tasks.design_recipient_id', $params['designerId'])
+            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+        }) // Join với bảng tasks
+        ->leftJoin('kpi_users', function($join) use ($year_month) {
+            $join->on('kpi_users.user_id', '=', 'users.id')
+            ->where('kpi_users.year_month', $year_month);
+        });
+        
+        $query->where('users.id', $params['designerId'])
         ->groupBy('users.name', 'kpi_users.kpi'); // Nhóm thêm theo cột name để tránh lỗi SQL
         return $query->get();
     }

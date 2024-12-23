@@ -529,7 +529,7 @@ class TaskController extends BaseController
                     'teamId' => Auth::user()->team_id ?? -1
                 ];
                 $seller = $this->taskRepository->reportTaskBySeller($params);
-                $designer = $this->taskRepository->reportTaskByDesigner($params);
+                $designer = $this->taskRepository->reportTaskByDesigners($params);
                 $leader = $this->taskRepository->reportTaskByLeader($params);
                 $total = $this->taskRepository->totalCountTask($params);
                 $data = [
@@ -545,7 +545,24 @@ class TaskController extends BaseController
 
                 return $this->sendSuccess($data);
                 
-            } else {
+            } else if ($userTypeId == 4) {
+                $params = [
+                    'startDate' => $request->start_date,
+                    'endDate' => $request->end_date,
+                    'userTypeId' => $userTypeId,    
+                    'teamId' => Auth::user()->team_id ?? -1,
+                    'designerId' => Auth::user()->id
+                ];
+                $designer = $this->taskRepository->reportTaskByDesigner($params);
+                $data = [
+                    'seller' => [],
+                    'designer' => $designer,
+                    'leader' => [],
+                    'total' => []
+                ];
+                return $this->sendSuccess($data);
+            }
+            else {
                 return $this->sendError('Không có quyền truy cập', 403);
             }
         } catch (\Exception $ex) {
