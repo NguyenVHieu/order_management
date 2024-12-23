@@ -193,14 +193,14 @@ class MailController extends BaseController
                                     $item['style'] = $data['style'][$i] ?? '' . ' ' . $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
-                                    $item['style'] = str_replace("\r", "", $data['style'][$i]);
+                                    $item['style'] = str_replace("\r", "", $data['style'][$i]) ?? '';
                                     $sizeOther = $this->getSize($item['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
                                             $item['style'] = $item['style'].' '.$data['size'][$i];
                                             $item['size'] = $sizeOther;
                                         } else {
-                                            $item['size'] = $data['size'][$i];
+                                            $item['size'] = $data['size'][$i] ?? '';
                                             $item['style'] = $item['style'].' '.$item['size'];
                                         }
                                     } else {
@@ -268,6 +268,7 @@ class MailController extends BaseController
                         // $client->expunge();
                         Helper::trackingInfo('end order number: ' . $data['orderNumber']);
                     } catch (\Throwable $th) {
+                        dd($th);
                         unset($messages[$keyMes]);
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                         continue;
