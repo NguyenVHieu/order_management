@@ -88,7 +88,7 @@ class OrderController extends BaseController
                         'size' => $order->size, 
                         'color' => $order->color
                     ];
-                    $variant_id = 12;
+                    $variant_id = $this->getVariantId($params);
                     if ($variant_id == 0) {
                         $check = false;
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
@@ -159,6 +159,8 @@ class OrderController extends BaseController
                             "zip" => $order->zip
                         ]
                     ];
+
+                    
 
                     if(!empty($order->apartment)){
                         $orderData['address_to']['address2'] = $order->apartment;
