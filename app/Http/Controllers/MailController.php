@@ -185,12 +185,12 @@ class MailController extends BaseController
                                 $item['product'] = $data['product'][$i];
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
-                                    $item['size'] = $data['size_blanket'][$i];
+                                    $item['size'] = $data['size_blanket'][$i] ?? '';
                                     $item['style'] = str_replace("\r", "", $data['style'][$i]) . ' '. $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }else if (stripos($data['product'][$i], 'Flag') !== false){
-                                    $item['size'] = $data['size'][$i];
-                                    $item['style'] = $data['style'][$i] . ' ' . $item['size'];
+                                    $item['size'] = $data['size'][$i] ?? '';
+                                    $item['style'] = $data['style'][$i] ?? '' . ' ' . $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
                                     $item['style'] = str_replace("\r", "", $data['style'][$i]);
