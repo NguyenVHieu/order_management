@@ -345,46 +345,46 @@ class WebhookController extends BaseController
 
     public function updateOrderHubfulfill()
     {
-        try {
-            $arrayShipping = config('constants.shipping_hubfulfill');
-            $toDate = Carbon::now()->format('Y-m-d');
-            $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
+        // try {
+        //     $arrayShipping = config('constants.shipping_hubfulfill');
+        //     $toDate = Carbon::now()->format('Y-m-d');
+        //     $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
 
-            $orders = DB::table('orders')->where('place_order', 'hubfulfill')
-                               ->where('is_push', true)
-                               ->whereBetween('date_push', [$fromDate, $toDate])  
-                               ->select('order_id')->distinct()   
-                               ->get();
+        //     $orders = DB::table('orders')->where('place_order', 'hubfulfill')
+        //                        ->where('is_push', true)
+        //                        ->whereBetween('date_push', [$fromDate, $toDate])  
+        //                        ->select('order_id')->distinct()   
+        //                        ->get();
 
-            foreach($orders as $order) {
-                $client = new Client();
-                $token = env('TOKEN_HUBFULFILL');
-                $response = $client->get('https://hubfulfill.com/api/orders/'.$order->order_id, [
-                    'headers' => [
-                        'X-API-KEY' => $token,
-                        'Content-Type'  => 'application/json',
-                    ],
-                ]);
+        //     foreach($orders as $order) {
+        //         $client = new Client();
+        //         $token = env('TOKEN_HUBFULFILL');
+        //         $response = $client->get('https://hubfulfill.com/api/orders/'.$order->order_id, [
+        //             'headers' => [
+        //                 'X-API-KEY' => $token,
+        //                 'Content-Type'  => 'application/json',
+        //             ],
+        //         ]);
                 
-                $res = json_decode($response->getBody()->getContents(), true);
-                $order = Order::where('order_id', $order->order_id)->first();
-                if ($order) {
-                    $codeTracking = $arrayShipping[$order->country] ?? null;
-                    $order->status_order = $res['status'];
-                    $order->tracking_order = $codeTracking.'.'.$res['tracking_number'] ?? null;
-                    $order->cost = $res['total'];
-                    $order->save();
-                }else {
-                    Helper::trackingInfo('Không timg thấy order');
-                }
+        //         $res = json_decode($response->getBody()->getContents(), true);
+        //         $order = Order::where('order_id', $order->order_id)->first();
+        //         if ($order) {
+        //             $codeTracking = $arrayShipping[$order->country] ?? null;
+        //             $order->status_order = $res['status'];
+        //             $order->tracking_order = $codeTracking.'.'.$res['tracking_number'] ?? null;
+        //             $order->cost = $res['total'];
+        //             $order->save();
+        //         }else {
+        //             Helper::trackingInfo('Không timg thấy order');
+        //         }
                 
-            }
+        //     }
 
-            Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
+        //     Helper::trackingInfo('Cập nhật order hubfulfill thành công!');
 
-        } catch (\Throwable $th) {
-            Helper::trackingError('Cập nhật order hubfulfill thất bại:'. $th->getMessage());
-        }
+        // } catch (\Throwable $th) {
+        //     Helper::trackingError('Cập nhật order hubfulfill thất bại:'. $th->getMessage());
+        // }
     }
 
     function backupDB()
