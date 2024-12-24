@@ -269,7 +269,6 @@ class MailController extends BaseController
                         // $client->expunge();
                         Helper::trackingInfo('end order number: ' . $data['orderNumber']);
                     } catch (\Throwable $th) {
-                        dd($th);
                         unset($messages[$keyMes]);
                         Helper::trackingError('fetchMailOrder child error ' . $th->getMessage());
                         continue;
