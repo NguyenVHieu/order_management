@@ -748,7 +748,7 @@ class OrderController extends BaseController
                     $state = $resCountry['places'][0]['state abbreviation'] === $order->state ? $resCountry['places'][0]['state'] : $order->state;
                         
                     $orderData = [
-                        "order_id" => (string)$key. time(),
+                        "order_id" => 'ORDER'.$key.time(),
                         "items" => $lineItems,
                         "shipping" => [
                             "shipping_name" => $order->first_name .' '. $order->last_name,
