@@ -14,6 +14,7 @@ use App\Http\Requests\TaskRequest;
 use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskRequestResource;
 use App\Http\Resources\TaskResource;
+use App\Jobs\NotificationSeller;
 use App\Models\KpiUser;
 use App\Models\TaskRequest as TaskRequestModel;
 use App\Models\Task;
@@ -296,6 +297,27 @@ class TaskController extends BaseController
             $res = new TaskResource($task_new);
             DB::commit();   
             Helper::trackingInfo(json_encode($request->all()));
+            // Đăng ký hàm sẽ được thực thi sau khi phản hồi đã được gửi
+                register_shutdown_function(function() use ($request, $task_new) {
+                    try {
+                        $status_old = $request->status_old;
+                        $status_new = $request->status;
+        
+                        Helper::trackingInfo("Bắt đầu xử lý thông báo từ trạng thái cũ: $status_old sang trạng thái mới: $status_new");
+        
+                        if ((in_array($status_old, ['new_order', 'new_design']) && $status_new === 'in_progress') || $status_new === 'done') {
+                            $message = $status_new === 'in_progress' 
+                                ? "Task {$task_new->title} đã có designer nhận!"
+                                : "Task {$task_new->title} đã xong!";
+        
+                            Helper::trackingInfo("Gửi thông báo: $message");
+                            $this->notificationLark($task_new->created_by, $message);
+                        }
+                    } catch (\Exception $e) {
+                        Helper::trackingError("Lỗi khi gửi thông báo: " . $e->getMessage());
+                    }
+                });
+
             return $this->sendSuccess($res);
 
         } catch (\Exception $e) {
@@ -607,14 +629,14 @@ class TaskController extends BaseController
         }   
     }
 
-    public function notificationLark(Request $request)
+    public function notificationLark($userId, $text)
     {
         try {
             // 1. Đăng nhập (Lấy tenant_access_token)
             $tenantAccessToken = $this->getTenantAccessToken();
 
-            $user = User::find($request->userId);
-            $text = $request->text;
+            $user = User::find($userId);
+            $text = $text;
             //2. Tìm OpenID
             $openId = $this->findOpenId($tenantAccessToken, $user->email); // Thay email cần tìm
 
