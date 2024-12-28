@@ -467,6 +467,7 @@ class OrderController extends BaseController
                             "countryCode" => $country->iso_alpha_2,
                             "provinceCode" => $order->state,
                             "addressLine1" => $order->address,
+                            "addressLine2" => $order->apartment ?? '',  
                             "city" => $order->city,
                             "zipcode" => $order->zip,
                         ],
