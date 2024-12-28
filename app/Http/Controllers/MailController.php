@@ -134,8 +134,8 @@ class MailController extends BaseController
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
                             'shipping' => '/Shipping:\s*\$?(\d+(\.\d{2})?|US)/',
                             'orderTotal' => '/Order Total:\s*\$?(\d+(\.\d{2})?|US)/',
-                            'size' => '/(?:Finish|Sizes|Options):\s*(.*)/',
-                            'size_blanket' => '/Size:\s*(\d+x\d+)/',
+                            'size' => '/(?:Finish|Sizes|Size):\s*(.*)/',
+                            'size_blanket' => '/(?:Size|Sizes):\s*(\d+x\d+)/',
                             'personalization' => '/Personalization:\s*([\s\S]*?)(?=\r?\nQuantity:|$)/', 
                         ];
 
@@ -185,23 +185,22 @@ class MailController extends BaseController
                                 $item['product'] = $data['product'][$i];
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
-                                    $item['size'] = $data['size_blanket'][$i];
+                                    $item['size'] = $data['size_blanket'][$i] ?? '';
                                     $item['style'] = str_replace("\r", "", $data['style'][$i]) . ' '. $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }else if (stripos($data['product'][$i], 'Flag') !== false){
-                                    $item['size'] = $data['size'][$i];
-                                    $item['style'] = $data['style'][$i] . ' ' . $item['size'];
+                                    $item['size'] = $data['size'][$i] ?? '';
+                                    $item['style'] = $data['style'][$i] ?? '' . ' ' . $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
-                                    $style = $this->extractInfo('/(?:Style|Sizes):\s*(.*)/', $emailBody);
-                                    $item['style'] = str_replace("\r", "", $style[$i]);
+                                    $item['style'] = !empty($data['style'][$i]) ? str_replace("\r", "", $data['style'][$i]) : '';
                                     $sizeOther = $this->getSize($item['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
                                             $item['style'] = $item['style'].' '.$data['size'][$i];
                                             $item['size'] = $sizeOther;
                                         } else {
-                                            $item['size'] = $data['size'][$i];
+                                            $item['size'] = $data['size'][$i] ?? '';
                                             $item['style'] = $item['style'].' '.$item['size'];
                                         }
                                     } else {
@@ -210,8 +209,9 @@ class MailController extends BaseController
 
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }
-                                if (stripos($item['product'][$i], 'digital') !== false || stripos($item['product'][$i], 'upgrade') !== false || 
-                                    stripos($item['style'][$i], 'digital') !== false || stripos($item['style'][$i], 'upgrade') !== false){
+
+                                if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false || 
+                                    stripos($item['style'], 'digital') !== false || stripos($item['style'], 'upgrade') !== false){
                                     // $message->setFlag('SEEN');
                                     // $client->expunge();
                                     continue;
@@ -234,12 +234,10 @@ class MailController extends BaseController
                                 $data['style'] = $data['style'] . ' '. $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }else if ( stripos($data['product'], 'Flag') !== false){
-                                $data['style'] = is_array($data['style']) ? $data['style'][0] : $data['style'];
                                 $data['style'] = $data['style']. ' '. $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             } else {
-                                $style = $this->extractInfo('/(?:Style|Sizes):\s*(.*)/', $emailBody);
-                                $data['style'] = str_replace("\r", "", $style);
+                                $data['style'] = str_replace("\r", "", $data['style']);
                                 $sizeOther = $this->getSize($data['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {

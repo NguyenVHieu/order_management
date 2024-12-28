@@ -88,7 +88,7 @@ class OrderController extends BaseController
                         'size' => $order->size, 
                         'color' => $order->color
                     ];
-                    $variant_id = 12;
+                    $variant_id = $this->getVariantId($params);
                     if ($variant_id == 0) {
                         $check = false;
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
@@ -159,6 +159,8 @@ class OrderController extends BaseController
                             "zip" => $order->zip
                         ]
                     ];
+
+                    
 
                     if(!empty($order->apartment)){
                         $orderData['address_to']['address2'] = $order->apartment;
@@ -736,25 +738,18 @@ class OrderController extends BaseController
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
+                    $country = DB::table('countries')->where('name', $order->country)->first();
                     $client = new Client();
-                    $resCountry = $client->post('https://countriesnow.space/api/v0.1/countries/states', [
+                    $resCountry = $client->get("http://api.zippopotam.us/{$country->iso_alpha_2}/{$order->zip}", [
                         'headers' => [
                             'Content-Type'  => 'application/json',
                         ],
-                        'json' => [
-                            'country' => $order->country
-                        ]
                     ]);   
                     $resCountry = json_decode($resCountry->getBody()->getContents(), true);
-                    if ($resCountry['error'] == false && count($resCountry['data']['states']) > 0) {
-                        $state = $order->state;
-                        $state = collect($resCountry['data']['states'])->first(function ($item) use ($state) {
-                            return strtoupper($item['state_code']) === strtoupper($state);
-                        });
-                    }
+                    $state = $resCountry['places'][0]['state abbreviation'] === $order->state ? $resCountry['places'][0]['state'] : $order->state;
                         
                     $orderData = [
-                        "order_id" => (string)$key. time(),
+                        "order_id" => 'ORDER'.$key.time(),
                         "items" => $lineItems,
                         "shipping" => [
                             "shipping_name" => $order->first_name .' '. $order->last_name,
@@ -762,7 +757,7 @@ class OrderController extends BaseController
                             "shipping_address_2" => $order->apartment ?? '',
                             "shipping_city" => $order->city,
                             "shipping_zip" => $order->zip,
-                            "shipping_state" => $state['name'],
+                            "shipping_state" => $state,
                             "shipping_country" => $order->country,
                         ],
                         "shipping_method" => $shipping_method
@@ -1531,6 +1526,7 @@ class OrderController extends BaseController
     }
 
     public function appendSheetFlag($data){
+        set_time_limit(-1);
         try{
             $orders = collect($data)->flatten(1);
             $spreadsheetId = '1tTXxP2JKEojJAe3DX5vWD2mVDhP1TjoBy_cZ6nK7D9M';
@@ -1576,14 +1572,14 @@ class OrderController extends BaseController
                     '#'.$item->order_number,
                     (string)$item->quantity,
                     $size,
-                    $this->saveImgeDrive($item->img_1) ?? '',
+                    !empty($item->img_1) ? $this->saveImgeDrive($item->img_1) : '',
                     $item->first_name. ' ' . $item->last_name,
                     $item->address,
                     $item->city,
                     $item->zip,
                     $item->state ?? '',
                     $item->country,
-                    $this->saveImgeDrive($item->img_6) ?? '',
+                    !empty($item->img_6) ? $this->saveImgeDrive($item->img_6) : '',
                     '',
                     '',
                     (string)$total_cost,

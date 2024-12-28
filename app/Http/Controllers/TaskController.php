@@ -14,6 +14,7 @@ use App\Http\Requests\TaskRequest;
 use App\Http\Resources\TaskHistoryResource;
 use App\Http\Resources\TaskRequestResource;
 use App\Http\Resources\TaskResource;
+use App\Jobs\NotificationSeller;
 use App\Models\KpiUser;
 use App\Models\TaskRequest as TaskRequestModel;
 use App\Models\Task;
@@ -106,6 +107,12 @@ class TaskController extends BaseController
             $data['created_by'] = $request->userId; 
             $data['created_at'] = now();
 
+            if ( $data['status_id'] == 1) {
+                $data['type'] = 'new_design';
+            } else {
+                $data['type'] = 'new_order';
+            }
+
             $paramScore = [
                 'seller_id' => $data['created_by'],
                 'score_old' => 0,
@@ -113,7 +120,7 @@ class TaskController extends BaseController
                 'year_month' => now()->format('Y-m')    
             ];
 
-            if (!$this->checkScoreSeller($paramScore)) {
+            if ($data['type'] !== 'new_design' && !$this->checkScoreSeller($paramScore)) {
                 return $this->sendError('Quá số hạng ngạch', 422);
             }
 
@@ -180,8 +187,8 @@ class TaskController extends BaseController
                     'score_new' => $data['count_product'],
                     'year_month' => now()->format('Y-m')
                 ];
-    
-                if (!$this->checkScoreSeller($params)) {
+
+                if ($task->type !== 'new_design' && !$this->checkScoreSeller($params)) {
                     return $this->sendError('Quá số hạng ngạch', 422);
                 }
             }
@@ -290,6 +297,27 @@ class TaskController extends BaseController
             $res = new TaskResource($task_new);
             DB::commit();   
             Helper::trackingInfo(json_encode($request->all()));
+            // Đăng ký hàm sẽ được thực thi sau khi phản hồi đã được gửi
+                register_shutdown_function(function() use ($request, $task_new) {
+                    try {
+                        $status_old = $request->status_old;
+                        $status_new = $request->status;
+        
+                        Helper::trackingInfo("Bắt đầu xử lý thông báo từ trạng thái cũ: $status_old sang trạng thái mới: $status_new");
+        
+                        if ((in_array($status_old, ['new_order', 'new_design']) && $status_new === 'in_progress') || $status_new === 'done') {
+                            $message = $status_new === 'in_progress' 
+                                ? "Task {$task_new->title} đã có designer nhận!"
+                                : "Task {$task_new->title} đã xong!";
+        
+                            Helper::trackingInfo("Gửi thông báo: $message");
+                            $this->notificationLark($task_new->created_by, $message);
+                        }
+                    } catch (\Exception $e) {
+                        Helper::trackingError("Lỗi khi gửi thông báo: " . $e->getMessage());
+                    }
+                });
+
             return $this->sendSuccess($res);
 
         } catch (\Exception $e) {
@@ -323,7 +351,7 @@ class TaskController extends BaseController
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $category_designs = DB::table('category_designs')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();    
             $designers = DB::table('users')
-                ->where('user_type_id', 4)
+                ->whereIn('user_type_id', [4, 5])
                 ->leftJoin('tasks', function($join) {
                     $join->on('users.id', '=', 'tasks.design_recipient_id')
                          ->whereIn('tasks.status_id', [3, 4, 5]);
@@ -523,7 +551,7 @@ class TaskController extends BaseController
                     'teamId' => Auth::user()->team_id ?? -1
                 ];
                 $seller = $this->taskRepository->reportTaskBySeller($params);
-                $designer = $this->taskRepository->reportTaskByDesigner($params);
+                $designer = $this->taskRepository->reportTaskByDesigners($params);
                 $leader = $this->taskRepository->reportTaskByLeader($params);
                 $total = $this->taskRepository->totalCountTask($params);
                 $data = [
@@ -539,7 +567,24 @@ class TaskController extends BaseController
 
                 return $this->sendSuccess($data);
                 
-            } else {
+            } else if ($userTypeId == 4) {
+                $params = [
+                    'startDate' => $request->start_date,
+                    'endDate' => $request->end_date,
+                    'userTypeId' => $userTypeId,    
+                    'teamId' => Auth::user()->team_id ?? -1,
+                    'designerId' => Auth::user()->id
+                ];
+                $designer = $this->taskRepository->reportTaskByDesigner($params);
+                $data = [
+                    'seller' => [],
+                    'designer' => $designer,
+                    'leader' => [],
+                    'total' => []
+                ];
+                return $this->sendSuccess($data);
+            }
+            else {
                 return $this->sendError('Không có quyền truy cập', 403);
             }
         } catch (\Exception $ex) {
@@ -584,14 +629,14 @@ class TaskController extends BaseController
         }   
     }
 
-    public function notificationLark(Request $request)
+    public function notificationLark($userId, $text)
     {
         try {
             // 1. Đăng nhập (Lấy tenant_access_token)
             $tenantAccessToken = $this->getTenantAccessToken();
 
-            $user = User::find($request->userId);
-            $text = $request->text;
+            $user = User::find($userId);
+            $text = $text;
             //2. Tìm OpenID
             $openId = $this->findOpenId($tenantAccessToken, $user->email); // Thay email cần tìm
 
@@ -785,10 +830,10 @@ class TaskController extends BaseController
                 $paramScore['seller_id'] =  $request->request_to; 
             }
 
-
-            if (!$this->checkScoreSeller($paramScore)) {
+            if ($task->type !== 'new_design' && !$this->checkScoreSeller($paramScore)) {
                 return $this->sendError('Quá số hạng ngạch của seller', 422);
             }
+            
             
             $data = [
                 'task_id' => $request->task_id,
@@ -851,7 +896,7 @@ class TaskController extends BaseController
                     $paramScore['seller_id'] =  $requestTask->request_from; 
                 }
 
-                if (!$this->checkScoreSeller($paramScore)) {
+                if ($task->type != 'new_design' && !$this->checkScoreSeller($paramScore)) {
                     return $this->sendError('Quá số hạng ngạch của seller', 422);
                 }
                 
@@ -879,6 +924,7 @@ class TaskController extends BaseController
             $params = [
                 'userId' => $userId,
                 'type' => $request->type ?? 1,
+                'keyword' => $request->keyword ?? '',
             ];
 
             $results = $this->taskRepository->getRequestTask($params);

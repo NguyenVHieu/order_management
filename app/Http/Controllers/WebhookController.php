@@ -499,4 +499,9 @@ class WebhookController extends BaseController
         }
     }
 
+    public function webhookTiktok(Request $request)
+    {
+        Helper::trackingInfo('Body Webhook Tiktok:' . json_encode($request->all()));
+    }
+
 }

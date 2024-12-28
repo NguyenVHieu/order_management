@@ -119,6 +119,7 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/update-order-hubfulfill', 'updateOrderHubfulfill');
     Route::post('/update-order-private', 'updateOrderPrivate');
     Route::post('/backupdb', 'backupDB');
+    Route::post('/webhook-tiktok', 'webhookTiktok');
 });
 
 Route::controller(MailController::class)->group(function(){
