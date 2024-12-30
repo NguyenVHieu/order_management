@@ -42,6 +42,8 @@ class OrderController extends BaseController
     protected $tokenHubfulfill;
     protected $uPrivate;
     protected $pPrivate;
+    protected $apiKeyGearment;
+    protected $apiSignatureGearment;
 
     protected $baseUrlHubfulfill;
     protected $baseUrlLenful;
@@ -49,6 +51,7 @@ class OrderController extends BaseController
     protected $baseUrlMerchize;
     protected $baseUrlPrintify;
     protected $orderRepository;
+    protected $baseUrlGearment;
 
     public function __construct(OrderRepository $orderRepository)
     {   
@@ -57,6 +60,7 @@ class OrderController extends BaseController
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
+        $this->baseUrlGearment = 'https://api.gearment.com/v2';
         $this->shopIdPrintify = env('SHOP_ID_PRINTIFY');
         $this->tokenPrintify = env('TOKEN_PRINTIFY');
         $this->tokenMerchize = env('TOKEN_MERCHIZE');
@@ -68,6 +72,8 @@ class OrderController extends BaseController
         $this->pPrivate = env('P_PRIVATE');
         $this->shopIdLenful = env('SHOP_ID_LENFUL');
         $this->tokenHubfulfill = env('TOKEN_HUBFULFILL');
+        $this->apiKeyGearment = env('API_KEY_GEARMENT');
+        $this->apiSignatureGearment = env('API_SIGNATURE_GEARMENT');
         $this->orderRepository = $orderRepository;
     }
 
@@ -983,6 +989,110 @@ class OrderController extends BaseController
         return array_merge(...$results);
     }
 
+    function pushOrderToGearment($data)
+    {
+        $results = [];
+        foreach($data as $key => $orders) {
+            try {
+                $lineItems = [];
+                $result = [];
+                $info = [];
+                $items = [];
+                $shipping_method = null;
+                $check = true;
+                foreach($orders as $order) {
+                    if (empty($order->shipping_method)) {
+                        $shipping_method = $order->is_shipping == true ? 1 : 0;
+                    } else {
+                        if (!in_array($order->shipping_method, [0, 1, 2, 3])) {
+                            $results[][$order->order_number. ' '] = 'Phương thức vận chuyển không hợp lệ';
+                            $check = false;
+                            continue;   
+                        }
+
+                        $shipping_method = $order->shipping_method;
+                    }
+
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $variant_id = $product->gearment ?? '';
+                    if ($variant_id == '') {
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $check = false;
+                    }else {
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Success!';
+                    }
+
+                    $info[$order->id] = [
+                        'place_order' => 'gearment',
+                        'is_push' => 1,
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id,
+                        'status_order' => "pending",
+                        'cost' => 0.00
+                    ];
+
+                    $lineItems[] = [
+                        "variant_id" => $variant_id,
+                        "quantity" => $order->quantity,
+                        "design_link" => $order->img_1 ?? "",
+                        "design_link_back" => $order->img_2 ?? "",
+                    ];
+
+                }
+
+                if (count($lineItems) > 0 && $check)
+                {
+                    $country = DB::table('countries')->where('name', $order->country)->first();
+                    $orderId = 'ODER_'. $key. time();
+                    $orderData = [
+                        "api_key" => $this->apiKeyGearment,
+                        "api_signature" => $this->apiSignatureGearment,
+                        "order_id" => $orderId,
+                        "external_id" => 'EXT_'. $key. time(),
+                        "shipping_name" => $order->first_name. ' '. $order->last_name,
+                        "shipping_address1" => $order->address,
+                        "shipping_address2" => $order->apartment ?? '',
+                        "shipping_province_code" => $order->state,
+                        "shipping_zipcode" => $order->zip,
+                        "shipping_city" => $order->city,
+                        "shipping_country_code" => $country->iso_alpha_2,
+                        "shipping_method" => $shipping_method,
+                        "line_items" => array_values($lineItems)
+                    ];
+
+                    $client = new Client();
+                    $resOrder = $client->post($this->baseUrlGearment.'/?act=order_create', [
+                        'headers' => [
+                            'Content-Type'  => 'application/json',
+                        ],
+                        'json' => $orderData
+                    ]);
+
+                    $resOrderFormat = json_decode($resOrder->getBody()->getContents(), true);
+                    if ($resOrderFormat['status'] === "success") {
+                        foreach($info as $key_order_id => $data) {
+                            $data['order_id'] = $orderId;
+                            DB::table('orders')->where('id', $key_order_id)->update($data);
+                        }
+                    } else {
+                        $result = [];
+                        $result[$key. ' '] = 'Lỗi khi tạo order';
+                    }
+                }
+            } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
+                $result = [];
+                $result[$key. ' '] = 'Lỗi khi tạo order';
+            }
+
+            $results[] = $result;
+
+        }
+
+        return array_merge(...$results);
+                    
+    }
+
     public function getOrderDB(Request $req) 
     {
         try {
@@ -1111,6 +1221,9 @@ class OrderController extends BaseController
                         break;
                     case 'interest_print':
                         $results[] = $this->appendSheetFlag($data);
+                        break;
+                    case 'gearment':
+                        $results[] = $this->pushOrderToGearment($data);
                         break;
                     default:
                         return $this->sendError('Không tìm thấy nơi đặt hàng', 404);

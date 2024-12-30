@@ -504,4 +504,28 @@ class WebhookController extends BaseController
         Helper::trackingInfo('Body Webhook Tiktok:' . json_encode($request->all()));
     }
 
+    public function webhookGearment(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Body Webhook Gearment:' . json_encode($request->all()));
+            $order_id = $request->data->order_id;
+            $status = $request->data->ord_status ?? null;
+            $tracking_number = $request->data->tracking_number ?? null;
+            $tracking_company = $request->data->tracking_company ?? null;
+
+            $order = Order::where('order_id', $order_id)->first();
+            if ($order) {
+                $order->status_order = $status;
+                $order->tracking_order = $tracking_number != null ? $tracking_company.'.'.$tracking_number : null;
+                $order->save();
+            }else {
+                Helper::trackingInfo('Không timg thấy order');
+            }
+            Helper::trackingInfo('Webhook cập nhật Gearment thành công');
+
+        } catch (\Throwable $th) {
+            Helper::trackingError('Lỗi Webhook Gearment' . json_encode($th->getMessage()));
+        }        
+    }
+
 }
