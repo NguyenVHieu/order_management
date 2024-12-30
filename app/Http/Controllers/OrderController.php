@@ -1248,9 +1248,10 @@ class OrderController extends BaseController
         
         $resFormat = json_decode($resVariant->getBody()->getContents(), true);
         $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color) {
-
+            $sizeOrigin = $size;
             if (strpos($size,'"') === false && strpos($size, 'x') !== false) {
                 $size = str_replace('x', '" × ', $size). '"';
+                $sizeOrigin = str_replace('x', '" x ', $sizeOrigin). '"';
             }
 
             if (strpos($variant['options']['size'],'"') === false && strpos($size, '×') !== false) {
@@ -1269,7 +1270,7 @@ class OrderController extends BaseController
             
             if (!empty($variant['options']['size'])) {
                 // $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
-                $resultSize = in_array($size, $variant['options']);
+                $resultSize = in_array($size, $variant['options']) || in_array($sizeOrigin, $variant['options']);
             }
 
             if ($resultColor && $resultSize) {
