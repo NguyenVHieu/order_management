@@ -896,7 +896,7 @@ class TaskController extends BaseController
                     $paramScore['seller_id'] =  $requestTask->request_from; 
                 }
 
-                if ($task->type != 'new_design' && !$this->checkScoreSeller($paramScore)) {
+                if ($task->type === 'new_design' && !$this->checkScoreSeller($paramScore)) {
                     return $this->sendError('Quá số hạng ngạch của seller', 422);
                 }
                 
