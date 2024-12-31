@@ -817,7 +817,15 @@ class TaskController extends BaseController
 
     public function requestUpdateScore(Request $request)
     {
-            try {
+        try {
+            $requestTask = TaskRequestModel::where('task_id', $request->task_id)
+                                    ->whereNull('approval')
+                                    ->first();
+
+            if ($requestTask) {
+                return $this->sendError('Task đã có yêu cầu chỉnh sửa', 422);
+            }   
+            
             $task = Task::find($request->task_id);
             $paramScore = [
                 'score_old' => $task->count_product,
@@ -845,13 +853,9 @@ class TaskController extends BaseController
                 'approval' => null,
                 'created_at' => now(),  
             ];
-            $requestTask = TaskRequestModel::where('task_id', $request->task_id)
-                                      ->whereNull('approval')
-                                      ->first();
+            
 
-            if ($requestTask) {
-                return $this->sendError('Task đã có yêu cầu chỉnh sửa', 422);
-            }       
+                
 
             $res = TaskRequestModel::insert($data); 
             return $this->sendSuccess($res);
