@@ -832,7 +832,7 @@ class TaskController extends BaseController
                 'score_new' => $request->score_request,
                 'year_month' => $task->created_at->format('Y-m')    
             ];
-            if (Auth::user()->user_type_id == 1) {
+            if (Auth::user()->user_type_id == 1 || Auth::user()->user_type_id == 3) {
                 $paramScore['seller_id'] =  Auth::user()->id;
             }else {
                 $paramScore['seller_id'] =  $request->request_to; 
@@ -894,7 +894,7 @@ class TaskController extends BaseController
                     'year_month' => now()->format('Y-m')    
                 ];
 
-                if (Auth::user()->user_type_id == 1) {
+                if (Auth::user()->user_type_id == 1 || Auth::user()->user_type_id == 3) {
                     $paramScore['seller_id'] =  Auth::user()->id;
                 }else {
                     $paramScore['seller_id'] =  $requestTask->request_from; 
