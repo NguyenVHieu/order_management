@@ -77,7 +77,8 @@ class TaskController extends BaseController
                 'keyword' => $request->keyword ?? '',
                 'team_id' => Auth::user()->team_id,
                 'created_by' => $request->created_by ?? null,
-                'design_recipient_id' => $request->design_recipient_id ?? null
+                'design_recipient_id' => $request->design_recipient_id ?? null,
+                'my_task' => $request->my_task ?? 0
             ];
 
             $results = $this->taskRepository->getAllTasks($params);
