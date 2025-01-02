@@ -348,7 +348,7 @@ class WebhookController extends BaseController
         try {
             $arrayShipping = config('constants.shipping_hubfulfill');
             $toDate = Carbon::now()->format('Y-m-d');
-            $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
+            $fromDate = Carbon::now()->subDays(10)->format('Y-m-d');
 
             $orders = DB::table('orders')->where('place_order', 'hubfulfill')
                                ->where('is_push', true)
