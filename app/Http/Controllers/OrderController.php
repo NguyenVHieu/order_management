@@ -1612,6 +1612,22 @@ class OrderController extends BaseController
                 $data['blueprint_id'] = $blueprint->product_printify_id ?? null;
 
                 DB::table('orders')->where('id', $id)->update($data);
+
+                if ($address_all) {
+                    $dataAddress = [
+                        'country' => $request->country,
+                        'city' => $request->city,
+                        'address' => $request->address,
+                        'zip' => $request->zip,
+                        'state' => $request->state,
+                        'apartment' => $request->address_2,
+                        'email' => $request->email,
+                        'phone' => $request->phone,
+                        'updated_at' => now(),
+                        'updated_by' => Auth::user()->id,
+                    ];
+                    DB::table('orders')->where('order_number_group', $data['order_number_group'])->update($dataAddress);
+                }
             }
             
             DB::commit();
