@@ -48,7 +48,7 @@ class TaskController extends BaseController
                 $designers = [];
                 $sellers = [];
             } else {
-                $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
+                $designers = DB::table('users')->whereIn('user_type_id', [4, 5])->select($columns)->get();
                 $sellers = $this->getDataUser($columns);
             }
             $data = [
@@ -512,6 +512,8 @@ class TaskController extends BaseController
                 'teamId' => Auth::user()->team_id ?? -1,
                 'keyword' => $request->keyword ?? '',
                 'sort' => $request->sort ?? 1,
+                'date_from' => $request->date_from ?? null,
+                'date_to' => $request->date_to ?? null,
             ];
             $results = $this->taskRepository->getTaskDone($params);
 

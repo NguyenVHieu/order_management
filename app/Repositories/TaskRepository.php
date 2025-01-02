@@ -108,8 +108,8 @@ class TaskRepository implements TaskRepositoryInterface
     
     }
 
-        public function getTaskDone($params)
-        {
+    public function getTaskDone($params)
+    {
             $query = Task::with(['status', 'images', 'designer', 'createdBy']);
 
             if (!empty($params['userTypeId']) && $params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
@@ -157,8 +157,18 @@ class TaskRepository implements TaskRepositoryInterface
             $query->orderBy('created_at', 'DESC');
         }
 
-            return $query->paginate(32);
+        if (!empty($params['date_from'])) {
+            $date_from = Carbon::parse($params['date_from'])->startOfDay();
+            $query->where('created_at', '>=', $date_from);
         }
+        
+        if (!empty($params['date_to'])) {
+            $date_to = Carbon::parse($params['date_to'])->endOfDay();
+            $query->where('created_at', '<=', $date_to);
+        }
+
+        return $query->paginate(32);
+    }
 
     public function reportTaskByDesigners($params)
     {
