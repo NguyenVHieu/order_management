@@ -123,6 +123,14 @@ class TaskRepository implements TaskRepositoryInterface
                     $query->where('design_recipient_id', $params['userId']);
                 }
             }
+
+            if (!empty($params['created_by'])) {
+                $query->where('tasks.created_by', $params['created_by']);
+            }
+    
+            if (!empty($params['design_recipient_id'])) {
+                $query->where('tasks.design_recipient_id', $params['design_recipient_id']);
+            }
             
 
             if (!empty($params['keyword'])) {

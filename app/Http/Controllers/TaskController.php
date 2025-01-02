@@ -514,6 +514,8 @@ class TaskController extends BaseController
                 'sort' => $request->sort ?? 1,
                 'date_from' => $request->date_from ?? null,
                 'date_to' => $request->date_to ?? null,
+                'created_by' => $request->created_by ?? null,
+                'design_recipient_id' => $request->design_recipient_id ?? null
             ];
             $results = $this->taskRepository->getTaskDone($params);
 
