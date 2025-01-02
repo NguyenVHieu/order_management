@@ -84,12 +84,18 @@ class TaskController extends BaseController
 
             $tasks = TaskResource::collection($results);
             $paginator = $tasks->resource->toArray();
-            $paginator['data'] = $paginator['data'] ?? [];     
+            $paginator['data'] = $paginator['data'] ?? [];
+            
+            
     
             $data = [
                 'tasks' => $tasks,
                 'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
+            if ($request->status === 'done')
+            {
+                $data['count'] = count($tasks);
+            }
             
             return $this->sendSuccess($data);
         } catch (\Exception $ex) {
