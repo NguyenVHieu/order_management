@@ -107,7 +107,7 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function calCostOrder($params)
     {   
-        $query = DB::table('orders')->selectRaw('SUM(orders.cost) AS total_cost')
+        $query = DB::table('orders')->selectRaw('SUM(orders.cost) AS total_cost')->selectRaw('COUNT(DISTINCT orders.order_number_group) AS total_order')
                     ->leftJoin('users', 'users.id', '=', 'orders.approval_by')
                     ->leftJoin('shops', 'shops.id', '=', 'orders.shop_id')
                     ->leftJoin('teams', 'teams.id', '=', 'users.team_id');

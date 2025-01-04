@@ -83,7 +83,7 @@ class ChartController extends BaseController
                 DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"))
                 ->first();
             
-            $results['orders'][] = $orders->total_order ?? 0;
+            // $results['orders'][] = $orders->total_order ?? 0;
             $results['labels'] = $dates;
             $results['total_order'] = $orders->total_order ?? 0;
             $results['total_cost'] = $total_cost ?? 0;
@@ -130,7 +130,7 @@ class ChartController extends BaseController
         try {
             $teams = DB::table('teams')->select(['id as value', 'name as label'])->get();
             $shops = DB::table('shops')->select(['id as value', 'name as label'])->get();
-            $users = DB::table('users')->where('is_admin', false)->select(['id as value', 'name as label'])->get();
+            $users = DB::table('users')->where('is_admin', false)->where('user_type_id', 1)->select(['id as value', 'name as label'])->get();
             $data = [
                 'users' => $users,
                 'shops' => $shops,
