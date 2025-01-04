@@ -9,6 +9,8 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\RevenueDayController;
+use App\Http\Controllers\RevenueMonthController;
 use App\Http\Controllers\TiktokController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -99,6 +101,25 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'updateOrCreate');
             Route::get('/create', 'create');
+            Route::get('/{id}', 'edit');
+            Route::delete('/{id}', 'destroy');
+        });
+    });
+
+    Route::prefix('revenue-days')->group(function () {
+        Route::controller(RevenueDayController::class)->group(function(){
+            Route::get('/init', 'init');
+            Route::get('/', 'index');
+            Route::post('/', 'updateOrCreate');
+            Route::get('/{id}', 'edit');
+            Route::delete('/{id}', 'destroy');
+        });
+    });
+
+    Route::prefix('revenue-months')->group(function () {
+        Route::controller(RevenueMonthController::class)->group(function(){
+            Route::get('/', 'index');
+            Route::post('/', 'updateOrCreate');
             Route::get('/{id}', 'edit');
             Route::delete('/{id}', 'destroy');
         });
