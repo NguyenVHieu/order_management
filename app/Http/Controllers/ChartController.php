@@ -70,6 +70,8 @@ class ChartController extends BaseController
             foreach ($dates as $date) {
                 
                 $results['cost'][] = isset($data[$date]['total_cost']) ? (float) $data[$date]['total_cost'] : 0.00;
+                $results['orders'][] = isset($data[$date]['amount_order_push']) ? $data[$date]['amount_order_push'] : 0;
+            
             }
             if ($data) {
                 foreach($data as $value) {
