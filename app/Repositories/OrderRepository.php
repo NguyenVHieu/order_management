@@ -137,4 +137,39 @@ class OrderRepository implements OrderRepositoryInterface
         return $query->get();
         
     }
+
+    public function calOrderByTime($params) 
+    {
+        $start_date = Carbon::parse($params['start_date'])->startOfDay();
+        $end_date = Carbon::parse($params['end_date'])->endOfDay(); 
+        $type = $params['type'];
+
+        if ($type === 'date') {
+            $format = "%Y-%m-%d";
+        } else if ($type === 'month') {
+            $format = "%Y-%m";
+        } else if ($type === 'year') {
+            $format = "%Y";
+        }
+        
+        $columns = [
+            DB::raw("DATE_FORMAT(recieved_mail_at, '$format') AS time"),
+            DB::raw("COUNT(DISTINCT order_number_group) AS total_order"),
+        ];
+        
+        $query = Order::query()
+            ->select($columns)
+            ->whereBetween('recieved_mail_at', [$start_date, $end_date])
+            ->groupBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')")) 
+            ->orderBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')"))
+            ->get()
+            ->keyBy('time')
+            ->map(function ($row) {
+                return [
+                    'total_order' => $row->total_order,
+                ];
+            });
+    
+        return $query;
+    }
 }

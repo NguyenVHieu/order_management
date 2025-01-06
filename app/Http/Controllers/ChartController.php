@@ -67,10 +67,11 @@ class ChartController extends BaseController
             $total_order_push = 0;
 
             $data = $this->orderRepository->filterOrderByTime($request->all());
+            $orderToday = $this->orderRepository->calOrderByTime($request->all());
+
             foreach ($dates as $date) {
-                
                 $results['cost'][] = isset($data[$date]['total_cost']) ? (float) $data[$date]['total_cost'] : 0.00;
-                $results['orders'][] = isset($data[$date]['amount_order_push']) ? $data[$date]['amount_order_push'] : 0;
+                $results['orders'][] = isset($orderToday[$date]['total_order']) ? $orderToday[$date]['total_order'] : 0;
             
             }
             if ($data) {
