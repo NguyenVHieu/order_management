@@ -171,12 +171,12 @@ class TaskRepository implements TaskRepositoryInterface
 
         if (!empty($params['date_from'])) {
             $date_from = Carbon::parse($params['date_from'])->startOfDay();
-            $query->where('created_at', '>=', $date_from);
+            $query->where('done_at', '>=', $date_from);
         }
         
         if (!empty($params['date_to'])) {
             $date_to = Carbon::parse($params['date_to'])->endOfDay();
-            $query->where('created_at', '<=', $date_to);
+            $query->where('done_at', '<=', $date_to);
         }
 
         return $query->paginate(32);
@@ -196,7 +196,7 @@ class TaskRepository implements TaskRepositoryInterface
         ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.design_recipient_id', '=', 'users.id')
             ->where('tasks.status_id', 6)
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -229,7 +229,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.design_recipient_id', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.design_recipient_id', $params['designerId'])
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -257,7 +257,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.type', 'new_design')
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -293,7 +293,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.type', 'new_design')
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -325,7 +325,7 @@ class TaskRepository implements TaskRepositoryInterface
         )
         ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
         ->where('tasks.status_id', 6)
-        ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+        ->whereBetween('tasks.done_at', [$start_date, $end_date]);
 
         if ($params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
             $query->where('users.team_id', $params['teamId']);
@@ -354,7 +354,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.type', 'new_design')
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         })
         
         ->groupBy('teams.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
