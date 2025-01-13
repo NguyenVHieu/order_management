@@ -1560,7 +1560,7 @@ class OrderController extends BaseController
             if ($request->hasFile('gift_img')) {
                 $data['gift_img'] = $this->saveImgeSku($request->gift_img);
             }else {
-                $data['gift_img'] = $request->gift_img ?? null;
+                $data['gift_img'] = isset($request->gift_img) ? $request->gift_img : null;
             }
             
             $data['place_order'] = $request->place_order;
