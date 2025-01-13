@@ -214,6 +214,7 @@ class OrderController extends BaseController
             $lineItems = [];
             $items = [];
             $result = [];
+            $gift_img = null;
             try {
                 $key_order_number = $key. time();
                 $check = true;
@@ -278,6 +279,9 @@ class OrderController extends BaseController
                     $lineItems[] = $item;
 
                     $items[] = $order->order_number;
+                    if ($gift_img == null && !empty($order->gift_img)) {
+                        $gift_img = $order->gift_img;
+                    }
                 }
                 if (count($lineItems) > 0 && $check == true) {
                     $identifier = $key;
@@ -305,6 +309,11 @@ class OrderController extends BaseController
                         ],
                         "items" => array_values($lineItems),
                     ];
+
+                    if ($gift_img != null) {
+                        $orderData['branding']['thank_you_card_design'] = $gift_img;
+                    }
+
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
@@ -1547,9 +1556,13 @@ class OrderController extends BaseController
             }else {
                 $data['img_7'] = $request->r_img_7 ?? null;
             }
-            
-            
 
+            if ($request->hasFile('gift_img')) {
+                $data['gift_img'] = $this->saveImgeSku($request->gift_img);
+            }else {
+                $data['gift_img'] = $request->gift_img ?? null;
+            }
+            
             $data['place_order'] = $request->place_order;
 
             $order = DB::table('orders')->where('id', $request->id)->first();
