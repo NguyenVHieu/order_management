@@ -279,8 +279,8 @@ class OrderController extends BaseController
                     $lineItems[] = $item;
 
                     $items[] = $order->order_number;
-                    if ($gift_img == null && !empty($order->gift_img)) {
-                        $gift_img = $order->gift_img;
+                    if ($gift_img == null && !empty($order->img_7)) {
+                        $gift_img = $order->img_7;
                     }
                 }
                 if (count($lineItems) > 0 && $check == true) {
@@ -1557,12 +1557,6 @@ class OrderController extends BaseController
                 $data['img_7'] = $request->r_img_7 ?? null;
             }
 
-            if ($request->hasFile('gift_img')) {
-                $data['gift_img'] = $this->saveImgeSku($request->gift_img);
-            }else {
-                $data['gift_img'] = isset($request->gift_img) ? $request->gift_img : null;
-            }
-            
             $data['place_order'] = $request->place_order;
 
             $order = DB::table('orders')->where('id', $request->id)->first();
