@@ -219,12 +219,20 @@ class OrderController extends BaseController
                 $key_order_number = $key. time();
                 $check = true;
                 $condition = [];
+                $type = null;
                 foreach($orders as $order) {
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->merchize == null) {
                         $check = false;
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
+                        if ($product->merchize === 'All-over Print Kids and Youth Baseball Jersey Without Piping') {
+                            if (stripos($order->style, 'Kids') !== false) {
+                                $type = 'Kid';
+                            } else if (stripos($order->style, 'Youth') !== false) {
+                                $type = 'Youth';
+                            }
+                        }
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
@@ -274,6 +282,18 @@ class OrderController extends BaseController
 
                     if (!empty($order->img_4)) {
                         $item["design_hood"] = $order->img_4; 
+                    }
+
+                    if (!empty($type)) {
+                        $item["attributes"][] = [
+                            "name" =>  "Tiers",
+                            "option" =>  'TIER 1'
+                        ];
+
+                        $item["attributes"][] = [
+                            "name" =>  "Types",
+                            "option" =>  $type
+                        ];
                     }
 
                     $lineItems[] = $item;
