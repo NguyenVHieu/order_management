@@ -48,7 +48,7 @@ class TaskController extends BaseController
                 $designers = [];
                 $sellers = [];
             } else {
-                $designers = DB::table('users')->where('user_type_id', 4)->select($columns)->get();
+                $designers = DB::table('users')->whereIn('user_type_id', [4, 5])->select($columns)->get();
                 $sellers = $this->getDataUser($columns);
             }
             $data = [
@@ -77,19 +77,26 @@ class TaskController extends BaseController
                 'keyword' => $request->keyword ?? '',
                 'team_id' => Auth::user()->team_id,
                 'created_by' => $request->created_by ?? null,
-                'design_recipient_id' => $request->design_recipient_id ?? null
+                'design_recipient_id' => $request->design_recipient_id ?? null,
+                'my_task' => $request->my_task ?? 0
             ];
 
             $results = $this->taskRepository->getAllTasks($params);
 
             $tasks = TaskResource::collection($results);
             $paginator = $tasks->resource->toArray();
-            $paginator['data'] = $paginator['data'] ?? [];     
+            $paginator['data'] = $paginator['data'] ?? [];
+            
+            
     
             $data = [
                 'tasks' => $tasks,
                 'paginator' => count($paginator['data']) > 0 ? $this->paginate($paginator) : null,
             ];
+            if ($request->status === 'done')
+            {
+                $data['count'] = count($tasks);
+            }
             
             return $this->sendSuccess($data);
         } catch (\Exception $ex) {
@@ -506,6 +513,10 @@ class TaskController extends BaseController
                 'teamId' => Auth::user()->team_id ?? -1,
                 'keyword' => $request->keyword ?? '',
                 'sort' => $request->sort ?? 1,
+                'date_from' => $request->date_from ?? null,
+                'date_to' => $request->date_to ?? null,
+                'created_by' => $request->created_by ?? null,
+                'design_recipient_id' => $request->design_recipient_id ?? null
             ];
             $results = $this->taskRepository->getTaskDone($params);
 
@@ -531,9 +542,9 @@ class TaskController extends BaseController
         $seller = [];   
 
         if ($userTypeId == -1) {
-            $seller = DB::table('users')->where('user_type_id', 1)->select($columns)->get(); 
+            $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->select($columns)->get(); 
         } else if ($userTypeId == 3) {
-            $seller = DB::table('users')->where('user_type_id', 1)->where('team_id', $teamId)->select($columns)->get();
+            $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->where('team_id', $teamId)->select($columns)->get();
         } 
 
         return $seller;

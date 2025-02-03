@@ -348,7 +348,7 @@ class WebhookController extends BaseController
         try {
             $arrayShipping = config('constants.shipping_hubfulfill');
             $toDate = Carbon::now()->format('Y-m-d');
-            $fromDate = Carbon::now()->subDays(7)->format('Y-m-d');
+            $fromDate = Carbon::now()->subDays(10)->format('Y-m-d');
 
             $orders = DB::table('orders')->where('place_order', 'hubfulfill')
                                ->where('is_push', true)
@@ -369,9 +369,8 @@ class WebhookController extends BaseController
                 $res = json_decode($response->getBody()->getContents(), true);
                 $order = Order::where('order_id', $order->order_id)->first();
                 if ($order) {
-                    $codeTracking = $arrayShipping[$order->country] ?? null;
                     $order->status_order = $res['status'];
-                    $order->tracking_order = $codeTracking.'.'.$res['tracking_number'] ?? null;
+                    $order->tracking_order = $res['original_tracking_number'] ?? null;
                     $order->cost = $res['total'];
                     $order->save();
                 }else {

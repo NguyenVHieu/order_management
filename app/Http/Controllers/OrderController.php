@@ -214,16 +214,25 @@ class OrderController extends BaseController
             $lineItems = [];
             $items = [];
             $result = [];
+            $gift_img = null;
             try {
                 $key_order_number = $key. time();
                 $check = true;
                 $condition = [];
+                $type = null;
                 foreach($orders as $order) {
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->merchize == null) {
                         $check = false;
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                     }else {
+                        if ($product->merchize === 'All-over Print Kids and Youth Baseball Jersey Without Piping') {
+                            if (stripos($order->style, 'Kids') !== false) {
+                                $type = 'Kid';
+                            } else if (stripos($order->style, 'Youth') !== false) {
+                                $type = 'Youth';
+                            }
+                        }
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
@@ -275,9 +284,24 @@ class OrderController extends BaseController
                         $item["design_hood"] = $order->img_4; 
                     }
 
+                    if (!empty($type)) {
+                        $item["attributes"][] = [
+                            "name" =>  "Tiers",
+                            "option" =>  'TIER 1'
+                        ];
+
+                        $item["attributes"][] = [
+                            "name" =>  "Types",
+                            "option" =>  $type
+                        ];
+                    }
+
                     $lineItems[] = $item;
 
                     $items[] = $order->order_number;
+                    if ($gift_img == null && !empty($order->img_7)) {
+                        $gift_img = $order->img_7;
+                    }
                 }
                 if (count($lineItems) > 0 && $check == true) {
                     $identifier = $key;
@@ -305,6 +329,11 @@ class OrderController extends BaseController
                         ],
                         "items" => array_values($lineItems),
                     ];
+
+                    if ($gift_img != null) {
+                        $orderData['branding']['thank_you_card_design'] = $gift_img;
+                    }
+
                         
                     $response = $client->post($this->baseUrlMerchize. '/order/external/orders', [
                         'headers' => [
@@ -744,16 +773,8 @@ class OrderController extends BaseController
                 }
 
                 if (count($lineItems) > 0 && $check == true) {
-                    $country = DB::table('countries')->where('name', $order->country)->first();
                     $client = new Client();
-                    $resCountry = $client->get("http://api.zippopotam.us/{$country->iso_alpha_2}/{$order->zip}", [
-                        'headers' => [
-                            'Content-Type'  => 'application/json',
-                        ],
-                    ]);   
-                    $resCountry = json_decode($resCountry->getBody()->getContents(), true);
-                    $state = $resCountry['places'][0]['state abbreviation'] === $order->state ? $resCountry['places'][0]['state'] : $order->state;
-                        
+                    
                     $orderData = [
                         "order_id" => 'ORDER'.$key.time(),
                         "items" => $lineItems,
@@ -763,7 +784,7 @@ class OrderController extends BaseController
                             "shipping_address_2" => $order->apartment ?? '',
                             "shipping_city" => $order->city,
                             "shipping_zip" => $order->zip,
-                            "shipping_state" => $state,
+                            "shipping_state" => $order->state,
                             "shipping_country" => $order->country,
                         ],
                         "shipping_method" => $shipping_method
@@ -1547,8 +1568,6 @@ class OrderController extends BaseController
             }else {
                 $data['img_7'] = $request->r_img_7 ?? null;
             }
-            
-            
 
             $data['place_order'] = $request->place_order;
 
@@ -1578,6 +1597,7 @@ class OrderController extends BaseController
                 $data['note'] = $request->note ?? null;
                 DB::table('orders')->where('id', $id)->update($data);
             } else {
+                // $address_all = $request->address_all ?? false;
                 $data = [
                     'country' => $request->country,
                     'city' => $request->city,
@@ -1612,6 +1632,22 @@ class OrderController extends BaseController
                 $data['blueprint_id'] = $blueprint->product_printify_id ?? null;
 
                 DB::table('orders')->where('id', $id)->update($data);
+
+                // if ($address_all) {
+                //     $dataAddress = [
+                //         'country' => $request->country,
+                //         'city' => $request->city,
+                //         'address' => $request->address,
+                //         'zip' => $request->zip,
+                //         'state' => $request->state,
+                //         'apartment' => $request->address_2,
+                //         'email' => $request->email,
+                //         'phone' => $request->phone,
+                //         'updated_at' => now(),
+                //         'updated_by' => Auth::user()->id,
+                //     ];
+                //     DB::table('orders')->where('order_number_group', $data['order_number_group'])->update($dataAddress);
+                // }
             }
             
             DB::commit();

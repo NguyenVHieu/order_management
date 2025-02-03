@@ -24,9 +24,13 @@ class TaskRepository implements TaskRepositoryInterface
             if ($params['user_type_id'] == 4) {
                 $query->where(function($query) use ($params) {
                     $query->where('tasks.design_recipient_id', $params['user_id']);
-                    
+                    // dd($params);
                     if (in_array($params['status_id'], [1, 2])) {
-                        $query->orWhereNull('tasks.design_recipient_id');
+                        if ($params['my_task'] == 0)
+                        {
+                            $query->orWhereNull('tasks.design_recipient_id');
+                        }
+                        
                     }
                 });
             } else {
@@ -108,8 +112,8 @@ class TaskRepository implements TaskRepositoryInterface
     
     }
 
-        public function getTaskDone($params)
-        {
+    public function getTaskDone($params)
+    {
             $query = Task::with(['status', 'images', 'designer', 'createdBy']);
 
             if (!empty($params['userTypeId']) && $params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
@@ -122,6 +126,14 @@ class TaskRepository implements TaskRepositoryInterface
                 } elseif ($params['userTypeId'] == 4) {
                     $query->where('design_recipient_id', $params['userId']);
                 }
+            }
+
+            if (!empty($params['created_by'])) {
+                $query->where('tasks.created_by', $params['created_by']);
+            }
+    
+            if (!empty($params['design_recipient_id'])) {
+                $query->where('tasks.design_recipient_id', $params['design_recipient_id']);
             }
             
 
@@ -157,8 +169,18 @@ class TaskRepository implements TaskRepositoryInterface
             $query->orderBy('created_at', 'DESC');
         }
 
-            return $query->paginate(32);
+        if (!empty($params['date_from'])) {
+            $date_from = Carbon::parse($params['date_from'])->startOfDay();
+            $query->where('done_at', '>=', $date_from);
         }
+        
+        if (!empty($params['date_to'])) {
+            $date_to = Carbon::parse($params['date_to'])->endOfDay();
+            $query->where('done_at', '<=', $date_to);
+        }
+
+        return $query->paginate(32);
+    }
 
     public function reportTaskByDesigners($params)
     {
@@ -174,7 +196,7 @@ class TaskRepository implements TaskRepositoryInterface
         ->leftJoin('tasks', function ($join) use($start_date, $end_date){
             $join->on('tasks.design_recipient_id', '=', 'users.id')
             ->where('tasks.status_id', 6)
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -207,7 +229,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.design_recipient_id', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.design_recipient_id', $params['designerId'])
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -235,7 +257,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.type', 'new_design')
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -271,7 +293,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.type', 'new_design')
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         }) // Join với bảng tasks
         ->leftJoin('kpi_users', function($join) use ($year_month) {
             $join->on('kpi_users.user_id', '=', 'users.id')
@@ -303,7 +325,7 @@ class TaskRepository implements TaskRepositoryInterface
         )
         ->leftJoin('users', 'users.id', '=', 'tasks.created_by') // Join với bảng users
         ->where('tasks.status_id', 6)
-        ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+        ->whereBetween('tasks.done_at', [$start_date, $end_date]);
 
         if ($params['userTypeId'] != -1 && $params['userTypeId'] != 5) {
             $query->where('users.team_id', $params['teamId']);
@@ -332,7 +354,7 @@ class TaskRepository implements TaskRepositoryInterface
             $join->on('tasks.created_by', '=', 'users.id')
             ->where('tasks.status_id', 6)
             ->where('tasks.type', 'new_design')
-            ->whereBetween('tasks.created_at', [$start_date, $end_date]);
+            ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         })
         
         ->groupBy('teams.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
