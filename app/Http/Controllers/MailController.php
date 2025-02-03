@@ -228,32 +228,32 @@ class MailController extends BaseController
                         }else {
 
                             $data['thumb'] = $thumb;
-                         
+                            $style = is_array($data['style']) ? $data['style'][0] : $data['style'];
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['size'] = $data['size_blanket'];
-                                $data['style'] = $data['style'] . ' '. $data['size'];
+                                $data['style'] = $style . ' '. $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             }else if ( stripos($data['product'], 'Flag') !== false){
-                                $data['style'] = $data['style']. ' '. $data['size'];
+                                $data['style'] = $style. ' '. $data['size'];
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             } else {
-                                $data['style'] = str_replace("\r", "", $data['style']);
+                                $data['style'] = str_replace("\r", "", $style);
                                 $sizeOther = $this->getSize($data['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
-                                            $data['style'] = $data['style'].' '.$data['size'];
+                                            $data['style'] = $style.' '.$data['size'];
                                             $data['size'] = $sizeOther;
                                         } else {
                                             $data['size'] = $data['size'];
-                                            $data['style'] = $data['style'].' '.$data['size'];
+                                            $data['style'] = $style.' '.$data['size'];
                                         }
                                     } else {
                                         $data['size'] = $sizeOther;
                                     }
-                                $data['blueprint_id'] = $this->getBlueprintId($data['style']);
+                                $data['blueprint_id'] = $this->getBlueprintId($style);
                             }
                             if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false ||
-                                stripos($data['style'], 'digital') !== false || stripos($data['style'], 'upgrade') !== false){
+                                stripos($style, 'digital') !== false || stripos($style, 'upgrade') !== false){
                                 // $message->setFlag('SEEN');
                                 // $client->expunge();
                                 continue;
