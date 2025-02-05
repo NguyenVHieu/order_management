@@ -918,7 +918,7 @@ class OrderController extends BaseController
 
                     if (!empty($order->img_7)) {
                         $item["designs"][] = [
-                            "position" => -1,
+                            "position" => 8,
                             "link" => $order->img_7,
                         ];
                     }
