@@ -876,21 +876,21 @@ class OrderController extends BaseController
                     ];
 
                     $item = [
-                        "design_sku" => $sku."-DESIGN",
                         "product_sku" => $sku,
                         "quantity" => 1,
                         "mockups" => [
                             $order->img_6
                         ],
-                        "designs" => [
-                            [
-                                "position" => 1,
-                                "link" => $order->img_1,
-                            ]
-                        ],
 
                         "shippings" => [(int)$shipping_method]
                     ];
+                    if (!empty($order->img_1)) {
+                        $item["designs"][] = [
+                            "position" => 1,
+                            "link" => $order->img_1,
+                        ];
+                    }
+
                     if (!empty($order->img_2)) {
                         $item["designs"][] = [
                             "position" => 2,
