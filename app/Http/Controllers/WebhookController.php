@@ -507,10 +507,10 @@ class WebhookController extends BaseController
     {
         try {
             Helper::trackingInfo('Body Webhook Gearment:' . json_encode($request->all()));
-            $order_id = $request->data->order_id;
-            $status = $request->data->ord_status ?? null;
-            $tracking_number = $request->data->tracking_number ?? null;
-            $tracking_company = $request->data->tracking_company ?? null;
+            $order_id = $request->data['order_id'] ?? null;
+            $status = $request->data['ord_status'] ?? null;
+            $tracking_number = $request->data['tracking_number'] ?? null;
+            $tracking_company = $request->data['tracking_company'] ?? null;
 
             $order = Order::where('order_id', $order_id)->first();
             if ($order) {
