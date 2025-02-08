@@ -104,22 +104,6 @@ class ChartController extends BaseController
     {
         try {
             $data = $this->orderRepository->calCostOrder($request->all());
-            if ($request->type === 'seller') {
-                if (count($data) > 0) {
-                    foreach ($data as $order) {
-                        $name = $order->user_name;
-                        $res[] = [
-                            'user_name' => $name,
-                            'total_cost' => (float)$order->total_cost,
-                            'value' => $order
-                        ];
-                    }
-
-                    
-                    return $this->sendSuccess($res);
-                }
-                
-            }
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
