@@ -1724,7 +1724,7 @@ class OrderController extends BaseController
                     $size,
                     !empty($item->img_1) ? $this->saveImgeDrive($item->img_1) : '',
                     $item->first_name. ' ' . $item->last_name,
-                    !empty($item->apartment) ? $item->apartment . ' '. $item->address : $item->address,
+                    !empty($item->apartment) ? $item->address . ' '. $item->apartment : $item->address,
                     $item->city,
                     $item->zip,
                     $item->state ?? '',
