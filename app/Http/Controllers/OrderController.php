@@ -304,7 +304,6 @@ class OrderController extends BaseController
                     }
                 }
                 if (count($lineItems) > 0 && $check == true) {
-                    $identifier = $key;
                     if (count($items) > 1) {
                         $base = strstr($items[0], '#', true); // Lấy phần trước dấu #
                         $numbers = [];
@@ -312,6 +311,8 @@ class OrderController extends BaseController
                             $numbers[] = substr($item, strpos($item, '#') + 1); // Lấy phần sau dấu #
                         }
                         $identifier = $base . "#" . implode('_', $numbers);
+                    }else{
+                        $identifier = $items[0];
                     }
 
                     $client = new Client();
