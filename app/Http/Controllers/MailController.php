@@ -43,7 +43,7 @@ class MailController extends BaseController
                         'shop_id' => $shop->id ?? null,
                         'size' => $param['size'] ?? null,
                         'blueprint_id' => $param['blueprint_id'] ?? null,
-                        'style' => $param['style'] != '' ? $param['style'] : null,
+                        'style' => $param['style'] != '' ? html_entity_decode($param['style']) : null,
                         'color' => $param['color'] != '' ? $param['color'] : null,
                         'personalization' => $param['personalization'] != '' ? html_entity_decode($param['personalization']) : null,
                         'personalization_2' => $param['personalization_2'] != '' ? $param['personalization_2'] : null,
@@ -183,6 +183,7 @@ class MailController extends BaseController
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
+                                $data['style'][$i] = html_entity_decode($data['style'][$i]);
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
                                     $item['size'] = $data['size_blanket'][$i] ?? '';
@@ -229,6 +230,7 @@ class MailController extends BaseController
 
                             $data['thumb'] = $thumb;
                             $style = is_array($data['style']) ? $data['style'][0] : $data['style'];
+                            $style = html_entity_decode($style);
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['size'] = $data['size_blanket'];
                                 $data['style'] = $style . ' '. $data['size'];
