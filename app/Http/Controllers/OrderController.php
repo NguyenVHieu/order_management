@@ -1382,10 +1382,12 @@ class OrderController extends BaseController
         ]);
         
         $resFormat = json_decode($resVariant->getBody()->getContents(), true);
+        // dd($resFormat);
         $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color) {
-            $sizeOrigin = $size;
-            if (strpos($size,'"') === false && strpos($size, 'x') !== false) {
+            $sizeOrigin = $size1 = $size;
+            if (strpos($size,'"') === false && strpos($size, 'x') !== false && strpos($size,'″') === false) {
                 $size = str_replace('x', '" × ', $size). '"';
+                $size1 = str_replace('x', '″ x ', $size1). '″';
                 $sizeOrigin = str_replace('x', '" x ', $sizeOrigin). '"';
             }
 
@@ -1404,8 +1406,9 @@ class OrderController extends BaseController
             }
             
             if (!empty($variant['options']['size'])) {
+                // dd($size, $variant['options']['size'], $sizeOrigin);
                 // $resultSize = stripos($title, ' / '.$size) !== false || stripos($title, $size.' / ') !== false || stripos($title, $size) !== false;
-                $resultSize = in_array($size, $variant['options']) || in_array($sizeOrigin, $variant['options']);
+                $resultSize = in_array($size, $variant['options']) || in_array($sizeOrigin, $variant['options']) || in_array($size1, $variant['options']);
             }
 
             if ($resultColor && $resultSize) {
