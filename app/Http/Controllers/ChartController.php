@@ -84,6 +84,7 @@ class ChartController extends BaseController
             $orders = DB::table('orders')
                 ->select(DB::raw("COUNT(DISTINCT CONCAT(order_number_group, '-', is_push, IF(is_push = 1, place_order, ''))) AS total_order"),
                 DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"))
+                ->where('recieved_mail_at', '>=', '2025-01-01 00:00:00')    
                 ->first();
             
             // $results['orders'][] = $orders->total_order ?? 0;
@@ -103,27 +104,10 @@ class ChartController extends BaseController
     {
         try {
             $data = $this->orderRepository->calCostOrder($request->all());
-            if (!empty($request->user_id)) {
-                $total_cost = 0;
-                if (count($data) > 0) {
-                    foreach ($data as $order) {
-                        $total_cost += $order->total_cost;
-                        $name = $order->user_name;
-                        $order->total_cost = (float)$order->total_cost;
-                    }
-
-                    $res = [
-                        'user_name' => $name,
-                        'total_cost' => (float)$total_cost,
-                        'value' => $data
-                    ];
-                    return $this->sendSuccess($res);
-                }
-                
-            }
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
+            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }

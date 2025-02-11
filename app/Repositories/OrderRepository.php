@@ -107,36 +107,100 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function calCostOrder($params)
     {   
-        $query = DB::table('orders')->selectRaw('SUM(orders.cost) AS total_cost')->selectRaw('COUNT(DISTINCT orders.order_number_group) AS total_order')
-                    ->leftJoin('users', 'users.id', '=', 'orders.approval_by')
-                    ->leftJoin('shops', 'shops.id', '=', 'orders.shop_id')
-                    ->leftJoin('teams', 'teams.id', '=', 'users.team_id');
+        $type = $params['type'] ?? 'seller';
 
-        $query->where('is_push', true);
-        $query->whereBetween('date_push', [$params['start_date'], $params['end_date']]);
+        if ($type === 'seller') {
+            $query = DB::table('users')
+                ->leftJoin('orders', function ($join) use ($params) {
+                    $join->on('users.id', '=', 'orders.approval_by')
+                        ->where('orders.is_push', true)
+                        ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                })
+                ->join('shops', 'orders.shop_id', '=', 'shops.id')
+                ->where('users.user_type_id', 1)
+                ->select('users.id', 'users.name AS user_name', 'shops.id AS shop_id', 'shops.name AS shop_name')
+                ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
+                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
+                ->groupBy('users.id', 'users.name', 'shops.id', 'shops.name')
+                ->orderBy('users.id')
+                ->union(
+                    DB::table('users')
+                        ->leftJoin('user_shops', 'users.id', '=', 'user_shops.user_id')
+                        ->leftJoin('shops', 'user_shops.shop_id', '=', 'shops.id')
+                        ->select('users.id', 'users.name AS user_name', 'shops.id AS shop_id', 'shops.name AS shop_name')
+                        ->selectRaw('0 AS total_cost')
+                        ->selectRaw('0 AS total_order')
+                        ->where('users.user_type_id', 1)
+                        ->whereNotExists(function ($query) use ($params) {
+                            $query->select(DB::raw(1))
+                                ->from('orders')
+                                ->whereRaw('orders.approval_by = users.id')
+                                ->where('orders.is_push', true)
+                                ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                        })
+                );
 
-        if (!empty($params['user_id'])) 
-        {
-            $query->where('orders.approval_by', $params['user_id']);
-            $query->addSelect('users.name AS user_name', 'shops.name AS shop_name');
-            $query->groupBy('users.name', 'shops.name');
         } 
-        else if (!empty($params['shop_id'])) 
+        else if ($type === 'shop') 
         {
-            $query->where('orders.shop_id', $params['shop_id']);
-            $query->addSelect('shops.name AS shop_name');
-            $query->groupBy('shops.name');
-        } 
-        else if (!empty($params['team_id'])) 
-        {
-            $query->where('users.team_id', $params['team_id']);
-            $query->addSelect('teams.name AS team_name')
-            ->groupBy('teams.name');
+            $query = DB::table('shops')
+                ->leftJoin('orders', function ($join) use ($params) {
+                    $join->on('shops.id', '=', 'orders.shop_id')
+                        ->where('orders.is_push', true)
+                        ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                })
+                ->select('shops.id', 'shops.name AS shop_name')
+                ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
+                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
+                ->groupBy('shops.id', 'shops.name')
+                ->unionAll(
+                    DB::table('shops')
+                        ->select('shops.id', 'shops.name AS shop_name')
+                        ->selectRaw('0 AS total_cost')
+                        ->selectRaw('0 AS total_order')
+                        ->whereNotExists(function ($query) use ($params) {
+                            $query->select(DB::raw(1))
+                                ->from('orders')
+                                ->whereRaw('orders.shop_id = shops.id')
+                                ->where('orders.is_push', true)
+                                ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                        })
+                );
+        } else {
+            $query = DB::table('teams')
+                ->leftJoin('users', 'users.team_id', '=', 'teams.id')
+                ->leftJoin('orders', function ($join) use ($params) {
+                    $join->on('users.id', '=', 'orders.approval_by')
+                        ->where('orders.is_push', true)
+                        ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                })
+                ->select('teams.id', 'teams.name AS team_name')
+                ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
+                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
+                ->groupBy('teams.id', 'teams.name')
+                ->unionAll(
+                    DB::table('teams')
+                        ->select('teams.id', 'teams.name AS team_name')
+                        ->selectRaw('0 AS total_cost')
+                        ->selectRaw('0 AS total_order')
+                        ->whereNotExists(function ($query) use ($params) {
+                            $query->select(DB::raw(1))
+                                ->from('users')
+                                ->whereRaw('users.team_id = teams.id')
+                                ->whereNotExists(function ($query) use ($params) {
+                                    $query->select(DB::raw(1))
+                                        ->from('orders')
+                                        ->whereRaw('orders.approval_by = users.id')
+                                        ->where('orders.is_push', true)
+                                        ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                                });
+                        })
+                );
         }
 
         return $query->get();
-        
     }
+
 
     public function calOrderByTime($params) 
     {
