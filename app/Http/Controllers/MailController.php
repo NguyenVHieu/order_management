@@ -183,18 +183,18 @@ class MailController extends BaseController
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
-                                $data['style'][$i] = html_entity_decode($data['style'][$i]);
+                                $style[$i] = isset($data['style'][$i]) ? html_entity_decode($data['style'][$i]) : null;
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
                                     $item['size'] = $data['size_blanket'][$i] ?? '';
-                                    $item['style'] = str_replace("\r", "", $data['style'][$i]) . ' '. $item['size'];
+                                    $item['style'] = str_replace("\r", "", $style[$i]) . ' '. $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }else if (stripos($data['product'][$i], 'Flag') !== false){
                                     $item['size'] = $data['size'][$i] ?? '';
-                                    $item['style'] = $data['style'][$i] ?? '' . ' ' . $item['size'];
+                                    $item['style'] = $style[$i] ?? '' . ' ' . $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
-                                    $item['style'] = !empty($data['style'][$i]) ? str_replace("\r", "", $data['style'][$i]) : '';
+                                    $item['style'] = !empty($style[$i]) ? str_replace("\r", "", $style[$i]) : '';
                                     $sizeOther = $this->getSize($item['style']);
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
