@@ -1941,4 +1941,35 @@ class OrderController extends BaseController
             return $this->sendError('Split order thất bại');
         }
     }
+
+    public function import(Request $request)
+    {
+        try {
+            $file = $request->file('file');
+            if (!$file) {
+                return $this->sendError('File không tồn tại', 404);
+            }
+
+            // Create the directory if it does not exist
+            $dateFolder = now()->format('Ymd');
+            $time = now()->format('his');
+
+            $directory = public_path('uploads/import/' . $dateFolder);
+
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+            // $name = rawurlencode($image->getClientOriginalName());
+
+            $path = $file->move($directory, $time. '_'. $file->getClientOriginalName());
+
+            Excel::import(new OrderImport, $path);
+
+            return $this->sendSuccess('Import thành công!');
+
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Import thất bại', 500);
+        }
+    }
 }

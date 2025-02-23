@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/import-order-flag', 'importOrderFlag');
             Route::get('/info/get', 'getInfoOrder');
             Route::post('/split-order/{id}', 'splitOrder');
+            Route::post('/import', 'import');
         });
     });
 
