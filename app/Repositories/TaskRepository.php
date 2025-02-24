@@ -23,7 +23,8 @@ class TaskRepository implements TaskRepositoryInterface
         if (!empty($params['user_id']) && $params['user_type_id'] != -1 && $params['user_type_id'] != 5) {
             if ($params['user_type_id'] == 4) {
                 $query->where(function($query) use ($params) {
-                    $query->where('tasks.design_recipient_id', $params['user_id']);
+                    $query->where('tasks.design_recipient_id', $params['user_id'])
+                        ->orWhereNull('tasks.design_recipient_id');
                 });
             } else {
                 $query->join('users', 'users.id', '=', 'tasks.created_by');
