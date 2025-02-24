@@ -38,8 +38,10 @@ class TaskRepository implements TaskRepositoryInterface
         }
 
         if ($params['my_task'] == 1) {
-            $query->where('tasks.design_recipient_id', $params['user_id'])
-                ->orWhere('tasks.created_by', $params['user_id']);
+            $query->where(function($q) use ($params) {
+                $q->where('tasks.design_recipient_id', $params['user_id'])
+                  ->orWhere('tasks.created_by', $params['user_id']);
+            });
         }
 
         if (!empty($params['keyword'])) {
