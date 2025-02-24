@@ -785,8 +785,9 @@ class TaskController extends BaseController
         try {
             $task = $this->taskRepository->getTaskById($id);
             $userId = Auth::user()->id;
+            $userTypeId = Auth::user()->user_type_id ?? -1;
 
-            if ($userId != $task->created_by || !in_array($task->status_id, [1, 2])) {
+            if (($userId != $task->created_by || !in_array($task->status_id, [1, 2])) && $userTypeId != -1) {
                 return $this->sendError('Không có quyền xóa', 403);
             }
             DB::table('task_images')->where('task_id', $id)->delete();

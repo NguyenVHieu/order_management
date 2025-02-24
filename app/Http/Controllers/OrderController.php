@@ -220,6 +220,7 @@ class OrderController extends BaseController
                 $check = true;
                 $condition = [];
                 $type = null;
+                $shipping_method = null;
                 foreach($orders as $order) {
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     if ($product->merchize == null) {
@@ -302,6 +303,10 @@ class OrderController extends BaseController
                     if ($gift_img == null && !empty($order->img_7)) {
                         $gift_img = $order->img_7;
                     }
+
+                    if (!empty($order->shipping_method)) {
+                        $shipping_method = $order->shipping_method;
+                    }
                 }
                 if (count($lineItems) > 0 && $check == true) {
                     if (count($items) > 1) {
@@ -330,6 +335,10 @@ class OrderController extends BaseController
                         ],
                         "items" => array_values($lineItems),
                     ];
+
+                    if (!empty($shipping_method)) {
+                        $orderData['tags'] = $shipping_method;
+                    }
 
                     if ($gift_img != null) {
                         $orderData['branding']['thank_you_card_design'] = $gift_img;
