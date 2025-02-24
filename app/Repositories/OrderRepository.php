@@ -39,7 +39,7 @@ class OrderRepository implements OrderRepositoryInterface
             } elseif ($params['type'] == 2) {
                 $query->where('is_push', false)->where('is_approval', true);
             } else {
-                $query->where('is_push', false)->where('is_approval', false);
+                $query->where('is_push', false)->where('is_approval', false)->where('recieved_mail_at', '>=', '2024-12-31 23:59:59');
             }
         }
 
