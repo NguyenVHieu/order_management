@@ -337,7 +337,7 @@ class OrderController extends BaseController
                     ];
 
                     if (!empty($shipping_method)) {
-                        $orderData['tags'] = $shipping_method;
+                        $orderData['tags'] = [$shipping_method];
                     }
 
                     if ($gift_img != null) {
