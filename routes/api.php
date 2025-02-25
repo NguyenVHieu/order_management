@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/info/get', 'getInfoOrder');
             Route::post('/split-order/{id}', 'splitOrder');
             Route::post('/import', 'import');
+            Route::post('/update-cost', 'updateCost');
         });
     });
 

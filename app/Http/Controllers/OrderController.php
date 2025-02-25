@@ -1981,4 +1981,22 @@ class OrderController extends BaseController
             return $this->sendError('Import thất bại', 500);
         }
     }
+
+    public function updateCost(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Request update cost: '. json_encode($request->all()));
+            $id = $request->id;
+            $cost = $request->cost ?? 0.00;
+            $data = [
+                'cost' => $cost,
+            ];
+            DB::table('orders')->where('id', $id)->update($data);
+            Helper::trackingInfo('Update cost order: '. $id);
+            return $this->sendSuccess('Cập nhật thành công!');
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Cập nhật thất bại', 500);
+        }
+    }
 }
