@@ -135,8 +135,8 @@ class TaskController extends BaseController
             $task_images = $request->file ?? [];  
 
             if (!empty($task_images)) {
-                foreach($task_images as $image) {
-                    $url = $this->saveImageTask($image);
+                foreach($task_images as $index => $image) {
+                    $url = $this->saveImageTask($image, $index);
                     $data_image = [
                         'task_id' => $task->id,
                         'image_url' => $url
@@ -208,8 +208,8 @@ class TaskController extends BaseController
                 
                 if (!empty($taskImages)) {
                     DB::table('task_images')->where('task_id', $task->id)->whereNotIn('image_url', $imgUrls)->delete();
-                    foreach ($taskImages as $image) {
-                        $url = $this->saveImageTask($image);
+                    foreach ($taskImages as $index => $image) {
+                        $url = $this->saveImageTask($image, $index);
                         DB::table('task_images')->insert([
                             'task_id' => $task->id,
                             'image_url' => $url
@@ -221,9 +221,9 @@ class TaskController extends BaseController
                 $image_src_reviews = $request->image_src_review ?? [];
 
                 DB::table('task_done_images')->where('task_id', $task->id)->whereNotIn('image_url', $image_src_reviews)->delete();
-                foreach($file_reviews as $file)
+                foreach($file_reviews as $index => $file)
                 {
-                    $url = $this->saveImageTask($file);
+                    $url = $this->saveImageTask($file, $index);
                     $data = [
                         'task_id' => $task->id,
                         'image_url' => $url,
@@ -387,7 +387,7 @@ class TaskController extends BaseController
         } 
     }
 
-    public function saveImageTask($image)
+    public function saveImageTask($image, $index)
     {
         $dateFolder = now()->format('Ymd');
         $time = now()->format('his');
@@ -399,9 +399,9 @@ class TaskController extends BaseController
         }
         // $name = rawurlencode($image->getClientOriginalName());
 
-        $path = $image->move($directory, $time. '_'. $image->getClientOriginalName());
+        $path = $image->move($directory, $time. '_'. $index .$image->getClientOriginalName());
 
-        $url = asset('tasks/' .$dateFolder. '/'. $time. '_'. $image->getClientOriginalName());
+        $url = asset('tasks/' .$dateFolder. '/'. $time. '_'. $index .$image->getClientOriginalName());
 
         return $url;
     }
@@ -437,8 +437,8 @@ class TaskController extends BaseController
             if (!empty($request->files_comment)) {
                 $images = $request->files_comment ?? [];
                 if (!empty($images)) {
-                    foreach($images as $image) {
-                        $url = $this->saveImageTask($image);
+                    foreach($images as $index => $image) {
+                        $url = $this->saveImageTask($image, $index);
                         $data_image = [
                             'task_history_id' => $comment->id,
                             'image_url' => $url
