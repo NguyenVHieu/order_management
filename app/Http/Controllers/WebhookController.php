@@ -256,7 +256,7 @@ class WebhookController extends BaseController
                     $arr_order_number[] = $order_number;
                 }
                 
-                $value = DB::table('orders')->whereIn('order_number', $arr_order_number)->first();
+                $value = DB::table('orders')->whereIn('order_number', $arr_order_number)->where('place_order', 'otb')->first();
                 if ($value) {
                     DB::table('orders')->whereIn('order_number', $arr_order_number)->update($data);
                     $value_order =  Order::where('order_number', $arr_order_number[0])->first();
