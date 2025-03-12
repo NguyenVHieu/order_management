@@ -127,7 +127,7 @@ class TaskController extends BaseController
                 'year_month' => now()->format('Y-m')    
             ];
 
-            if ($data['type'] !== 'new_design' && !$this->checkScoreSeller($paramScore)) {
+            if ($data['type'] === 'new_design' && !$this->checkScoreSeller($paramScore)) {
                 return $this->sendError('Quá số hạng ngạch', 422);
             }
 
@@ -195,7 +195,7 @@ class TaskController extends BaseController
                     'year_month' => now()->format('Y-m')
                 ];
 
-                if ($task->type !== 'new_design' && !$this->checkScoreSeller($params)) {
+                if ($task->type === 'new_design' && !$this->checkScoreSeller($params)) {
                     return $this->sendError('Quá số hạng ngạch', 422);
                 }
             }
