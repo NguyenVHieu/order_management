@@ -110,7 +110,7 @@ class WebhookController extends BaseController
     {
         try {
             Helper::trackingInfo('Body Webhook Created Order Merchize:' . json_encode($request->all()));
-            $order_id = $request['resource']['code'];
+            $order_id = $request['resource']['order_code'];
             $status = 'created';
             $order_number = $request['resource']['identifier'];
             $result = [];
