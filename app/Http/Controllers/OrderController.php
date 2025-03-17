@@ -433,7 +433,7 @@ class OrderController extends BaseController
     
                     $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
     
-                    if (empty($resSkuConvert['data'])) {
+                    if (empty($resSkuConvert['data']) || empty($order->color) || empty($order->size)) {
                         $result[$order->order_number .' '. $order->color .' '. $order->size] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
@@ -1603,6 +1603,7 @@ class OrderController extends BaseController
     public function update(OrderRequest $request, $id)
     {
         try {
+            Helper::trackingInfo('Request update order: '. json_encode($request->all()));
             $type = $request->type ?? 0; // type = 1 là update note
             DB::beginTransaction();
             $order = DB::table('orders')->where('id', $id)->first();
