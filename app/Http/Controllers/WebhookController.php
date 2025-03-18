@@ -110,7 +110,7 @@ class WebhookController extends BaseController
     {
         try {
             Helper::trackingInfo('Body Webhook Created Order Merchize:' . json_encode($request->all()));
-            $order_id = $request['resource']['order_code'];
+            $order_id = $request['resource']['code'];
             $status = 'created';
             $order_number = $request['resource']['identifier'];
             $result = [];
@@ -163,7 +163,7 @@ class WebhookController extends BaseController
         try {
             Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
             $cost = $request['resource']['price'];
-            $order_id = $request['resource']['order_code'];
+            $order_id = $request['resource']['code'];
             $order = Order::where('order_id', $order_id)->first();
 
             if ($order) {
