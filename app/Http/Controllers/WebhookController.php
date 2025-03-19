@@ -161,9 +161,9 @@ class WebhookController extends BaseController
 
     public function orderPaymentMerchize(Request $request){
         try {
-            Helper::trackingInfo('Body Webhook Progress Order Merchize:' . json_encode($request->all()));
+            Helper::trackingInfo('Body Webhook Payment Order Merchize:' . json_encode($request->all()));
             $cost = $request['resource']['price'];
-            $order_id = $request['resource']['order_code'];
+            $order_id = $request['resource']['code'];
             $order = Order::where('order_id', $order_id)->first();
 
             if ($order) {
