@@ -1214,6 +1214,9 @@ class OrderController extends BaseController
             
             foreach($orders as $data) {
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                if ($order->is_push == true) {
+                    return $this->sendError('Tồn tại đơn hàng đã được đẩy', 500);
+                }
                 $order_number_format = $order->order_number;
                 if (strpos($order_number_format, '#') !== false) {
                     $order_number_format = strstr($order_number_format, '#', true); 
