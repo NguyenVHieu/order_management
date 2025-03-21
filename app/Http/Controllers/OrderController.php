@@ -418,13 +418,14 @@ class OrderController extends BaseController
                         $prodNum = 1;
                     }
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    $productType = $order->is_tiktok == true ? $order->style : $product->private;
                     $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $token,
                             'Content-Type'  => 'application/json',
                         ],
                         'query' => [
-                            'prodType' => $product->private,
+                            'prodType' => $productType,
                             'prodSize' => $order->size,
                             'prodNum' => $prodNum,
                             'prodColor' => $order->color,
