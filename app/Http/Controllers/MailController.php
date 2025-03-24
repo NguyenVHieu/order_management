@@ -195,7 +195,7 @@ class MailController extends BaseController
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
                                     $item['style'] = !empty($style[$i]) ? str_replace("\r", "", $style[$i]) : '';
-                                    $sizeOther = $this->getSize($item['style']);
+                                    $sizeOther = $this->getSize(trim($item['style']));
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
                                             $item['style'] = $item['style'].' '.$data['size'][$i];
@@ -240,7 +240,7 @@ class MailController extends BaseController
                                 $data['blueprint_id'] = $this->getBlueprintId($data['style']);
                             } else {
                                 $data['style'] = str_replace("\r", "", $style);
-                                $sizeOther = $this->getSize($data['style']);
+                                $sizeOther = $this->getSize(trim($data['style']));
                                     if (!in_array($sizeOther, $sizeShirt)){
                                         if (in_array($sizeOther, $sizeStyle) || in_array($sizeOther, $sizeCanvas)) {
                                             $data['style'] = $style.' '.$data['size'];
