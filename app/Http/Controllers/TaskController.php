@@ -353,6 +353,7 @@ class TaskController extends BaseController
     public function initForm() 
     {
         try {
+            $scores = config('constants.scoresTask');
             $product = DB::table('product_tasks')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $platform_size = DB::table('platform_size_tasks')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
             $templates = DB::table('templates')->select([DB::raw('CAST(id AS CHAR) as value'), 'name as label'])->get();
@@ -373,6 +374,7 @@ class TaskController extends BaseController
                 ->get();
 
             $data = [
+                'scores' => $scores,
                 'templates' => $templates,
                 'category_designs' => $category_designs,
                 'designers' => $designers,

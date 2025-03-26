@@ -1,4 +1,5 @@
 <?php 
+
     return [
         'shipping_hubfulfill' => [
             'Bulgaria' => 'EUYTECO',
@@ -183,6 +184,12 @@
             "18x24 inch",
             "20x30 inch",
             "Custom Cat Poster"
-        ] 
+        ],
+        'scoresTask' => array_map(function ($value) {
+        return [
+            'label' => (string) $value,
+            'value' => (string) $value,
+        ];
+    }, range(0.25, 15.5, 0.25)),
     ];
 ?>
