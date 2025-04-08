@@ -412,6 +412,10 @@ class OrderController extends BaseController
             try {
                 $check = true;
                 foreach($orders as $key => $order) {
+                    if ($order->country === 'United Kingdom') {
+                        $this->baseUrlPrivate = $this->baseUrlPrivate . '/uk';
+                    }
+
                     if (!empty($order->img_1) && !empty($order->img_2)) {
                         $prodNum = 2;
                     }else {
