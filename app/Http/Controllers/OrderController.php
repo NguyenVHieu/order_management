@@ -412,7 +412,7 @@ class OrderController extends BaseController
             try {
                 $check = true;
                 foreach($orders as $key => $order) {
-                    if ($order->country === 'United Kingdom') {
+                    if ($order->order_number_group == 3643723036) {
                         $this->baseUrlPrivate = $this->baseUrlPrivate . '/uk';
                     }
 
