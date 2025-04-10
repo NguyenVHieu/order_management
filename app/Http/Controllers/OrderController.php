@@ -411,13 +411,18 @@ class OrderController extends BaseController
             
             try {
                 $check = true;
-                $uk = true;
+                $uk = false;
                 foreach($orders as $key => $order) {
-                    if ($order->order_number_group == 3643723036 && $uk == true) {
-                        $this->baseUrlPrivate = $this->baseUrlPrivate . '/uk';
-                        $uk = false;
+                    if (!empty($order->shipping_method)) {
+                        if ($order->shipping_method === 'UK') {
+                            if (!$uk) {
+                                $this->baseUrlPrivate .= '/uk';
+                                $uk = true;
+                            }
+                        } else {
+                            $shipping_method = $order->shipping_method;
+                        }
                     }
-
                     
                     if (!empty($order->img_1) && !empty($order->img_2)) {
                         $prodNum = 2;
