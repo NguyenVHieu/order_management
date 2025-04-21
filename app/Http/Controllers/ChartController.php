@@ -86,13 +86,15 @@ class ChartController extends BaseController
                 DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"))
                 ->where('recieved_mail_at', '>=', '2025-01-01 00:00:00')    
                 ->first();
-            
+
+            $items = $this->orderRepository->countOrderByTime($request->all());            
             // $results['orders'][] = $orders->total_order ?? 0;
             $results['labels'] = $dates;
             $results['total_order'] = $orders->total_order ?? 0;
             $results['total_cost'] = $total_cost ?? 0;
             $results['total_order_push'] = $total_order_push ?? 0;
             $results['total_order_not_push'] = $orders->amount_order_not_push ?? 0;
+            $results['item_order'] = $items;
 
             return $this->sendSuccess($results);
         } catch (\Throwable $th) {
@@ -107,7 +109,6 @@ class ChartController extends BaseController
             return $this->sendSuccess($data);
 
         } catch (\Throwable $th) {
-            dd($th);
             return $this->sendError('Lỗi Server');
         }
     }
