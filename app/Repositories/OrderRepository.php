@@ -145,23 +145,34 @@ class OrderRepository implements OrderRepositoryInterface
         } 
         else if ($type === 'shop') 
         {
+            $subQuery = DB::table('orders')
+                ->select('orders.shop_id', DB::raw('COUNT(orders.id) AS item_orders'))
+                ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59'])
+                ->groupBy('orders.shop_id');
+
             $query = DB::table('shops')
                 ->leftJoin('orders', function ($join) use ($params) {
                     $join->on('shops.id', '=', 'orders.shop_id')
                         ->where('orders.is_push', true)
                         ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
                 })
+                ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
+                    $join->on('shops.id', '=', 'sub_orders.shop_id');
+                })
                 ->select('shops.id', 'shops.name AS shop_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
-                ->selectRaw('COUNT(orders.id) AS item_orders')
-                ->groupBy('shops.id', 'shops.name')
+                ->selectRaw('COALESCE(sub_orders.item_orders, 0) AS item_orders')
+                ->groupBy('shops.id', 'shops.name', 'sub_orders.item_orders')
                 ->unionAll(
                     DB::table('shops')
+                        ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
+                            $join->on('shops.id', '=', 'sub_orders.shop_id');
+                        })
                         ->select('shops.id', 'shops.name AS shop_name')
                         ->selectRaw('0 AS total_cost')
                         ->selectRaw('0 AS total_order')
-                        ->selectRaw('0 AS item_orders')
+                        ->selectRaw('COALESCE(sub_orders.item_orders, 0) AS item_orders')
                         ->whereNotExists(function ($query) use ($params) {
                             $query->select(DB::raw(1))
                                 ->from('orders')
@@ -170,6 +181,7 @@ class OrderRepository implements OrderRepositoryInterface
                                 ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
                         })
                 );
+
         } else {
             $query = DB::table('teams')
                 ->leftJoin('users', 'users.team_id', '=', 'teams.id')
