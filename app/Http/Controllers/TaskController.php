@@ -545,7 +545,7 @@ class TaskController extends BaseController
             $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->select($columns)->get(); 
         } else if ($userTypeId == 3) {
             $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->where('team_id', $teamId)->select($columns)->get();
-        }  else if ($userTypeId == 4) {
+        }  else if ($userTypeId == 4 || $userTypeId == 5) {
             $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->select($columns)->get();
         } 
 
