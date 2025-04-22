@@ -43,13 +43,11 @@ class TaskController extends BaseController
                 'users.name as label',
                 'users.avatar',
             ];
-
+            $sellers = $this->getDataUser($columns);
             if (Auth::user()->user_type_id == 4) {
                 $designers = [];
-                $sellers = [];
             } else {
                 $designers = DB::table('users')->whereIn('user_type_id', [4, 5])->select($columns)->get();
-                $sellers = $this->getDataUser($columns);
             }
             $data = [
                 'designers' => $designers,
@@ -547,6 +545,8 @@ class TaskController extends BaseController
             $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->select($columns)->get(); 
         } else if ($userTypeId == 3) {
             $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->where('team_id', $teamId)->select($columns)->get();
+        }  else if ($userTypeId == 4) {
+            $seller = DB::table('users')->whereIn('user_type_id', [1, 3])->select($columns)->get();
         } 
 
         return $seller;
