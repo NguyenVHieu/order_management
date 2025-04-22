@@ -147,6 +147,7 @@ class OrderRepository implements OrderRepositoryInterface
         {
             $subQuery = DB::table('orders')
                 ->select('orders.shop_id', DB::raw('COUNT(orders.id) AS item_orders'))
+                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order_mail')
                 ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59'])
                 ->groupBy('orders.shop_id');
 
@@ -163,7 +164,8 @@ class OrderRepository implements OrderRepositoryInterface
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
                 ->selectRaw('COALESCE(sub_orders.item_orders, 0) AS item_orders')
-                ->groupBy('shops.id', 'shops.name', 'sub_orders.item_orders')
+                ->selectRaw('COALESCE(sub_orders.total_order_mail, 0) AS total_order_mail')
+                ->groupBy('shops.id', 'shops.name', 'sub_orders.item_orders', 'sub_orders.total_order_mail')
                 ->unionAll(
                     DB::table('shops')
                         ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
@@ -173,6 +175,7 @@ class OrderRepository implements OrderRepositoryInterface
                         ->selectRaw('0 AS total_cost')
                         ->selectRaw('0 AS total_order')
                         ->selectRaw('COALESCE(sub_orders.item_orders, 0) AS item_orders')
+                        ->selectRaw('COALESCE(sub_orders.total_order_mail, 0) AS total_order_mail')
                         ->whereNotExists(function ($query) use ($params) {
                             $query->select(DB::raw(1))
                                 ->from('orders')
