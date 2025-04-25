@@ -491,7 +491,7 @@ class OrderController extends BaseController
 
                     $items[] = $order->order_number;
 
-                    if (!empty($order->shipping_method)) {
+                    if (!empty($order->shipping_method) && $order->shipping_method != 'UK') {
                         $shipping_method = $order->shipping_method;
                     }
     
