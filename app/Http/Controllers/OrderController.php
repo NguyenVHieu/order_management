@@ -2004,12 +2004,20 @@ class OrderController extends BaseController
         try {
             Helper::trackingInfo('Request update cost: '. json_encode($request->all()));
             $id = $request->id;
-            $cost = $request->cost ?? 0.00;
-            $data = [
-                'cost' => $cost,
-            ];
-            DB::table('orders')->where('id', $id)->update($data);
-            Helper::trackingInfo('Update cost order: '. $id);
+            $data = [];
+            if (!empty($request->cost)) {
+                $data['cost'] = $request->cost;
+            }
+
+            if (!empty($request->tracking_number)) {
+                $data['tracking_order'] = $request->tracking_number;
+            }
+
+            if (!empty($data)) {
+                DB::table('orders')->where('id', $id)->update($data);
+                Helper::trackingInfo('Update cost order: '. $id);
+            }
+            
             return $this->sendSuccess('Cập nhật thành công!');
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
