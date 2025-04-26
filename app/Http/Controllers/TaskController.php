@@ -79,6 +79,10 @@ class TaskController extends BaseController
                 'my_task' => $request->my_task ?? 0
             ];
 
+            if (!empty($request->page_size)) {
+                $params['page_size'] = $request->page_size ?? 12;
+            }
+
             $results = $this->taskRepository->getAllTasks($params);
 
             $tasks = TaskResource::collection($results);
@@ -331,6 +335,120 @@ class TaskController extends BaseController
             return $this->sendError($e->getMessage());
         }
     }
+
+    public function changeStatuses(Request $request)
+    {
+        $results = [];
+        $userId = Auth::user()->id;
+        $userTypeId = Auth::user()->user_type_id;
+        $tasks = $request->tasks ?? [];
+        if (empty($tasks)) {
+            return $this->sendError('Không có task');
+        }
+
+        try {
+            foreach ($tasks as $taskItem) {
+                try {
+                    $id = $taskItem['id'];
+                    $statusName = $taskItem['status'];
+                    $statusOldName = $taskItem['status_old'];
+
+                    $status = DB::table('status_tasks')->where('name', $statusName)->first();
+                    $status_old = DB::table('status_tasks')->where('name', $statusOldName)->first();
+
+                    if (!$status || !$status_old) {
+                        $results[] = [
+                            'id' => $id,
+                            'status' => false,
+                            'message' => 'Không tìm thấy trạng thái'
+                        ];
+                        continue;
+                    }
+
+                    $task = $this->taskRepository->getTaskByCondition($id, $status_old->id);
+
+                    if (empty($task)) {
+                        $results[] = [
+                            'id' => $id,
+                            'status' => false,
+                            'message' => 'Không tìm thấy task hoặc đã cập nhật trạng thái'
+                        ];
+                        continue;
+                    }
+
+                    if (!$this->hasChangeStatusPermission($task->status_id, $statusName, $task->design_recipient_id, $userId, $userTypeId)) {
+                        $results[] = [
+                            'id' => $id,
+                            'status' => false,
+                            'message' => 'Không có quyền cập nhật'
+                        ];
+                        continue;
+                    }
+
+                    $data = [
+                        'status_id' => $status->id,
+                        'updated_at' => now(),
+                        'updated_by' => $userId,
+                    ];
+
+                    if ($statusName === 'in_progress') {
+                        $data['design_recipient_id'] = $userId;
+                        $data['deadline'] = now()->addDays(1);
+                    }
+
+                    if ($statusName === 'done') {
+                        if ($task->created_by != $userId) {
+                            $results[] = [
+                                'id' => $id,
+                                'status' => false,
+                                'message' => 'Không có quyền cập nhật'
+                            ];
+                            continue;
+                        }
+                        $data['is_done'] = 1;
+                        $data['done_at'] = now();
+                    }
+
+                    $task_new = $this->taskRepository->updateTask($id, $data);
+                    $this->updateHistory($id, $task->status_id, $task_new->status_id);
+
+                    // Xử lý thông báo sau phản hồi
+                    register_shutdown_function(function () use ($statusOldName, $statusName, $task_new) {
+                        try {
+                            if ((in_array($statusOldName, ['new_order', 'new_design']) && $statusName === 'in_progress') || $statusName === 'done') {
+                                $message = $statusName === 'in_progress'
+                                    ? "Task {$task_new->title} đã có designer nhận!"
+                                    : "Task {$task_new->title} đã xong!";
+        
+                                $this->notificationLark($task_new->created_by, $message);
+                            }
+                        } catch (\Exception $e) {
+                            Helper::trackingError("Lỗi khi gửi thông báo: " . $e->getMessage());
+                        }
+                    });
+
+                    $results[] = [
+                        'id' => $id,
+                        'status' => true,
+                        'message' => 'Success'
+                    ];
+                } catch (\Exception $e) {
+                    Helper::trackingError("Lỗi task ID {$taskItem['id']}: " . $e->getMessage());
+                    $results[] = [
+                        'id' => $taskItem['id'],
+                        'status' => false,
+                        'message' => $e->getMessage()
+                    ];
+                }
+            }
+
+            return $this->sendSuccess($results);
+        } catch (\Exception $e) {
+            Helper::trackingError("Lỗi chung: " . $e->getMessage());
+            return $this->sendError($e->getMessage());
+        }
+    }
+
 
 
     public function getData($request) 

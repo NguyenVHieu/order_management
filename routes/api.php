@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', 'index'); 
             Route::post('/', 'store');
             Route::post('/change-status', 'changeStatus');
+            Route::post('/change-statuses', 'changeStatuses');
             Route::get('/init-form', 'initForm');
             Route::get('/edit/{id}', 'edit');
             Route::post('/update/{id}', 'update');   

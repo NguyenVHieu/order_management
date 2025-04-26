@@ -26,6 +26,7 @@ class TaskRepository implements TaskRepositoryInterface
                     $query->where('tasks.design_recipient_id', $params['user_id'])
                         ->orWhereNull('tasks.design_recipient_id');
                 });
+             
             } else {
                 $query->join('users', 'users.id', '=', 'tasks.created_by');
                 $query->join('teams', 'teams.id', '=', 'users.team_id');
@@ -67,7 +68,12 @@ class TaskRepository implements TaskRepositoryInterface
             return $query->get();
         }
 
-        return $query->paginate(12);
+        if (empty($params['page_size'])) {
+            return $query->get();
+        } else {
+            return $query->paginate($params['page_size']);
+        }
+        
     }
 
     public function getTaskById($id)
