@@ -138,7 +138,7 @@ class UserController extends BaseController
             $query->shop_ids = $arr_shop;
             $user = new UserResource($query);  
             $shops = Shop::select(['id as value', 'name as label'])->get();
-            $userTypes = UserType::select(['id as value', 'name as label'])->get();
+            $userTypes = UserType::select(['id as value', 'name as label'])->get()->push(['value' => 0, 'label' => 'manager']);
             $teams = Team::select(['id as value', 'name as label'])->get();
             $data = [
                 'shops' => $shops,
