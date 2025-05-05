@@ -154,8 +154,7 @@ class OrderRepository implements OrderRepositoryInterface
             $query = DB::table('shops')
                 ->leftJoin('orders', function ($join) use ($params) {
                     $join->on('shops.id', '=', 'orders.shop_id')
-                        ->where('orders.is_push', true)
-                        ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                        ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59']);
                 })
                 ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
                     $join->on('shops.id', '=', 'sub_orders.shop_id');
@@ -180,13 +179,12 @@ class OrderRepository implements OrderRepositoryInterface
                             $query->select(DB::raw(1))
                                 ->from('orders')
                                 ->whereRaw('orders.shop_id = shops.id')
-                                ->where('orders.is_push', true)
-                                ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
+                                ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59']);
                         })
                 );
 
         } else {
-            $query = DB::table('teams')
+            $query = DB::table('teams')->whereNotIn('teams.id', [7, 8])
                 ->leftJoin('users', 'users.team_id', '=', 'teams.id')
                 ->leftJoin('orders', function ($join) use ($params) {
                     $join->on('users.id', '=', 'orders.approval_by')

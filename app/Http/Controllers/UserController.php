@@ -50,8 +50,9 @@ class UserController extends BaseController
     {
         try {
             $shops = Shop::select(['id as value', 'name as label'])->get();
-            $userTypes = UserType::select(['id as value', 'name as label'])->get();
+            // $userTypes = UserType::select(['id as value', 'name as label'])->get();
             $teams = Team::select(['id as value', 'name as label'])->get();
+            $userTypes = UserType::select(['id as value', 'name as label'])->get()->push(['value' => 0, 'label' => 'manager']);
             $data = [
                 'shops' => $shops,
                 'userTypes' => $userTypes,

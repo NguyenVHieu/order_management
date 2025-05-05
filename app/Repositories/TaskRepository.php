@@ -362,6 +362,7 @@ class TaskRepository implements TaskRepositoryInterface
             ->where('tasks.type', 'new_design')
             ->whereBetween('tasks.done_at', [$start_date, $end_date]);
         })
+        ->whereNotIn('teams.id', [7, 8])
         
         ->groupBy('teams.name'); // Nhóm thêm theo cột name để tránh lỗi SQL
 
