@@ -177,13 +177,27 @@ class MailController extends BaseController
                         if (is_array($data['product'])){
                             $countStyle = count($data['product']);
                             for ($i=0; $i < $countStyle; $i++) {
+                                if ($data['product'][$i] == 'Extra Printing Fees') {
+                                    if (is_array($data['color'])) {
+                                        array_splice($data['color'], $i, 0, '');
+                                    }
+
+                                    if (is_array($data['style'])) {
+                                        array_splice($data['style'], $i, 0, '');
+                                    }
+                                    
+                                    continue;
+                                }
+
                                 $item = [];
-                                $item['color'] = $data['color'][$i] ?? null;
+                                $item['color'] = is_array($data['color']) ? $data['color'][$i] : $data['color'] ?? null;
                                 $item['personalization'] = $personalizationList[$i] ?? null;
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
-                                $style[$i] = isset($data['style'][$i]) ? html_entity_decode($data['style'][$i]) : null;
+                                $data['style'] = is_array($data['style']) ? $data['style'][$i] : $data['style'] ?? null;
+                                $style[$i] = isset($data['style']) ? html_entity_decode($data['style']) : null;
+                                $style[$i] = is_array($style) ? $style[$i] : $style ?? null;
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
                                     $item['size'] = $data['size_blanket'][$i] ?? '';
