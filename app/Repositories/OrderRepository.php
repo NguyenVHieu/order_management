@@ -146,8 +146,8 @@ class OrderRepository implements OrderRepositoryInterface
         else if ($type === 'shop') 
         {
             $subQuery = DB::table('orders')
-                ->select('orders.shop_id', DB::raw('COUNT(orders.id) AS item_orders'))
-                ->selectRaw('COALESCE(SUM(orders.quantity)) AS total_order_mail')
+                ->select('orders.shop_id', DB::raw('SUM(orders.quantity) AS item_orders'))
+                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order_mail')
                 ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59'])
                 ->groupBy('orders.shop_id');
 
