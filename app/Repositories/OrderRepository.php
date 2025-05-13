@@ -121,7 +121,7 @@ class OrderRepository implements OrderRepositoryInterface
                 ->select('users.id', 'users.name AS user_name', 'shops.id AS shop_id', 'shops.name AS shop_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
-                ->selectRaw('COUNT(orders.id) AS item_orders')
+                ->selectRaw('SUM(orders.quantity) AS item_orders')
                 ->groupBy('users.id', 'users.name', 'shops.id', 'shops.name')
                 ->orderBy('users.id')
                 ->union(
@@ -147,7 +147,7 @@ class OrderRepository implements OrderRepositoryInterface
         {
             $subQuery = DB::table('orders')
                 ->select('orders.shop_id', DB::raw('COUNT(orders.id) AS item_orders'))
-                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order_mail')
+                ->selectRaw('COALESCE(SUM(orders.quantity)) AS total_order_mail')
                 ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59'])
                 ->groupBy('orders.shop_id');
 
@@ -193,7 +193,7 @@ class OrderRepository implements OrderRepositoryInterface
                 })
                 ->select('teams.id', 'teams.name AS team_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
-                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
+                ->selectRaw('COALESCE(SUM(orders.quantity)) AS total_order')
                 ->selectRaw('COUNT(orders.id) AS item_orders')
                 ->groupBy('teams.id', 'teams.name')
                 ->unionAll(
@@ -261,6 +261,6 @@ class OrderRepository implements OrderRepositoryInterface
         $start_date = Carbon::parse($params['start_date'])->startOfDay();
         $end_date = Carbon::parse($params['end_date'])->endOfDay();
         return Order::whereBetween('recieved_mail_at', [$start_date, $end_date])
-            ->count();
+            ->sum('quantity');
     }   
 }
