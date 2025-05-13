@@ -195,9 +195,9 @@ class MailController extends BaseController
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
-                                $data['style'] = is_array($data['style']) ? $data['style'][$i] : $data['style'] ?? null;
-                                $style[$i] = isset($data['style']) ? html_entity_decode($data['style']) : null;
-                                $style[$i] = is_array($style) ? $style[$i] : $style ?? null;
+                                $style[$i] = is_array($data['style']) ? $data['style'][$i] : $data['style'] ?? null;
+                                $style[$i] = isset($style[$i]) ? html_entity_decode($style[$i]) : null;
+                                // $style[$i] = is_array($style) ? $style[$i] : $style ?? null;
 
                                 if (stripos($data['product'][$i], 'Blanket') !== false) {
                                     $item['size'] = $data['size_blanket'][$i] ?? '';
