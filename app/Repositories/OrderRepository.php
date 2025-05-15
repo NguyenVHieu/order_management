@@ -256,6 +256,16 @@ class OrderRepository implements OrderRepositoryInterface
         return $query;
     }
 
+    public function calOrderInTime($params) 
+    {
+        $start_date = Carbon::parse($params['start_date'])->startOfDay();
+        $end_date = Carbon::parse($params['end_date'])->endOfDay(); 
+        $result = Order::whereBetween('recieved_mail_at', [$start_date, $end_date])
+            ->select(DB::raw("COUNT(DISTINCT order_number_group) AS total_order"))
+            ->first();
+        return $result ? $result->total_order : 0;
+    }
+
     public function countOrderByTime($params) 
     {
         $start_date = Carbon::parse($params['start_date'])->startOfDay();
