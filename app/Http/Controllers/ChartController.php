@@ -95,6 +95,7 @@ class ChartController extends BaseController
             $results['total_cost'] = $total_cost ?? 0;
             $results['total_order_push'] = $total_order_push ?? 0;
             $results['total_order_not_push'] = $orders->amount_order_not_push ?? 0;
+            $results['item_order'] = (int)$items;
             $results['item_order'] = $items;
             $results['order_intime'] = $orderInTime;
 

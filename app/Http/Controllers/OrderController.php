@@ -1643,6 +1643,8 @@ class OrderController extends BaseController
                     'updated_at' => now(),
                     'updated_by' => Auth::user()->id,
                     'shipping_method' => $request->shipping_method ?? null, 
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
                 ];
 
                 if (isset($request->place_order) && !empty($request->place_order)) {
