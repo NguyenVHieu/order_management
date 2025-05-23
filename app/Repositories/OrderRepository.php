@@ -118,6 +118,7 @@ class OrderRepository implements OrderRepositoryInterface
                 })
                 ->join('shops', 'orders.shop_id', '=', 'shops.id')
                 ->whereIn('users.user_type_id', [1, 3])
+                ->where('users.id', '!=', 11)
                 ->select('users.id', 'users.name AS user_name', 'shops.id AS shop_id', 'shops.name AS shop_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
@@ -133,6 +134,7 @@ class OrderRepository implements OrderRepositoryInterface
                         ->selectRaw('0 AS total_order')
                         ->selectRaw('0 AS item_orders')
                         ->whereIn('users.user_type_id', [1, 3])
+                        ->where('users.id', '!=', 11)
                         ->whereNotExists(function ($query) use ($params) {
                             $query->select(DB::raw(1))
                                 ->from('orders')
