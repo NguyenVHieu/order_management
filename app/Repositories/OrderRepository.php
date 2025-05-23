@@ -117,7 +117,7 @@ class OrderRepository implements OrderRepositoryInterface
                         ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
                 })
                 ->join('shops', 'orders.shop_id', '=', 'shops.id')
-                ->where('users.user_type_id', 1)
+                ->whereIn('users.user_type_id', [1, 3])
                 ->select('users.id', 'users.name AS user_name', 'shops.id AS shop_id', 'shops.name AS shop_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
@@ -132,7 +132,7 @@ class OrderRepository implements OrderRepositoryInterface
                         ->selectRaw('0 AS total_cost')
                         ->selectRaw('0 AS total_order')
                         ->selectRaw('0 AS item_orders')
-                        ->where('users.user_type_id', 1)
+                        ->whereIn('users.user_type_id', [1, 3])
                         ->whereNotExists(function ($query) use ($params) {
                             $query->select(DB::raw(1))
                                 ->from('orders')
@@ -154,7 +154,7 @@ class OrderRepository implements OrderRepositoryInterface
             $query = DB::table('shops')
                 ->leftJoin('orders', function ($join) use ($params) {
                     $join->on('shops.id', '=', 'orders.shop_id')
-                        ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59']);
+                        ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
                 })
                 ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
                     $join->on('shops.id', '=', 'sub_orders.shop_id');
