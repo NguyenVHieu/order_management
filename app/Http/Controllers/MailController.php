@@ -205,7 +205,7 @@ class MailController extends BaseController
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }else if (stripos($data['product'][$i], 'Flag') !== false){
                                     $item['size'] = $data['size'][$i] ?? '';
-                                    $item['style'] = $style[$i] ?? '' . ' ' . $item['size'];
+                                    $item['style'] = $style[$i] . ' ' . $item['size'];
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 } else {
                                     $item['style'] = !empty($style[$i]) ? str_replace("\r", "", $style[$i]) : '';
