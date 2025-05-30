@@ -234,7 +234,15 @@ class OrderController extends BaseController
                             } else if (stripos($order->style, 'Youth') !== false) {
                                 $type = 'Youth';
                             }
-                        }
+                        } else if ($product->merchize === 'All-over Print Kid And Youth V-neck Sleeveless Jersey Tank Top') {
+                            if (stripos($order->size, 'Y') !== false) {
+                                $type = 'Youth';
+                                $order->size = str_replace('Y', '', $order->size);
+                            }else {
+                                $type = 'Kid';
+                            }
+                               
+                        } 
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
                     }
 
