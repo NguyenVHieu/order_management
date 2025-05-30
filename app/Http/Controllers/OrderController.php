@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\OrdersExport;
 use GuzzleHttp\Client;
 use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
@@ -446,7 +447,7 @@ class OrderController extends BaseController
     
                     $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
     
-                    if (empty($resSkuConvert['data']) || empty($order->color) || empty($order->size)) {
+                    if (empty($resSkuConvert['data']) || empty($order->color) || empty($order->size || empty($productType))) {
                         $result[$order->order_number .' '. $order->color .' '. $order->size] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
@@ -2024,6 +2025,17 @@ class OrderController extends BaseController
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             return $this->sendError('Cập nhật thất bại', 500);
+        }
+    }
+
+    public function export()
+    {
+        try {
+            return Excel::download(new OrdersExport(), 'orders_2025_05_EmmaWhiteApparel.xlsx');
+        } catch (\Throwable $th) {
+
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Xuất đơn hàng thất bại', 500);
         }
     }
 }

@@ -163,3 +163,4 @@ Route::get('/refresh-token', [TiktokController::class, 'refreshToken']);
 Route::get('/get-auth-code', [TiktokController::class, 'getAuthCode']);
 Route::get('/compress-image', [OrderController::class, 'compressImage']);
 Route::get('/test-all', [OrderController::class, 'getAll']);
+Route::get('/export-orders', [OrderController::class, 'export']);
