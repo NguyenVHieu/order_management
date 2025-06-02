@@ -122,7 +122,7 @@ class OrderRepository implements OrderRepositoryInterface
                 ->select('users.id', 'users.name AS user_name', 'shops.id AS shop_id', 'shops.name AS shop_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
-                ->selectRaw('CAST(SUM(orders.quantity) AS SIGNED) AS item_orders')
+                ->selectRaw('CAST(COALESCE(SUM(orders.quantity), 0) AS SIGNED) AS item_orders')
                 ->groupBy('users.id', 'users.name', 'shops.id', 'shops.name')
                 ->orderBy('users.id')
                 ->union(
@@ -147,41 +147,29 @@ class OrderRepository implements OrderRepositoryInterface
         } 
         else if ($type === 'shop') 
         {
-            $subQuery = DB::table('orders')
-                ->select('orders.shop_id', DB::raw('CAST(SUM(orders.quantity) AS SIGNED) AS item_orders'))
-                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order_mail')
-                ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59'])
-                ->groupBy('orders.shop_id');
 
             $query = DB::table('shops')
                 ->leftJoin('orders', function ($join) use ($params) {
                     $join->on('shops.id', '=', 'orders.shop_id')
                         ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
                 })
-                ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
-                    $join->on('shops.id', '=', 'sub_orders.shop_id');
-                })
                 ->select('shops.id', 'shops.name AS shop_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
-                ->selectRaw('COALESCE(sub_orders.item_orders, 0) AS item_orders')
-                ->selectRaw('COALESCE(sub_orders.total_order_mail, 0) AS total_order_mail')
-                ->groupBy('shops.id', 'shops.name', 'sub_orders.item_orders', 'sub_orders.total_order_mail')
+                ->selectRaw('CAST(COALESCE(SUM(orders.quantity), 0) AS SIGNED) AS item_orders')
+                ->groupBy('shops.id', 'shops.name')
                 ->unionAll(
                     DB::table('shops')
-                        ->leftJoinSub($subQuery, 'sub_orders', function ($join) {
-                            $join->on('shops.id', '=', 'sub_orders.shop_id');
-                        })
                         ->select('shops.id', 'shops.name AS shop_name')
                         ->selectRaw('0 AS total_cost')
                         ->selectRaw('0 AS total_order')
-                        ->selectRaw('COALESCE(sub_orders.item_orders, 0) AS item_orders')
-                        ->selectRaw('COALESCE(sub_orders.total_order_mail, 0) AS total_order_mail')
+                        ->selectRaw('0 AS item_orders')
+                        // ->selectRaw('COALESCE(sub_orders.total_order_mail, 0) AS total_order_mail')
                         ->whereNotExists(function ($query) use ($params) {
                             $query->select(DB::raw(1))
                                 ->from('orders')
                                 ->whereRaw('orders.shop_id = shops.id')
-                                ->whereBetween('orders.recieved_mail_at', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59']);
+                                ->whereBetween('orders.date_push', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59']);
                         })
                 );
 
@@ -195,8 +183,9 @@ class OrderRepository implements OrderRepositoryInterface
                 })
                 ->select('teams.id', 'teams.name AS team_name')
                 ->selectRaw('COALESCE(SUM(orders.cost), 0) AS total_cost')
-                ->selectRaw('CAST(SUM(orders.quantity) AS SIGNED) AS item_orders')
-                ->selectRaw('COUNT(orders.id) AS item_orders')
+                ->selectRaw('CAST(COALESCE(SUM(orders.quantity), 0) AS SIGNED) AS item_orders')
+                ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group)) AS total_order')
+                // ->selectRaw('COUNT(orders.id) AS item_orders')
                 ->groupBy('teams.id', 'teams.name')
                 ->unionAll(
                     DB::table('teams')
