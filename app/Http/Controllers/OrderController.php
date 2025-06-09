@@ -903,7 +903,7 @@ class OrderController extends BaseController
                         $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
-                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Sucess';
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Success';
                     }
 
                     $info[$order->id] = [
