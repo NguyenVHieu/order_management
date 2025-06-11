@@ -2053,4 +2053,62 @@ class OrderController extends BaseController
             return $this->sendError('Xuất đơn hàng thất bại', 500);
         }
     }
+
+    public function store(Request $request)
+    {
+        Helper::trackingInfo('Request create order: '. json_encode($request->all()));
+        try {
+            $data = [
+                'order_number' => $request->order_number,
+                'order_number_group' => strpos($request->order_number, '#') !== false ? strstr($request->order_number, '#', true) : $request->order_number,
+                'color' => $request->color,
+                'size' => $request->size,
+                'style' => $request->style,
+                'shop_id' => $request->shop_id ?? null,
+                'personalization' => $request->personalization ?? null,
+                'personalization_2' => $request->personalization_2 ?? null,
+                'quantity' => $request->quantity ?? 1,
+                'thumbnail' => $request->thumbnail ?? null,
+                'recieved_mail_at' => now(),
+                'country' => $request->country,
+                'city' => $request->city,
+                'address' => $request->address,
+                'zip' => $request->zip,
+                'state' => $request->state,
+                'im_code' => $request->im_code,
+                'tax' => $request->tax,
+                'is_shipping' => $request->is_shipping,
+                'apartment' => $request->apartment,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'updated_at' => now(),
+                'updated_by' => Auth::user()->id,
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'product_name' => $request->product_name ?? null,
+                'img_1' => !empty($request->img_1) ? $this->saveImgeSku($request->img_1) : null,
+                'img_2' => !empty($request->img_2) ? $this->saveImgeSku($request->img_2) : null,
+                'img_3' => !empty($request->img_3) ? $this->saveImgeSku($request->img_3) : null,
+                'img_4' => !empty($request->img_4) ? $this->saveImgeSku($request->img_4) : null,
+                'img_5' => !empty($request->img_5) ? $this->saveImgeSku($request->img_5) : null,
+                'img_6' => !empty($request->img_6) ? $this->saveImgeSku($request->img_6) : null,
+                'img_7' => !empty($request->img_7) ? $this->saveImgeSku($request->img_7) : null,
+                'note' => $request->note ?? null,
+                'created_at' => now(),
+                'created_by' => Auth::user()->id,
+            ];
+
+            $blueprint = DB::table('key_blueprints')->where('style', $request->style)->first();
+            $blueprint_id = $blueprint->product_printify_id ?? null;
+            if (!empty($blueprint_id)) {
+                $data['blueprint_id'] = $blueprint_id;
+            }
+            
+            DB::table("orders")->insert($data);
+            return $this->sendSuccess('Tạo đơn hàng thành công!');
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Tạo đơn hàng thất bại: '. $th->getMessage(), 500);
+        }
+    }
 }

@@ -60,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/split-order/{id}', 'splitOrder');
             Route::post('/import', 'import');
             Route::post('/update-cost', 'updateCost');
+            Route::post('/', 'store');
         });
     });
 
