@@ -2111,4 +2111,18 @@ class OrderController extends BaseController
             return $this->sendError('Tạo đơn hàng thất bại: '. $th->getMessage(), 500);
         }
     }
+
+    public function init()
+    {
+        try {
+            $shops = DB::table('shops')->select('id as value', 'name as label')->get();
+            $data = [
+                'shops' => $shops,
+            ];
+            return $this->sendSuccess($data);
+        } catch (\Throwable $th) {
+            return $this->sendError(('Server error'));
+        }
+        
+    }
 }

@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('orders')->group(function () {
         Route::controller(OrderController::class)->group(function(){
+            Route::get('/init', 'init');
             Route::post('/create', 'pushOrder');
             Route::get('/', 'getOrderDB');
             Route::get('/get-providers/{blueprint_id}/{order_id}', 'getProviders');
