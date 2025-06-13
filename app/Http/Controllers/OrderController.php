@@ -446,14 +446,14 @@ class OrderController extends BaseController
                         $prodNum = 1;
                     }
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
-                    // $productType = $order->is_tiktok == true ? $order->style : $product->private;
+                    $productType = $order->is_tiktok == true ? $order->style : $product->private;
                     $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $token,
                             'Content-Type'  => 'application/json',
                         ],
                         'query' => [
-                            'prodType' => $product->private,
+                            'prodType' => $productType,
                             'prodSize' => $order->size,
                             'prodNum' => $prodNum,
                             'prodColor' => $order->color,
@@ -462,7 +462,7 @@ class OrderController extends BaseController
     
                     $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
     
-                    if (empty($resSkuConvert['data']) || empty($order->color) || empty($order->size || $product->private== null)) {
+                    if (empty($resSkuConvert['data']) || empty($order->color) || empty($order->size || ($product->private== null  && $order->is_tiktok == false))) {
                         $result[$order->order_number .' '. $order->color .' '. $order->size] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
