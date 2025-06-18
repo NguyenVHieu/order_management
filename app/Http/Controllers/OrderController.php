@@ -2127,4 +2127,24 @@ class OrderController extends BaseController
         }
         
     }
+
+    public function pushManual(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Request push manual order: '. json_encode($request->all()));
+            
+            $ids = $request->ids;
+            DB::table('orders')->whereIn('id', $ids)->update([
+                'is_push' => true,
+                'push_by' => Auth::user()->id,
+                'date_push' => now(),
+                'status_order' => 'pushed',
+            ]);
+            
+            return $this->sendSuccess('Push manual thành công!');
+        } catch (\Throwable $th) {
+            Helper::trackingError($th->getMessage());
+            return $this->sendError('Push manual thất bại: '. $th->getMessage(), 500);
+        }
+    }
 }
