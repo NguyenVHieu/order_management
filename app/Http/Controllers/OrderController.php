@@ -916,7 +916,7 @@ class OrderController extends BaseController
 
                     $item = [
                         "product_sku" => $sku,
-                        "quantity" => 1,
+                        "quantity" => $order->quantity,
                         "mockups" => [
                             $order->img_6
                         ],
