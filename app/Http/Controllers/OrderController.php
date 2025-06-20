@@ -2058,6 +2058,19 @@ class OrderController extends BaseController
     {
         Helper::trackingInfo('Request create order: '. json_encode($request->all()));
         try {
+            $images = [];
+
+            for ($i = 1; $i <= 7; $i++) {
+                $imgKey = "img_$i";
+                $images[$imgKey] = null;
+
+                if (!empty($request->$imgKey)) {
+                    $images[$imgKey] = $request->hasFile($imgKey)
+                        ? $this->saveImgeSku($request->file($imgKey))
+                        : $this->getImageDrive($request->$imgKey);
+                }
+            }
+
             $data = [
                 'order_number' => $request->order_number,
                 'order_number_group' => strpos($request->order_number, '#') !== false ? strstr($request->order_number, '#', true) : $request->order_number,
@@ -2088,13 +2101,13 @@ class OrderController extends BaseController
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
                 'product_name' => $request->product_name ?? null,
-                'img_1' => !empty($request->img_1) ? $this->saveImgeSku($request->img_1) : null,
-                'img_2' => !empty($request->img_2) ? $this->saveImgeSku($request->img_2) : null,
-                'img_3' => !empty($request->img_3) ? $this->saveImgeSku($request->img_3) : null,
-                'img_4' => !empty($request->img_4) ? $this->saveImgeSku($request->img_4) : null,
-                'img_5' => !empty($request->img_5) ? $this->saveImgeSku($request->img_5) : null,
-                'img_6' => !empty($request->img_6) ? $this->saveImgeSku($request->img_6) : null,
-                'img_7' => !empty($request->img_7) ? $this->saveImgeSku($request->img_7) : null,
+                'img_1' => $images['img_1'] ?? null,
+                'img_2' => $images['img_2'] ?? null,
+                'img_3' => $images['img_3'] ?? null,
+                'img_4' => $images['img_4'] ?? null,            
+                'img_5' => $images['img_5'] ?? null,
+                'img_6' => $images['img_6'] ?? null,
+                'img_7' => $images['img_7'] ?? null,
                 'note' => $request->note ?? null,
                 'created_at' => now(),
                 'created_by' => Auth::user()->id,
@@ -2145,6 +2158,43 @@ class OrderController extends BaseController
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             return $this->sendError('Push manual thất bại: '. $th->getMessage(), 500);
+        }
+    }
+
+    public function getImageDrive($url)
+    {
+        $client = new Client();
+        if (preg_match('/\/d\/(.*?)\//', $url, $matches)) {
+            $fileId = $matches[1];
+            $downloadLink = "https://drive.google.com/uc?export=download&id=" . $fileId;
+    
+            try {
+                $response = $client->get($downloadLink);
+            
+                if ($response->getStatusCode() == 200) {
+                    $dateFolder = now()->format('Ymd');
+                    $time = now()->format('His');
+                    $directory = public_path('uploads/' . $dateFolder);
+    
+                    if (!file_exists($directory)) {
+                        mkdir($directory, 0755, true);
+                    }
+    
+                    $contentType = $response->getHeaderLine('Content-Type'); // image/jpeg
+                    $extension = explode('/', $contentType)[1] ?? 'jpg';
+    
+                    $fileName = Str::random(10) . '_' . $time . '.' . $extension;
+                    $filePath = $directory . '/' . $fileName;
+    
+                    file_put_contents($filePath, $response->getBody()->getContents());
+    
+                    $imageUrl = asset('uploads/' . $dateFolder . '/' . $fileName);
+    
+                    return $imageUrl;
+                }
+            } catch (\Exception $e) {
+                return null;
+            }
         }
     }
 }

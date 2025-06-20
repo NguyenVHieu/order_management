@@ -28,9 +28,12 @@ class MailController extends BaseController
                     $firstName = $parts[0];
                     $lastName = implode(" ", array_slice($parts, 1));
                     $shop = Shop::where('name', str_replace("\r", "", $param['shop']))->first();
+
                     if (empty($shop)) {
                         $shop = Shop::create(['name' => $param['shop']])->fresh();  
                     }
+                    $seller = $shop->seller[0]->id;
+
                     if ($param['shipping'] != '' && $param['shipping'] != '0.00'){
                         $shipping = $param['shipping'];
                     }else {
@@ -62,12 +65,14 @@ class MailController extends BaseController
                         'recieved_mail_at' => $param['recieved_mail_at'],
                         'zip' => $param['zip'],
                         'city' => $param['city'],
-                        'is_push' => false,
-                        'is_approval' => false,
+                        'is_push' => trim($param['style']) === 'Digital File (PNG)' ? true : false,
+                        'is_approval' => trim($param['style']) === 'Digital File (PNG)' ? true : false,
                         'multi' => $param['multi'], 
                         'order_number_group' => $param['orderNumberGroup'] ?? null,
                         'category_id' => $param['category_id'] ?? null,
-                        'im_code' => $param['im'] != '' ? $param['im'] : null
+                        'im_code' => $param['im'] != '' ? $param['im'] : null,
+                        'date_push' => trim($param['style']) === 'Digital File (PNG)' ? now() : null,
+                        'push_by' => trim($param['style']) === 'Digital File (PNG)' ? $seller : null,
                     ];
         
                     $order = DB::table('orders')->where('order_number', $data['order_number'])
@@ -189,12 +194,19 @@ class MailController extends BaseController
                                     continue;
                                 }
 
+                                
+
                                 $item = [];
                                 $item['color'] = is_array($data['color']) ? $data['color'][$i] : $data['color'] ?? null;
                                 $item['personalization'] = $personalizationList[$i] ?? null;
                                 $item['quantity'] = $data['quantity'][$i]; // Uncomment this line
                                 $item['thumb'] = $thumb[$i];
                                 $item['product'] = $data['product'][$i];
+                                if (stripos($item['product'], 'upgrade') !== false || stripos($item['style'], 'upgrade') !== false){
+                                    // $message->setFlag('SEEN');
+                                    // $client->expunge();
+                                    continue;
+                                }
 
                                 if (is_array($data['style'])) {
                                     $style[$i] = isset($data['style'][$i]) ? $data['style'][$i] : null;
@@ -230,15 +242,8 @@ class MailController extends BaseController
 
                                     $item['blueprint_id'] = $this->getBlueprintId($item['style']);
                                 }
-
-                                if (stripos($item['product'], 'digital') !== false || stripos($item['product'], 'upgrade') !== false || 
-                                    stripos($item['style'], 'digital') !== false || stripos($item['style'], 'upgrade') !== false){
-                                    // $message->setFlag('SEEN');
-                                    // $client->expunge();
-                                    continue;
-                                }
-                                $item['category_id'] = DB::table('key_categories')->where('style', $item['style'])->first()->category_id ?? null;
                                 
+                                $item['category_id'] = DB::table('key_categories')->where('style', $item['style'])->first()->category_id ?? null;
                                 $item['multi'] = true;
                                 $item['orderNumber'] = $data['orderNumber'].'#'.$i+1;
                                 $item['orderNumberGroup'] = $data['orderNumber'];
@@ -247,10 +252,17 @@ class MailController extends BaseController
                             }
                             
                         }else {
-
+                            
                             $data['thumb'] = $thumb;
                             $style = is_array($data['style']) ? $data['style'][0] : $data['style'];
                             $style = html_entity_decode($style);
+
+                            if (stripos($data['product'], 'upgrade') !== false || stripos($style, 'upgrade') !== false){
+                                // $message->setFlag('SEEN');
+                                // $client->expunge();
+                                continue;
+                            }
+                            
                             if (stripos($data['product'], 'Blanket') !== false) {
                                 $data['size'] = $data['size_blanket'];
                                 $data['style'] = $style . ' '. $data['size'];
@@ -273,12 +285,6 @@ class MailController extends BaseController
                                         $data['size'] = $sizeOther;
                                     }
                                 $data['blueprint_id'] = $this->getBlueprintId($style);
-                            }
-                            if (stripos($data['product'], 'digital') !== false || stripos($data['product'], 'upgrade') !== false ||
-                                stripos($style, 'digital') !== false || stripos($style, 'upgrade') !== false){
-                                // $message->setFlag('SEEN');
-                                // $client->expunge();
-                                continue;
                             }
                             
                             $data['category_id'] = DB::table('key_categories')->where('style', $data['style'])->first()->category_id ?? null;
