@@ -16,4 +16,10 @@ class Shop extends Model
         'created_by',
         'updated_by',
     ];
+
+    public function seller()
+    {
+        return $this->belongsToMany(User::class, 'user_shops')
+                    ->where('user_type_id', 1);
+    }
 }
