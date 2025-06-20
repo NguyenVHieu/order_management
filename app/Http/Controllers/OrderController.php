@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Http;
 use Intervention\Image\Facades\Image;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
-
+use Illuminate\Support\Str;
 class OrderController extends BaseController
 {
     protected $shopIdPrintify;
