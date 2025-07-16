@@ -259,7 +259,7 @@ class TaskController extends BaseController
             DB::beginTransaction();
             $id = $request->id;
             $userId = Auth::user()->id; 
-            $userTypeId = Auth::user()->user_type_id;
+            $userTypeId = Auth::user()->user_type_id ?? -1;
 
             $status = DB::table('status_tasks')->where('name', $request->status)->first();
             $status_old = DB::table('status_tasks')->where('name', $request->status_old)->first();
@@ -610,7 +610,7 @@ class TaskController extends BaseController
             return false;
         }
 
-        if (in_array($userTypeId, [1, 3])) {
+        if (in_array($userTypeId, [1, 3, -1])) {
             return in_array($status, ['new_design', 'new_order']) || ($status_old == 4 && in_array($status, ['fix', 'done']));
         }
 
