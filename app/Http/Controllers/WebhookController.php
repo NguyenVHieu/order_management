@@ -530,4 +530,14 @@ class WebhookController extends BaseController
         }        
     }
 
+    public function webhookWp(Request $request)
+    {
+        try {
+            Helper::trackingInfo('Body Webhook WP:' . json_encode($request->all()));
+
+        } catch (\Throwable $th) {
+            Helper::trackingError('Lỗi Webhook WP' . json_encode($th->getMessage()));
+        }
+    }
+
 }

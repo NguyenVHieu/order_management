@@ -148,6 +148,7 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/backupdb', 'backupDB');
     Route::post('/webhook-tiktok', 'webhookTiktok');
     Route::post('/webhook-gearment', 'webhookGearment');
+    Route::post('/webhook-wp', 'webhookWp');
 });
 
 Route::controller(MailController::class)->group(function(){
