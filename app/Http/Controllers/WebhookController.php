@@ -534,7 +534,44 @@ class WebhookController extends BaseController
     {
         try {
             Helper::trackingInfo('Body Webhook WP:' . json_encode($request->all()));
+            $country = $request->shipping['country'] ?? $request->billing['country'];
+            $data_country = DB::table('countries')->where('iso_alpha_2', $country)->first();
+            $data = [
+                'order_number_group' => $request->id,
+                'shop_id' => 15,
+                'first_name' => $request->shipping['first_name'] ?? $request->billing['first_name'],
+                'last_name' => $request->shipping['last_name'] ?? $request->billing['last_name'],
+                'email' => $request->billing['email'] ?? '',
+                'phone' => $request->shipping['phone'] ?? $request->billing['phone'],
+                'zip' => $request->shipping['postcode'] ?? $request->billing['postcode'],
+                'country' => !empty($data_country) ? $data_country->name : $country,
+                'state' => $request->shipping['state'] ?? $request->billing['state'],
+                'city' => $request->shipping['city'] ?? $request->billing['city'],
+                'apartment' => $request->shipping['address_2'] ?? $request->billing['address_2'],
+                'address' => $request->shipping['address_1'] ?? $request->billing['address_1'],
+                'shipping' => $request->shipping_total ?? '',
+                'order_total' => $request->total ?? '',
+            ];
+            $orderNumber = $request->id;
+            $lineItems = $request->line_items;
+            $multi = count($lineItems) > 1 ? true : false;
+            foreach($lineItems as $index => $item) {
+                $data_item = [
+                    'product_name' => $item['name'],
+                    'quantity' => $item['quantity'],
+                    'multi' => $multi,
+                    'order_number' => $multi ? $orderNumber.'#'.$index : $orderNumber,
+                    'size' => $item['meta_data'][0]['value'] ,
+                    'style' => $item['meta_data'][1]['value'],
+                    'thumbnail' => $item['image']['src'],
+                    'sku' => $item['sku'],
+                    'recieved_mail_at' => Carbon::parse($request->date_created)->format('Y-m-d H:i:s')
+                ];
+                $columns = array_merge($data, $data_item);
+                DB::table('orders')->insert($columns);
+            }
 
+            Helper::trackingInfo('Webhook WP ok: ' . $request->id);
         } catch (\Throwable $th) {
             Helper::trackingError('Lỗi Webhook WP' . json_encode($th->getMessage()));
         }
