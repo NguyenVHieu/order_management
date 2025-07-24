@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/update-cost', 'updateCost');
             Route::post('/', 'store');
             Route::post('/push-manual', 'pushManual');
+            Route::post('/add-note-wp', 'addNoteWp');
         });
     });
 

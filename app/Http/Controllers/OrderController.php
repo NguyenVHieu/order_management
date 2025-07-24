@@ -2197,4 +2197,38 @@ class OrderController extends BaseController
             }
         }
     }
+
+   public function addNoteWp(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $order = Order::findOrFail($id);
+            $shop = $order->shop;
+
+            $client = new Client();
+            $baseUrl = rtrim($shop->site, '/') . '/wp-json/wc/v3/orders/' . $order->order_number;
+            $auth = [$shop->customer_key, $shop->secret_key];
+
+            // Cập nhật trạng thái đơn hàng
+            $client->put($baseUrl, [
+                'auth' => $auth,
+                'json' => [
+                    'status' => 'completed'
+                ]
+            ]);
+
+            // Thêm ghi chú đơn hàng
+            $client->post($baseUrl . '/notes', [
+                'auth' => $auth,
+                'json' => [
+                    'note' => $order->tracking_order,
+                    'customer_note' => true
+                ]
+            ]);
+
+            return $this->sendSuccess('success');
+        } catch (\Throwable $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
 }
