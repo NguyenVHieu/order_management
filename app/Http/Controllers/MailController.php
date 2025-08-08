@@ -133,7 +133,7 @@ class MailController extends BaseController
                             'apartment' => '/<span class=\'second-line\'>([^<]+)<\/span>/',
                             'country' => '/<span class=\'country-name\'>([^<]+)<\/span>/',
                             'product' => '/Item:\s*(.+)/',
-                            'style' => '/Style:\s*(.*)/',
+                            'style' => '/(?:Style|Styles):\s*(.*)/',
                             'color' => '/(?:Primary color \(Matching with color chart\)|Primary color):\s*(.*)/i',
                             'quantity' => '/Quantity:\s*(.+)/',
                             'salesTax' => '/Sales Tax:\s*\$?(\d+(\.\d{2})?|US)/',
