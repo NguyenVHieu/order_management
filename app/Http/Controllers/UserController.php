@@ -209,7 +209,12 @@ class UserController extends BaseController
             if ($userLogin->user_type_id != null && $userTypeId == 1) {
                 $users = DB::table('users')->where('user_type_id', $userTypeId)->where('team_id', $userLogin->team_id)->select($columns)->get();
             } else {
-                $users = DB::table('users')->where('user_type_id', $userTypeId)->select($columns)->get();
+                if ($userTypeId == 4) {
+                    $users = DB::table('users')->whereIn('user_type_id', [4, 5])->select($columns)->get();
+                } else {
+                    $users = DB::table('users')->where('user_type_id', $userTypeId)->select($columns)->get();
+                }
+                
             }
 
             return $this->sendSuccess($users);
