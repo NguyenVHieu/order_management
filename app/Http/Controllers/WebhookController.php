@@ -556,13 +556,21 @@ class WebhookController extends BaseController
             $lineItems = $request->line_items;
             $multi = count($lineItems) > 1 ? true : false;
             foreach($lineItems as $index => $item) {
+                $size = $style = null;
+                if ($item['meta_data'][0]['key'] == 'Size') {
+                    $size = $item['meta_data'][0]['value'];
+                }
+
+                if ($item['meta_data'][1]['key'] == 'Design Style') {
+                    $style = $item['meta_data'][1]['value'];
+                }
                 $data_item = [
                     'product_name' => $item['name'],
                     'quantity' => $item['quantity'],
                     'multi' => $multi,
                     'order_number' => $multi ? $orderNumber.'#'.$index : $orderNumber,
-                    'size' => $item['meta_data'][0]['value'] ,
-                    'style' => $item['meta_data'][1]['value'],
+                    'size' => $size,
+                    'style' => $style,
                     'thumbnail' => $item['image']['src'],
                     'sku' => $item['sku'],
                     'recieved_mail_at' => Carbon::parse($request->date_created)->format('Y-m-d H:i:s')
