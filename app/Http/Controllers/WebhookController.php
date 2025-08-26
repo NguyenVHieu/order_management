@@ -585,4 +585,8 @@ class WebhookController extends BaseController
         }
     }
 
+    public function webhookUpdateOrderWp(Request $request) {
+        Helper::trackingInfo('Body Webhook Update order WP:' . json_encode($request->all()));
+    }
+
 }
