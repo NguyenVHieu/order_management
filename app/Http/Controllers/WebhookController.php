@@ -589,4 +589,9 @@ class WebhookController extends BaseController
         Helper::trackingInfo('Body Webhook Update order WP:' . json_encode($request->all()));
     }
 
+    public function webhookCreateOrderEnchanted(Request $request)
+    {
+        Helper::trackingInfo('Body Create Irder Enchanted:' . json_encode($request->all()));
+    }
+
 }

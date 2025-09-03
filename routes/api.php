@@ -151,6 +151,7 @@ Route::controller(WebhookController::class)->group(function(){
     Route::post('/webhook-gearment', 'webhookGearment');
     Route::post('/webhook-wp', 'webhookWp');
     Route::post('/webhook-update-order-wp', 'webhookUpdateOrderWp');
+    Route::post('/create-order-enchanted', 'webhookCreateOrderEnchanted');
 });
 
 Route::controller(MailController::class)->group(function(){
