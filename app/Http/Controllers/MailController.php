@@ -258,6 +258,9 @@ class MailController extends BaseController
                             $data['thumb'] = $thumb;
                             $style = is_array($data['style']) ? $data['style'][0] : $data['style'];
                             $style = html_entity_decode($style);
+                            if (stripos($data['personalization'], '-----------') !== false) {
+                                $data['personalization'] = null;
+                            }
 
                             
                             if (stripos($data['product'], 'Blanket') !== false) {
