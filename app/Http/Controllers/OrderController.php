@@ -248,6 +248,12 @@ class OrderController extends BaseController
                             }else {
                                 $type = '1-side Printed';
                             }
+
+                            if (stripos($order->style, 'Wavy Acrylic-Twinkle') !== false) {
+                                $order->color = 'Star Hologram';
+                            } else if (stripos($order->style, 'Wavy Acrylic-Sparkle') !== false) {
+                                $order->color = 'Broken Glass Hologram';
+                            }
                         }
 
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
