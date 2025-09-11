@@ -54,9 +54,8 @@ class User extends Authenticatable
         ];
     }
 
-    public function shop()
-    {
-        return $this->hasOne(Shop::class, 'id', 'shop_id');
+    public function shops() {
+        return $this->belongsToMany(Shop::class, 'user_shops', 'user_id', 'shop_id');
     }
 
     public function team()
