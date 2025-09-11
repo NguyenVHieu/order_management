@@ -22,4 +22,9 @@ class Shop extends Model
         return $this->belongsToMany(User::class, 'user_shops')
                     ->where('user_type_id', 1);
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_shops');
+    }
 }

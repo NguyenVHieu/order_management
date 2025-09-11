@@ -272,10 +272,17 @@ class OrderRepository implements OrderRepositoryInterface
             DB::raw("DATE_FORMAT(recieved_mail_at, '$format') AS time"),
             DB::raw("COUNT(DISTINCT order_number_group) AS total_order"),
         ];
+
+        $userId = Auth::user()->id;
+        $shopIds = User::find($userId)->shops()->pluck('shops.id')->toArray();
+        $userType = Auth::user()->user_type_id ?? null;
         
         $query = Order::query()
             ->select($columns)
             ->whereBetween('recieved_mail_at', [$start_date, $end_date])
+            ->when($userType !== null, function ($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            })
             ->groupBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')")) 
             ->orderBy(DB::raw("DATE_FORMAT(recieved_mail_at, '$format')"))
             ->get()
@@ -291,10 +298,17 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function calOrderInTime($params) 
     {
+        $userId = Auth::user()->id;
+        $shopIds = User::find($userId)->shops()->pluck('shops.id')->toArray();
+        $userType = Auth::user()->user_type_id ?? null;
+
         $start_date = Carbon::parse($params['start_date'])->startOfDay();
         $end_date = Carbon::parse($params['end_date'])->endOfDay(); 
         $result = Order::whereBetween('recieved_mail_at', [$start_date, $end_date])
             ->select(DB::raw("COUNT(DISTINCT order_number_group) AS total_order"))
+            ->when($userType !== null, function ($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            })
             ->first();
         return $result ? $result->total_order : 0;
     }

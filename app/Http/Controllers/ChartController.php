@@ -61,6 +61,10 @@ class ChartController extends BaseController
                 default:
                     throw new Exception('Invalid type provided.');
             }
+
+            $userId = Auth::user()->id;
+            $shopIds = User::find($userId)->shops()->pluck('shops.id')->toArray();
+            $userType = Auth::user()->user_type_id ?? null;
         
             $results = [];
             $total_cost = 0.00;
@@ -86,6 +90,9 @@ class ChartController extends BaseController
                 ->select(DB::raw("COUNT(DISTINCT CONCAT(order_number_group, '-', is_push, IF(is_push = 1, place_order, ''))) AS total_order"),
                 DB::raw("COUNT(DISTINCT CASE WHEN is_push = false THEN order_number_group END) AS amount_order_not_push"))
                 ->where('recieved_mail_at', '>=', '2025-01-01 00:00:00')    
+                ->when($userType !== null, function ($q) use ($shopIds) {
+                    $q->whereIn('shop_id', $shopIds);
+                })
                 ->first();
 
             $items = $this->orderRepository->countOrderByTime($request->all());            
