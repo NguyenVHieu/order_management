@@ -131,6 +131,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', 'destroy');
         });
     });
+
+    Route::prefix('charts')->group(function () {
+        Route::controller(ChartController::class)->group(function(){
+            Route::post('/order-by-date', 'filterOrderByTime');
+            Route::post('/cal-cost-order', 'calCostOrder');
+            Route::get('/init-data', 'initData');
+        });
+    });
 });
 
 Route::post('/update-order-otb', [WebhookController::class, 'updateOrderOtb']);
@@ -156,14 +164,6 @@ Route::controller(WebhookController::class)->group(function(){
 
 Route::controller(MailController::class)->group(function(){
     Route::get('/fetch-mail-order', 'fetchMailOrder');
-});
-
-Route::prefix('charts')->group(function () {
-    Route::controller(ChartController::class)->group(function(){
-        Route::post('/order-by-date', 'filterOrderByTime');
-        Route::post('/cal-cost-order', 'calCostOrder');
-        Route::get('/init-data', 'initData');
-    });
 });
 
 Route::get('/refresh-token', [TiktokController::class, 'refreshToken']);
