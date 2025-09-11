@@ -113,6 +113,7 @@ class OrderRepository implements OrderRepositoryInterface
         
         if ($type === 'seller') {
             $teamId = Auth::user()->team_id ?? null;
+            $userType = Auth::user()->user_type_id; 
             $main = DB::table('users')
                     ->leftJoin('orders', function ($join) use ($params) {
                         $join->on('users.id', '=', 'orders.approval_by')
@@ -129,7 +130,7 @@ class OrderRepository implements OrderRepositoryInterface
                     ->groupBy('users.id', 'users.name', 'shops.id', 'shops.name')
                     ->orderBy('users.id');
 
-                if (!empty($teamId)) {
+                if (!empty($teamId) && !empty($userType)) {
                     $main->where('users.team_id', $teamId);
                 }
 
@@ -150,7 +151,7 @@ class OrderRepository implements OrderRepositoryInterface
                             ->whereBetween('orders.date_push', [$params['start_date'], $params['end_date']]);
                     });
 
-                if (!empty($teamId)) {
+                if (!empty($teamId) && !empty($userType)) {
                     $union->where('users.team_id', $teamId);
                 }
 
@@ -160,6 +161,7 @@ class OrderRepository implements OrderRepositoryInterface
         else if ($type === 'shop') 
         {
             $userId = Auth::user()->id;
+            $userType = Auth::user()->user_type_id ?? null;
             $shopIds = User::where('id', $userId)->first()->shops()->pluck('shops.id')->toArray() ?? [];
             $main = DB::table('shops')
                 ->leftJoin('orders', function ($join) use ($params) {
@@ -172,7 +174,7 @@ class OrderRepository implements OrderRepositoryInterface
                 ->selectRaw('CAST(COALESCE(SUM(orders.quantity), 0) AS SIGNED) AS item_orders')
                 ->groupBy('shops.id', 'shops.name');
 
-            if (!empty($shopIds)) {
+            if (!empty($shopIds) && !empty($userType)) {
                 $main->whereIn('shops.id', $shopIds);
             }
 
@@ -188,7 +190,7 @@ class OrderRepository implements OrderRepositoryInterface
                         ->whereBetween('orders.date_push', [$params['start_date'].' 00:00:00', $params['end_date'].' 23:59:59']);
                 });
 
-            if (!empty($shopIds)) {
+            if (!empty($shopIds) && !empty($userType)) {
                 $union->whereIn('shops.id', $shopIds);
             }
 
@@ -211,7 +213,7 @@ class OrderRepository implements OrderRepositoryInterface
                 ->selectRaw('COALESCE(COUNT(DISTINCT orders.order_number_group), 0) AS total_order')
                 ->groupBy('teams.id', 'teams.name');
 
-            if (!empty($teamId)) {
+            if (!empty($teamId) && !empty($userType)) {
                 $main->where('teams.id', $teamId);
             }
 
@@ -234,7 +236,7 @@ class OrderRepository implements OrderRepositoryInterface
                         });
                 });
 
-            if (!empty($teamId)) {
+            if (!empty($teamId) && !empty($userType)) {
                 $union->where('teams.id', $teamId);
             }
 
