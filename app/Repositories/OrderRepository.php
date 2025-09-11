@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Order;
+use App\Models\Shop;
 use App\Models\User;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use Carbon\Carbon;
@@ -84,6 +85,9 @@ class OrderRepository implements OrderRepositoryInterface
             $format = "%Y";
         }
 
+        $userId = Auth::user()->id;
+        $shopIds = User::find($userId)->shops()->pluck('shops.id')->toArray();
+        $userType = Auth::user()->user_type_id ?? null;
         $columns = [
             DB::raw("DATE_FORMAT(date_push, '$format') AS time"),
             DB::raw("COUNT(DISTINCT CASE WHEN is_push = true THEN CONCAT(order_number_group, '-', place_order) END) AS amount_order_push"),
@@ -93,6 +97,9 @@ class OrderRepository implements OrderRepositoryInterface
         $query = Order::query()
             ->select($columns)
             ->whereBetween('date_push', [$start_date, $end_date])
+            ->when($userType !== null, function ($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            })
             ->groupBy(DB::raw("DATE_FORMAT(date_push, '$format')")) 
             ->orderBy(DB::raw("DATE_FORMAT(date_push, '$format')"))
             ->get()
