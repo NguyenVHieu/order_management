@@ -34,7 +34,7 @@
             'Belgium' => 'EUYTECO',
             'Romania' => 'EUYTECO',
             'Luxembourg' => 'EUYTECO',
-            'United States' => 'USUSPSEX',
+            'United States' => 'YUN',
           
             'Vietnam' => 'VNVNP',      
             'Switzerland' => 'CHYTECO',
