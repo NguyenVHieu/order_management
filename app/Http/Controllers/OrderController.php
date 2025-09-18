@@ -243,7 +243,7 @@ class OrderController extends BaseController
                             }
                                
                         } else if ($product->merchize === 'Custom Shape Wavy Hologram Suncatcher Ornament') {
-                            if (stripos($order->style, '2-side') !== false) {
+                            if (stripos($order->style, '2-side') !== false || stripos($order->style, 'Double Side') !== false) {
                                 $type = '2-side Printed';
                             }else {
                                 $type = '1-side Printed';
@@ -253,6 +253,12 @@ class OrderController extends BaseController
                                 $order->color = 'Star Hologram';
                             } else if (stripos($order->style, 'Wavy Acrylic-Sparkle') !== false) {
                                 $order->color = 'Broken Glass Hologram';
+                            }
+                        } else if ($product->merchize === 'Printed & Cut-out Acrylic Ornaments') {
+                            if (stripos($order->style, 'Double Side') !== false) {
+                                $type = 'Custom Shape 2-side Printed';
+                            }else {
+                                $type = 'Custom Shape 1-side Printed';
                             }
                         }
 
