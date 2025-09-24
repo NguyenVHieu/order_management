@@ -243,7 +243,7 @@ class OrderController extends BaseController
                             }
                                
                         } else if ($product->merchize === 'Custom Shape Wavy Hologram Suncatcher Ornament') {
-                            if (stripos($order->style, '2-side') !== false || stripos($order->style, 'Double Side') !== false) {
+                            if (stripos($order->style, '2-side') !== false || stripos($order->style, 'Double Side') !== false || stripos($order->style, '2 side') !== false) {
                                 $type = '2-side Printed';
                             }else {
                                 $type = '1-side Printed';
