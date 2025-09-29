@@ -61,7 +61,7 @@ class OrderController extends BaseController
         $this->baseUrlPrivate = 'https://api.privatefulfillment.com/v1';
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
-        $this->baseUrlGearment = 'https://api.gearment.com/v2';
+        $this->baseUrlGearment = 'https://apiv2.gearment.com/integration-handler/api/v3';
         $this->shopIdPrintify = env('SHOP_ID_PRINTIFY');
         $this->tokenPrintify = env('TOKEN_PRINTIFY');
         $this->tokenMerchize = env('TOKEN_MERCHIZE');
@@ -1088,8 +1088,12 @@ class OrderController extends BaseController
                     }
 
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
-                    $variant_id = $product->gearment ?? '';
-                    if ($variant_id == '') {
+                    
+                    
+                    if (!empty($product->gearment)) {
+                        $variant_id = $this->getVariantGearment($product->gearment, $order->size, $order->color);
+                    }
+                    if (empty($variant_id)) {
                         $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
                         $check = false;
                     }else {
@@ -1108,8 +1112,17 @@ class OrderController extends BaseController
                     $lineItems[] = [
                         "variant_id" => $variant_id,
                         "quantity" => $order->quantity,
-                        "design_link" => $order->img_1 ?? "",
-                        "design_link_back" => $order->img_2 ?? "",
+                        "printing_options" => [
+                            [
+                                'location_code' => 'PRINT_LOCATION_CODE_FRONT',
+                                'url' => $order->img_1 ?? ''
+                            ],
+                            [
+                                'location_code' => 'PRINT_LOCATION_CODE_BACK',
+                                'url' => $order->img_2 ?? ''
+                            ]
+                        ]
+                        
                     ];
 
                 }
@@ -1118,31 +1131,40 @@ class OrderController extends BaseController
                 {
                     $country = DB::table('countries')->where('name', $order->country)->first();
                     $orderId = 'ODER_'. $key. time();
-                    $orderData = [
-                        "api_key" => $this->apiKeyGearment,
-                        "api_signature" => $this->apiSignatureGearment,
-                        "order_id" => $orderId,
-                        "external_id" => 'EXT_'. $key. time(),
-                        "shipping_name" => $order->first_name. ' '. $order->last_name,
-                        "shipping_address1" => $order->address,
-                        "shipping_address2" => $order->apartment ?? '',
-                        "shipping_province_code" => $order->state,
-                        "shipping_zipcode" => $order->zip,
-                        "shipping_city" => $order->city,
-                        "shipping_country_code" => $country->iso_alpha_2,
-                        "shipping_method" => $shipping_method,
+                    $orderData['data'] = [
+                        "reference_id" => 'EXT_'. $key. time(),
+                        "platform" => 'MARKETPLACE_PLATFORM_GEARMENT',
+                        "address" => [
+                            "first_name" => $order->first_name,
+                            "last_name" => $order->last_name,
+                            "street_1" => $order->address,
+                            "street_2" => $order->apartment ?? "",
+                            "state_code" => $order->state,
+                            // "state_name": "string",
+                            "city" => $order->city,
+                            "zip_code" => $order->zip,
+                            "country_code" => $country->iso_alpha_2,
+                            "country_name" => $order->country,
+                            "phone_no" => $order->phone ?? "",
+                            "email" => $order->email ?? "",
+                            "type" => "TYPE_UNKNOWN"
+                        ],
+                        // "shipping_method" => (int)$shipping_method,
                         "line_items" => array_values($lineItems)
                     ];
 
                     $client = new Client();
-                    $resOrder = $client->post($this->baseUrlGearment.'/?act=order_create', [
+                    $resOrder = $client->post($this->baseUrlGearment.'/orders/draft', [
                         'headers' => [
                             'Content-Type'  => 'application/json',
+                            'X-Gearment-Client-Key' => $this->apiKeyGearment,
+                            'X-Gearment-Client-Secret' => $this->apiSignatureGearment,
                         ],
                         'json' => $orderData
                     ]);
 
                     $resOrderFormat = json_decode($resOrder->getBody()->getContents(), true);
+                    dd($resOrderFormat);
                     if ($resOrderFormat['status'] === "success") {
                         foreach($info as $key_order_id => $data) {
                             $data['order_id'] = $orderId;
@@ -1154,6 +1176,7 @@ class OrderController extends BaseController
                     }
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 Helper::trackingError($th->getMessage());
                 $result = [];
                 $result[$key. ' '] = 'Lỗi khi tạo order';
@@ -2245,4 +2268,36 @@ class OrderController extends BaseController
             return $this->sendError($e->getMessage());
         }
     }
+
+    public function getVariantGearment($gearment, $size, $color)
+    {
+        $query = [
+            'filter.product_ids' => $gearment,
+        ];
+
+        if (!empty($size)) {
+            $query['filter.colors'] = $size;
+        }
+        if (!empty($color)) {
+            $query['filter.sizes'] = $color;
+        }
+        
+        $client = new Client();
+        $response = $client->get($this->baseUrlGearment.'/catalog/variants', [
+            'query' => $query,
+            'headers' => [
+                'X-Gearment-Client-Key' => $this->apiKeyGearment,
+                'X-Gearment-Client-Secret' => $this->apiSignatureGearment,
+                'Content-Type'  => 'application/json',
+            ]
+        ]);
+
+        $resFormat = json_decode($response->getBody()->getContents(), true);
+        
+        if (empty($resFormat['data'])) {
+            return null;
+        }
+        return $resFormat['data'][0]['variant_id'];
+    }
+
 }
