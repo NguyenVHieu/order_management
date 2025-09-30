@@ -44,7 +44,8 @@ class Order extends Model
         'is_approval',
         'created_by',
         'updated_by',
-        'cost'
+        'cost',
+        'update_on_site'
     ];
 
     protected $casts = [
