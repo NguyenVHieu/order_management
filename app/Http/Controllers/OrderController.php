@@ -260,7 +260,7 @@ class OrderController extends BaseController
                             if (stripos($order->style, 'Double Side') !== false) {
                                 $type = 'Custom Shape 2-side Printed';
                             }else {
-                                $type = 'Custom Shape 1-side Printed';
+                                $type = 'Custom Shape Clear 1-side Printed';
                             }
                         }
 
