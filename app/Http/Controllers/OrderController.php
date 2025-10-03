@@ -257,7 +257,7 @@ class OrderController extends BaseController
                                 $order->color = 'Broken Glass Hologram';
                             }
                         } else if ($product->merchize === 'Printed & Cut-out Acrylic Ornaments') {
-                            if (stripos($order->style, 'Double Side') !== false) {
+                            if (stripos(Str::lower($order->style), 'double side') !== false || stripos(Str::lower($order->style), '2 side') !== false) {
                                 $type = 'Custom Shape 2-side Printed';
                             }else {
                                 $type = 'Custom Shape Clear 1-side Printed';
