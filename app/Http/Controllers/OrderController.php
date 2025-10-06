@@ -461,17 +461,21 @@ class OrderController extends BaseController
                     }
                     $product = DB::table('key_blueprints')->where('style', $order->style)->first();
                     $productType = $order->is_tiktok == true ? $order->style : $product->private;
+                    $query = [
+                        'prodType' => $productType,
+                        'prodSize' => $order->size,
+                        'prodNum' => $prodNum,
+                        'prodColor' => $order->color,
+                    ];
+                    if ($productType === 'T_SHIRT') {
+                        $query['countryCode'] = 'DE';
+                    }
                     $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $token,
                             'Content-Type'  => 'application/json',
                         ],
-                        'query' => [
-                            'prodType' => $productType,
-                            'prodSize' => $order->size,
-                            'prodNum' => $prodNum,
-                            'prodColor' => $order->color,
-                        ],
+                        'query' => $query
                     ]);
     
                     $resSkuConvert = json_decode($resSku->getBody()->getContents(), true);
