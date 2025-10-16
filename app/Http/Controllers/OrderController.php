@@ -467,9 +467,7 @@ class OrderController extends BaseController
                         'prodNum' => $prodNum,
                         'prodColor' => $order->color,
                     ];
-                    if ($productType === 'T_SHIRT') {
-                        $query['countryCode'] = 'DE';
-                    }
+
                     $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $token,
