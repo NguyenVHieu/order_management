@@ -1167,7 +1167,7 @@ class OrderController extends BaseController
                     $resOrderFormat = json_decode($resOrder->getBody()->getContents(), true);
                     if ($resOrderFormat['status'] === "success") {
                         foreach($info as $key_order_id => $data) {
-                            $data['order_id'] = $orderId;
+                            $data['order_id'] = $resOrderFormat['result']['ord_id'];
                             DB::table('orders')->where('id', $key_order_id)->update($data);
                         }
                     } else {
