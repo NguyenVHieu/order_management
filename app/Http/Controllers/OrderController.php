@@ -1167,7 +1167,7 @@ class OrderController extends BaseController
                     $resOrderFormat = json_decode($resOrder->getBody()->getContents(), true);
                     if ($resOrderFormat['status'] === "success") {
                         foreach($info as $key_order_id => $data) {
-                            $data['order_id'] = $resOrderFormat['result']['ord_id'];
+                            $data['order_id'] = $resOrderFormat['data']['order_id'];
                             DB::table('orders')->where('id', $key_order_id)->update($data);
                         }
                     } else {
@@ -1459,8 +1459,7 @@ class OrderController extends BaseController
         ]);
         
         $resFormat = json_decode($resVariant->getBody()->getContents(), true);
-        // dd($resFormat);
-        $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color) {
+        $matchedVariant = array_filter($resFormat['variants'], function($variant) use ($size, $color, $blueprint_id) {
             $sizeOrigin = $size1 = $size;
             if (strpos($size,'"') === false && strpos($size, 'x') !== false && strpos($size,'″') === false) {
                 $size = str_replace('x', '" × ', $size). '"';
@@ -1479,7 +1478,12 @@ class OrderController extends BaseController
             $resultSize = true;
 
             if (!empty($variant['options']['color']) || !empty($variant['options']['finish'])) {
-                $resultColor = in_array($color, $variant['options']);
+                if ($blueprint_id === 1626) {
+                    $resultColor = in_array('Photo', $variant['options']);
+                } else {
+                    $resultColor = in_array($color, $variant['options']);
+                }
+                
             }
             
             if (!empty($variant['options']['size'])) {
