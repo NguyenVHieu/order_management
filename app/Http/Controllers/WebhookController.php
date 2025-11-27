@@ -557,11 +557,11 @@ class WebhookController extends BaseController
             $multi = count($lineItems) > 1 ? true : false;
             foreach($lineItems as $index => $item) {
                 $size = $style = null;
-                if ($item['meta_data'][0]['key'] == 'Size') {
+                if (isset ($item['meta_data'][0]) && $item['meta_data'][0]['key'] == 'Size') {
                     $size = $item['meta_data'][0]['value'];
                 }
 
-                if ($item['meta_data'][1]['key'] == 'Design Style') {
+                if (isset ($item['meta_data'][1]) && $item['meta_data'][1]['key'] == 'Design Style') {
                     $style = $item['meta_data'][1]['value'];
                 }
                 $data_item = [
