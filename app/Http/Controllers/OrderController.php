@@ -263,7 +263,7 @@ class OrderController extends BaseController
                                 $type = 'Custom Shape Clear 1-side Printed';
                             }
                         } else if ($product->merchize === 'House Flag') {
-                            $types = 'Horizontal House';
+                            $type = 'Horizontal House';
                             $order->size = $this->convertSizeHouseFlag($order->size);
                         }
 
