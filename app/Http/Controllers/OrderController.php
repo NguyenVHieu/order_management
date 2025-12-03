@@ -262,6 +262,9 @@ class OrderController extends BaseController
                             }else {
                                 $type = 'Custom Shape Clear 1-side Printed';
                             }
+                        } else if ($product->merchize === 'House Flag') {
+                            $types = 'Horizontal House';
+                            $order->size = $this->convertSizeHouseFlag($order->size);
                         }
 
                         $result[$order->order_number.' '.$order->style.' '.$order->color] = 'Success!';
@@ -2301,6 +2304,20 @@ class OrderController extends BaseController
             return null;
         }
         return $resFormat['data'][0]['variant_id'];
+    }
+
+    public function convertSizeHouseFlag($size)
+    {
+        $size = strtolower($size);
+        if (stripos($size, '3x5') !== false || stripos($size, '36x60') !== false){
+            return '36x60';
+        } else if (stripos($size, '4x6') !== false){
+            return '48x72';
+        } else if (stripos($size, '5x8') !== false){
+            return '60x96';
+        } else {
+            return 'Default';
+        }
     }
 
 }
