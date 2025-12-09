@@ -433,6 +433,7 @@ class OrderController extends BaseController
         } catch (\Throwable $th) {
             return ['401' => 'Đăng nhập Private fullfillment không thành công'];
         }
+
         
         $results = [];
         foreach($data as $keyParent => $orders) {
@@ -444,17 +445,9 @@ class OrderController extends BaseController
             
             try {
                 $check = true;
-                $uk = false;
                 foreach($orders as $key => $order) {
                     if (!empty($order->shipping_method)) {
-                        if ($order->shipping_method === 'UK') {
-                            if (!$uk) {
-                                $this->baseUrlPrivate .= '/uk';
-                                $uk = true;
-                            }
-                        } else {
-                            $shipping_method = $order->shipping_method;
-                        }
+                        $shipping_method = $order->shipping_method;
                     }
                     
                     if (!empty($order->img_1) && !empty($order->img_2)) {
@@ -470,6 +463,9 @@ class OrderController extends BaseController
                         'prodNum' => $prodNum,
                         'prodColor' => $order->color,
                     ];
+                    if ($shipping_method == 'UK') {
+                        $query['countryCode'] = 'GB';
+                    }
 
                     $resSku = $client->get($this->baseUrlPrivate. '/sku', [
                         'headers' => [
