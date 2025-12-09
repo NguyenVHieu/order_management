@@ -541,7 +541,7 @@ class OrderController extends BaseController
                     }
                     $country = DB::table('countries')->where('name', $order->country)->first();
 
-                    if (empty($shipping_method)) {
+                    if (empty($shipping_method) || $shipping_method == 'UK') {
                         $shipping_method = $order->is_shipping == true ? "EXPRESS" : "STANDARD";
                     } else {
                         if (!in_array($shipping_method, ['STANDARD', 'EXPRESS', 'TWODAYS', 'PRIORITY', 'OVERNIGHT'])) {
