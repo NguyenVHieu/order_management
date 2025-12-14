@@ -45,6 +45,7 @@ class OrderController extends BaseController
     protected $pPrivate;
     protected $apiKeyGearment;
     protected $apiSignatureGearment;
+    protected $tokenPrintway;
 
     protected $baseUrlHubfulfill;
     protected $baseUrlLenful;
@@ -53,6 +54,7 @@ class OrderController extends BaseController
     protected $baseUrlPrintify;
     protected $orderRepository;
     protected $baseUrlGearment;
+    protected $baseUrlPrintway;
 
     public function __construct(OrderRepository $orderRepository)
     {   
@@ -62,6 +64,7 @@ class OrderController extends BaseController
         $this->baseUrlHubfulfill = 'https://hubfulfill.com/api';
         $this->baseUrlLenful = 'https://s-lencam.lenful.com/api';
         $this->baseUrlGearment = 'https://apiv2.gearment.com/integration-handler/api/v3';
+        $this->baseUrlPrintway = 'https://apis.printway.io/v3';
         $this->shopIdPrintify = env('SHOP_ID_PRINTIFY');
         $this->tokenPrintify = env('TOKEN_PRINTIFY');
         $this->tokenMerchize = env('TOKEN_MERCHIZE');
@@ -75,6 +78,7 @@ class OrderController extends BaseController
         $this->tokenHubfulfill = env('TOKEN_HUBFULFILL');
         $this->apiKeyGearment = env('API_KEY_GEARMENT');
         $this->apiSignatureGearment = env('API_SIGNATURE_GEARMENT');
+        $this->tokenPrintway = env('TOKEN_PRINTWAY');
         $this->orderRepository = $orderRepository;
     }
 
@@ -1188,6 +1192,103 @@ class OrderController extends BaseController
                     
     }
 
+    function pushOrderToPrintway($data) {
+        $results = [];
+        foreach($data as $key => $orders) {
+            try {
+                $lineItems = [];
+                $result = [];
+                $info = [];
+                $check = true;
+                foreach($orders as $order) {
+                    $product = DB::table('key_blueprints')->where('style', $order->style)->first();
+                    if (!empty($product->printway)) {
+                        $variant_id = $this->getVariantPrintway($product->printway, $order->size, $order->color);
+                    }
+
+                    if (empty($variant_id)) {
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Order hết màu, hết size hoặc không tồn tại SKU. Vui lòng kiểm tra lại';
+                        $check = false;
+                    }else {
+                        $result[$order->order_number.' '. $order->size. ' '. $order->color] = 'Success!';
+                    }
+
+                    $info[$order->id] = [
+                        'place_order' => 'printway',
+                        'is_push' => 1,
+                        'date_push' => date('Y-m-d'),
+                        'push_by' => Auth::user()->id,
+                        'status_order' => "pending",
+                        'cost' => 0.00
+                    ];
+
+                    $lineItems[] = [
+                        "variant_id" => $variant_id,
+                        "quantity" => $order->quantity,
+                        "mockup_url" => $order->img_6,
+                        "artwork_front" => $order->img_1,
+                        "artwork_back" => $order->img_2,
+                        "artwork_right" => $order->img_3,
+                        "artwork_left" => $order->img_4,
+                        "artwork_hood" => $order->img_5
+                    ];
+
+                }
+
+                if (count($lineItems) > 0 && $check)
+                {
+                    $country = DB::table('countries')->where('name', $order->country)->first();
+                    $orderId = $key. '_'.time();
+                    $orderData = [
+                        "order_id" => $orderId,
+                        "tiktok_order_type" => "seller",
+                        "firstName" => $order->first_name,
+                        "lastName" => $order->last_name,
+                        "shipping_address1" => $order->address,
+                        "shipping_address2" => $order->apartment ?? "",
+                        "shipping_city" => $order->city,
+                        "shipping_province" => $order->state,
+                        "shipping_province_code" => $order->state,
+                        "shipping_zip" => $order->zip,
+                        "shipping_country" => $order->country,
+                        "shipping_country_code" => $country->iso_alpha_2,
+                        "order_items" => array_values($lineItems)
+                    ];
+
+                    $client = new Client();
+                    $resOrder = $client->post($this->baseUrlPrintway.'/order/create-new-order', [
+                        'headers' => [
+                            'Content-Type'  => 'application/json',
+                            'pw-access-token'   => $this->tokenPrintway
+                        ],
+                        'json' => $orderData
+                    ]);
+
+                    $resOrderFormat = json_decode($resOrder->getBody()->getContents(), true);
+                    if ($resOrderFormat['success']) {
+                        foreach($info as $key_order_id => $data) {
+                            $data['order_id'] = $resOrderFormat['data']['pwOrderId'];
+                            $data['cost'] =  collect($resOrderFormat['data']['items'])->sum('totalFee');
+                            DB::table('orders')->where('id', $key_order_id)->update($data);
+                        }
+                    } else {
+                        $result = [];
+                        $result[$key. ' '] = 'Lỗi khi tạo order';
+                    }
+                }
+            } catch (\Throwable $th) {
+                Helper::trackingError($th->getMessage());
+                $result = [];
+                $result[$key. ' '] = 'Lỗi khi tạo order';
+            }
+
+            $results[] = $result;
+
+        }
+
+        return array_merge(...$results);
+    }
+
     public function getOrderDB(Request $req) 
     {
         try {
@@ -1267,6 +1368,41 @@ class OrderController extends BaseController
         
     }
 
+    public function getVariantPrintway($code, $size, $color) {
+        try {
+            $client = new Client();
+            $response = $client->get($this->baseUrlPrintway. "/products/detail", [
+                'headers' => [
+                    'pw-access-token' => $this->tokenPrintway,
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => [
+                    'code' => $code,
+                ]
+            ]);
+
+            if ($response->getStatusCode() === 200) {
+                $product = json_decode($response->getBody()->getContents(), true);
+                $variants = $product['data']['variants'];
+                $result = array_filter($variants, function ($variant) use ($size, $color) {
+                    foreach ($variant['attributes'] as $attr) {
+                        if (
+                            strtolower($attr['name']) === 'size' &&
+                            $attr['value'] === $size
+                        ) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                return !empty($result) ? $result[0]['variant_id'] : null;
+            }
+        } catch (\Throwable $th) {
+            dd($th);
+            return null;
+        }
+    }
+
     public function pushOrder(Request $request)
     {
         try {
@@ -1323,6 +1459,9 @@ class OrderController extends BaseController
                     case 'gearment':
                         $results[] = $this->pushOrderToGearment($data);
                         break;
+                    case 'printway':
+                        $results[] = $this->pushOrderToPrintway($data);
+                        break;
                     default:
                         return $this->sendError('Không tìm thấy nơi đặt hàng', 404);
                         break;   
@@ -1332,6 +1471,7 @@ class OrderController extends BaseController
             
             
         } catch (\Throwable $th) {
+            dd($th);
             Helper::trackingError($th->getMessage());
             return $this->sendError($th->getMessage(), 500);
         }

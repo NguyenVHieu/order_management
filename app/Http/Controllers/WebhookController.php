@@ -394,7 +394,7 @@ class WebhookController extends BaseController
         $dbPass = env('DB_PASSWORD');
         $dbHost = env('DB_HOST');
         $dbPort = env('DB_PORT');
-        $dbNames = ['order_management', 'tiktokshop_management', 'tool_seeding_2', 'listing_management'];
+        $dbNames = ['order_management', 'tiktokshop_management', 'tool_seeding_2', 'listing_management', 'handmade_management'];
         foreach ($dbNames as $dbName) {
             $backupPath = storage_path('backups');
     
