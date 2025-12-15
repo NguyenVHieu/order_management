@@ -1398,7 +1398,6 @@ class OrderController extends BaseController
                 return !empty($result) ? $result[0]['variant_id'] : null;
             }
         } catch (\Throwable $th) {
-            dd($th);
             return null;
         }
     }
@@ -1471,7 +1470,6 @@ class OrderController extends BaseController
             
             
         } catch (\Throwable $th) {
-            dd($th);
             Helper::trackingError($th->getMessage());
             return $this->sendError($th->getMessage(), 500);
         }
