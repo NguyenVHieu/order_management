@@ -1395,6 +1395,7 @@ class OrderController extends BaseController
                     }
                     return false;
                 });
+                $result = array_values($result);
                 return !empty($result) ? $result[0]['variant_id'] : null;
             }
         } catch (\Throwable $th) {
