@@ -1411,9 +1411,21 @@ class OrderController extends BaseController
             $orders = $request->orders;
             $datas = [];
             $results = [];
-            
+            $orderGroup = [];
+            $orderGroupTotal = [];
+            $missingItems = [];
             foreach($orders as $data) {
                 $order = DB::table('orders')->where('id', $data['order_id'])->first();
+                $groupKey = $order->order_number_group;
+                $orderGroup[$groupKey] = ($orderGroup[$groupKey] ?? 0) + 1;
+
+                // Lấy tổng số item của group trong DB (chỉ query 1 lần)
+                if (!isset($orderGroupTotal[$groupKey])) {
+                    $orderGroupTotal[$groupKey] = DB::table('orders')
+                        ->where('order_number_group', $groupKey)
+                        ->count();
+                }
+
                 if ($order->is_push == true) {
                     return $this->sendError('Tồn tại đơn hàng đã được đẩy', 500);
                 }
@@ -1433,7 +1445,19 @@ class OrderController extends BaseController
                 $datas[$platform][$order_number_format][] = $order;
             }
 
-            foreach ($datas as $key => $data)
+            foreach ($orderGroup as $groupKey => $countRequest) {
+                $countTotal = $orderGroupTotal[$groupKey] ?? 0;
+
+                if ($countRequest < $countTotal) {
+                    $missingItems[] = $groupKey;
+                }
+            }
+
+            if (!empty($missingItems)) {
+                return $this->sendError('Đơn hàng bị thiếu items: ' . implode(', ', $missingItems), 500);
+            }
+
+            foreach ($datas as $key => $data) {
                 switch ($key) {
                     case 'printify':
                         $results[] = $this->pushOrderToPrintify($data);
@@ -1466,10 +1490,8 @@ class OrderController extends BaseController
                         return $this->sendError('Không tìm thấy nơi đặt hàng', 404);
                         break;   
                 }
-
-                return $this->sendSuccess($results);
-            
-            
+            }
+            return $this->sendSuccess($results);
         } catch (\Throwable $th) {
             Helper::trackingError($th->getMessage());
             return $this->sendError($th->getMessage(), 500);
