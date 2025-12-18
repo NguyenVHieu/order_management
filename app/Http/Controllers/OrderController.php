@@ -1956,7 +1956,6 @@ class OrderController extends BaseController
                     } else if ($size == 'L2') {
                         $total_cost = (int)$item->quantity * 13.50;
                     } else {
-                        $size = '';
                         $total_cost = 0;
                     }
                 }else {
